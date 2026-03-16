@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-sage: #8A9A5B;
+  --color-sage-light: #A7B38D;
+  --color-sage-dark: #6B7B44;
+  
+  --color-cream: #FFF9E5;
+  --color-cream-dark: #F2E8D5;
+  
+  --color-terracotta: #E2725B;
+  --color-terracotta-light: #EB9381;
+  --color-terracotta-dark: #C15A45;
+  
+  --color-forest: #014421;
+  --color-amber-gold: #D4AF37;
+  --color-crimson: #DC143C;
+  --color-royal: #4169E1;
+  
+  --color-neon-green: #32CD32;
+  --color-neon-yellow: #FFD700;
+  --color-neon-red: #FF3131;
+  --color-neon-cyan: #4169E1;
+}
+
+@layer base {
+  body {
+    @apply bg-cream text-slate-900;
+  }
+}
+
+.card-shadow {
+  box-shadow: 0 4px 20px -2px rgba(138, 154, 91, 0.1);
+}
+
+.pop-feedback:active {
+  transform: scale(0.95);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+@layer utilities {
+  .scroll-mt-header {
+    scroll-margin-top: 80px;
+  }
+}
+
+@media print {
+  .sticky,
+  button,
+  input,
+  select,
+  .sidebar,
+  .no-print,
+  nav,
+  [role="navigation"],
+  .jump-nav {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    padding: 0 !important;
+  }
+
+  .card-shadow {
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Classroom Pulse",
+  "description": "A modern classroom management tool for tracking student behavior, communication, and progress with AI-powered insights.",
+  "requestFramePermissions": ["microphone", "camera"]
+}
