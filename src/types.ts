@@ -41,7 +41,9 @@ export interface Student {
 export interface Note {
   id: string;
   content: string;
+  student_id?: string | null;
   student_name: string;
+  class_name?: string | null;
   user_id: string;
   tags: string[];
   deadline: string | null;

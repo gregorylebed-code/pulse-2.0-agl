@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import { categorizeNote, summarizeNotes, refineReport, magicImport, draftParentSquareMessage, parseVoiceLog, performSmartScan, extractRotationMapping } from './lib/gemini';
 import { Note, Student, Report, ContactEntry, CalendarEvent } from './types';
+import { migrateFromLocalStorage } from './utils/migrateFromLocalStorage';
+import { useClassroomData } from './hooks/useClassroomData';
+import { supabase } from './lib/supabase';
+import PulseScreen from './components/PulseScreen';
+import FeedbackModal from './components/FeedbackModal';
 
 interface Task {
   id: string;
@@ -29,7 +34,8 @@ import {
   CheckCircle2, AlertCircle, Loader2, LogOut, User,
   Search, Filter, Calendar, MessageCircle, TrendingUp, Archive,
   Shield, GripVertical, CalendarX, Eye, Upload, ArrowRight, School,
-  FileText, ClipboardList, ChevronDown, Palette, Beaker, Download
+  FileText, ClipboardList, ChevronDown, Palette, Beaker, Download,
+  Smile, Meh, Frown, Coffee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -42,6 +48,10 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const ParentSquareIcon = () => (
+  <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[9px] font-black leading-none">PS</span>
+);
+
 const getIconForName = (name: string, type: string) => {
   switch (name) {
     case 'Sparkles': return <Sparkles className="w-4 h-4" />;
@@ -52,37 +62,41 @@ const getIconForName = (name: string, type: string) => {
     case 'Clock': return <Clock className="w-4 h-4" />;
     case 'FileInput': return <FileInput className="w-4 h-4" />;
     case 'Activity': return <Activity className="w-4 h-4" />;
-    case 'Users': return <Users className="w-4 h-4" />;
-    case 'MessageSquare': return <MessageSquare className="w-4 h-4" />;
-    case 'Mail': return <Mail className="w-4 h-4" />;
-    case 'Phone': return <Phone className="w-4 h-4" />;
+    case 'Smile': return <Smile className="w-4 h-4 text-emerald-600" />;
+    case 'Meh': return <Meh className="w-4 h-4 text-amber-500" />;
+    case 'Frown': return <Frown className="w-4 h-4 text-red-500" />;
+    case 'ParentSquare': return <ParentSquareIcon />;
+    case 'Users': return <Users className="w-4 h-4 text-blue-500" />;
+    case 'MessageSquare': return <MessageSquare className="w-4 h-4 text-blue-500" />;
+    case 'Mail': return <Mail className="w-4 h-4 text-blue-500" />;
+    case 'Phone': return <Phone className="w-4 h-4 text-blue-500" />;
     default:
-      if (type === 'positive') return <Sparkles className="w-4 h-4" />;
-      if (type === 'growth') return <AlertCircle className="w-4 h-4" />;
-      if (type === 'neutral') return <Activity className="w-4 h-4" />;
-      return <MessageSquare className="w-4 h-4" />;
+      if (type === 'positive') return <Smile className="w-4 h-4 text-emerald-600" />;
+      if (type === 'growth') return <Frown className="w-4 h-4 text-red-500" />;
+      if (type === 'neutral') return <Meh className="w-4 h-4 text-amber-500" />;
+      return <MessageSquare className="w-4 h-4 text-blue-500" />;
   }
 };
 
 const DEFAULT_BEHAVIOR_BUTTONS = [
-  { label: 'Participation', type: 'positive' as const, icon_name: 'Sparkles', icon: <Sparkles className="w-5 h-5" /> },
-  { label: 'Kindness', type: 'positive' as const, icon_name: 'CheckCircle2', icon: <CheckCircle2 className="w-5 h-5" /> },
-  { label: 'Persistence', type: 'positive' as const, icon_name: 'TrendingUp', icon: <TrendingUp className="w-5 h-5" /> },
-  { label: 'Disruption', type: 'growth' as const, icon_name: 'AlertCircle', icon: <AlertCircle className="w-5 h-5" /> },
-  { label: 'Peer Conflict', type: 'growth' as const, icon_name: 'Users2', icon: <Users2 className="w-5 h-5" /> },
-  { label: 'Distracted', type: 'growth' as const, icon_name: 'Clock', icon: <Clock className="w-5 h-5" /> },
-  { label: 'Missing HW', type: 'growth' as const, icon_name: 'FileInput', icon: <FileInput className="w-5 h-5" /> },
-  { label: 'Unprepared', type: 'growth' as const, icon_name: 'AlertCircle', icon: <AlertCircle className="w-5 h-5" /> },
-  { label: 'Observation', type: 'neutral' as const, icon_name: 'Activity', icon: <Activity className="w-5 h-5" /> },
-  { label: 'Independent Work', type: 'neutral' as const, icon_name: 'Clock', icon: <Clock className="w-5 h-5" /> },
-  { label: 'Group Work', type: 'neutral' as const, icon_name: 'Users', icon: <Users className="w-5 h-5" /> },
+  { label: 'Participation', type: 'positive' as const, icon_name: 'Smile', icon: <Smile className="w-5 h-5 text-emerald-600" /> },
+  { label: 'Kindness', type: 'positive' as const, icon_name: 'Smile', icon: <Smile className="w-5 h-5 text-emerald-600" /> },
+  { label: 'Persistence', type: 'positive' as const, icon_name: 'Smile', icon: <Smile className="w-5 h-5 text-emerald-600" /> },
+  { label: 'Disruption', type: 'growth' as const, icon_name: 'Frown', icon: <Frown className="w-5 h-5 text-red-500" /> },
+  { label: 'Peer Conflict', type: 'growth' as const, icon_name: 'Frown', icon: <Frown className="w-5 h-5 text-red-500" /> },
+  { label: 'Distracted', type: 'growth' as const, icon_name: 'Frown', icon: <Frown className="w-5 h-5 text-red-500" /> },
+  { label: 'Missing HW', type: 'growth' as const, icon_name: 'Frown', icon: <Frown className="w-5 h-5 text-red-500" /> },
+  { label: 'Unprepared', type: 'growth' as const, icon_name: 'Frown', icon: <Frown className="w-5 h-5 text-red-500" /> },
+  { label: 'Observation', type: 'neutral' as const, icon_name: 'Meh', icon: <Meh className="w-5 h-5 text-amber-500" /> },
+  { label: 'Independent Work', type: 'neutral' as const, icon_name: 'Meh', icon: <Meh className="w-5 h-5 text-amber-500" /> },
+  { label: 'Group Work', type: 'neutral' as const, icon_name: 'Meh', icon: <Meh className="w-5 h-5 text-amber-500" /> },
 ];
 
 const DEFAULT_COMM_BUTTONS = [
-  { label: 'ParentSquare', icon_name: 'MessageSquare', icon: <MessageSquare className="w-5 h-5" /> },
-  { label: 'Email', icon_name: 'Mail', icon: <Mail className="w-5 h-5" /> },
-  { label: 'Phone', icon_name: 'Phone', icon: <Phone className="w-5 h-5" /> },
-  { label: 'Meeting', icon_name: 'Users', icon: <Users className="w-5 h-5" /> },
+  { label: 'ParentSquare', icon_name: 'ParentSquare', icon: <ParentSquareIcon /> },
+  { label: 'Email', icon_name: 'Mail', icon: <Mail className="w-5 h-5 text-blue-500" /> },
+  { label: 'Phone', icon_name: 'Phone', icon: <Phone className="w-5 h-5 text-blue-500" /> },
+  { label: 'Meeting', icon_name: 'Users', icon: <Users className="w-5 h-5 text-blue-500" /> },
 ];
 
 const QUOTES = [
@@ -113,16 +127,50 @@ const TASK_COLORS: Record<string, any> = {
 };
 
 export default function App() {
+  // Use Supabase-backed data hook
+  const {
+    notes,
+    students,
+    indicators,
+    commTypes,
+    classes,
+    calendarEvents,
+    tasks,
+    reports,
+    profile,
+    rotationMapping,
+    specialsNames,
+    loading,
+    addNote,
+    updateNote,
+    deleteNote,
+    addStudent,
+    updateStudent,
+    deleteStudent,
+    addTask,
+    updateTask,
+    deleteTask,
+    addReport,
+    saveProfile,
+    saveRotationMapping,
+    saveSpecialsNames,
+    updateIndicators,
+    updateCommTypes,
+    updateClasses,
+    updateCalendarEvents,
+    refreshData,
+  } = useClassroomData();
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    (localStorage.getItem('cp_theme') as 'light' | 'dark') || 'light'
+  );
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('cp_theme', theme);
+  }, [theme]);
+
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'settings'>('pulse');
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [indicators, setIndicators] = useState(DEFAULT_BEHAVIOR_BUTTONS);
-  const [commTypes, setCommTypes] = useState(DEFAULT_COMM_BUTTONS);
-  const [classes, setClasses] = useState<string[]>(['AM', 'PM']);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [userName, setUserName] = useState('Teacher');
-  const [schoolName, setSchoolName] = useState('Classroom Pulse Elementary');
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [showTasks, setShowTasks] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [tempName, setTempName] = useState('');
@@ -131,15 +179,13 @@ export default function App() {
   const [activeColorMenuId, setActiveColorMenuId] = useState<string | null>(null);
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [isUsingBackup, setIsUsingBackup] = useState(false);
-
-  // Rotation & Specials State
-  const [rotationMapping, setRotationMapping] = useState<Record<string, string>>({});
-  const [specialsNames, setSpecialsNames] = useState<Record<string, string>>(DEFAULT_SPECIALS);
   const [showRotationForecast, setShowRotationForecast] = useState(false);
 
-  useEffect(() => {
-    loadData();
+  // Derive userName and schoolName from profile
+  const userName = profile.userName;
+  const schoolName = profile.schoolName;
 
+  useEffect(() => {
     const handleFallback = () => {
       setIsUsingBackup(true);
       setTimeout(() => setIsUsingBackup(false), 8000); // Hide after 8 seconds
@@ -160,138 +206,73 @@ export default function App() {
     };
   }, [activeColorMenuId]);
 
-  // --- localStorage helpers ---
-  const loadData = () => {
-    try {
-      const savedNotes = localStorage.getItem('cp_notes');
-      if (savedNotes) setNotes(JSON.parse(savedNotes));
-
-      const savedStudents = localStorage.getItem('cp_students');
-      if (savedStudents) setStudents(JSON.parse(savedStudents));
-
-      const savedIndicators = localStorage.getItem('cp_indicators');
-      if (savedIndicators) {
-        const parsed = JSON.parse(savedIndicators);
-        const behavior = parsed
-          .filter((i: any) => i.category === 'behavior')
-          .map((i: any) => ({ ...i, icon: getIconForName(i.icon_name, i.type) }));
-        const comm = parsed
-          .filter((i: any) => i.category === 'communication')
-          .map((i: any) => ({ ...i, icon: getIconForName(i.icon_name, 'communication') }));
-        if (behavior.length > 0) setIndicators(behavior);
-        if (comm.length > 0) setCommTypes(comm);
-      }
-
-      const savedClasses = localStorage.getItem('cp_classes');
-      if (savedClasses) setClasses(JSON.parse(savedClasses));
-
-      const savedCalendar = localStorage.getItem('cp_calendar_events');
-      if (savedCalendar) setCalendarEvents(JSON.parse(savedCalendar));
-
-      const savedProfile = localStorage.getItem('cp_profile');
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile);
-        if (profile.userName) setUserName(profile.userName);
-        if (profile.schoolName) setSchoolName(profile.schoolName);
-      }
-
-      const savedTasks = localStorage.getItem('cp_tasks');
-      if (savedTasks) setTasks(JSON.parse(savedTasks));
-
-      const savedRotation = localStorage.getItem('rotationMapping');
-      if (savedRotation) setRotationMapping(JSON.parse(savedRotation));
-
-      const savedSpecials = localStorage.getItem('specialsNames');
-      if (savedSpecials) setSpecialsNames(JSON.parse(savedSpecials));
-    } catch (e) {
-      console.error('Error loading saved data:', e);
-    }
-  };
-
+  // Handle name changes
   const saveName = () => {
     if (!tempName.trim()) return;
     const newName = tempName.trim();
-    setUserName(newName);
-    const existing = localStorage.getItem('cp_profile');
-    const profile = existing ? JSON.parse(existing) : {};
-    localStorage.setItem('cp_profile', JSON.stringify({ ...profile, userName: newName }));
+    saveProfile({ ...profile, userName: newName });
     setTempName('');
     toast.success(`Welcome, ${newName}!`);
   };
 
   const resetUserName = () => {
-    setUserName('Teacher');
-    const existing = localStorage.getItem('cp_profile');
-    const profile = existing ? JSON.parse(existing) : {};
-    const updated = { ...profile };
-    delete updated.userName;
-    localStorage.setItem('cp_profile', JSON.stringify(updated));
+    saveProfile({ ...profile, userName: 'Teacher' });
     toast.info('Name reset. What should I call you?');
   };
 
-  const addTask = () => {
+  // Handle task management
+  const handleAddTask = async () => {
     if (!newTaskText.trim()) return;
-    const newTask: Task = {
-      id: Date.now().toString(36),
+    await addTask({
       text: newTaskText.trim(),
       completed: false,
-      created_at: new Date().toISOString(),
       color: 'default'
-    };
-    const updated = [newTask, ...tasks];
-    setTasks(updated);
-    localStorage.setItem('cp_tasks', JSON.stringify(updated));
+    });
     setNewTaskText('');
   };
 
-  const setTaskColor = (id: string, color: string) => {
-    const updated = tasks.map(t => t.id === id ? { ...t, color } : t);
-    setTasks(updated);
-    localStorage.setItem('cp_tasks', JSON.stringify(updated));
-    setActiveColorMenuId(null); // Close menu after selection
+  const handleSetTaskColor = async (id: string, color: string) => {
+    await updateTask(id, { color });
+    setActiveColorMenuId(null);
   };
 
-  const toggleTask = (id: string) => {
-    const updated = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-    setTasks(updated);
-    localStorage.setItem('cp_tasks', JSON.stringify(updated));
+  const handleToggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      await updateTask(id, { completed: !task.completed });
+    }
   };
 
-  const deleteTask = (id: string) => {
-    const updated = tasks.filter(t => t.id !== id);
-    setTasks(updated);
-    localStorage.setItem('cp_tasks', JSON.stringify(updated));
+  const handleDeleteTask = async (id: string) => {
+    await deleteTask(id);
   };
 
-  const clearCompleted = () => {
-    const updated = tasks.filter(t => !t.completed);
-    setTasks(updated);
-    localStorage.setItem('cp_tasks', JSON.stringify(updated));
+  const handleClearCompleted = async () => {
+    const completedTasks = tasks.filter(t => t.completed).map(t => t.id);
+    for (const taskId of completedTasks) {
+      await deleteTask(taskId);
+    }
   };
 
-  const startEditingTask = (task: Task) => {
+  const handleStartEditingTask = (task: Task) => {
     setEditingTaskId(task.id);
     setEditTaskText(task.text);
   };
 
-  const updateTaskText = () => {
+  const handleUpdateTaskText = async () => {
     if (!editingTaskId) return;
-    const updated = tasks.map(t =>
-      t.id === editingTaskId ? { ...t, text: editTaskText.trim() || t.text } : t
-    );
-    setTasks(updated);
-    localStorage.setItem('cp_tasks', JSON.stringify(updated));
+    await updateTask(editingTaskId, { text: editTaskText.trim() || tasks.find(t => t.id === editingTaskId)?.text });
     setEditingTaskId(null);
     setEditTaskText('');
   };
 
-  const onDragEnd = (result: any) => {
+  const handleOnDragEnd = async (result: any) => {
     if (!result.destination) return;
     const items = Array.from(tasks);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-    setTasks(items);
-    localStorage.setItem('cp_tasks', JSON.stringify(items));
+    // Note: This reorders in state, but Supabase doesn't support custom ordering yet
+    // This will reset on refresh. Consider adding an "order" field to tasks table if needed.
   };
 
   const getRotationForDate = (date: Date) => {
@@ -481,36 +462,46 @@ export default function App() {
                 indicators={indicators}
                 commTypes={commTypes}
                 calendarEvents={calendarEvents}
-                onNoteAdded={loadData}
+                classes={classes}
+                onNoteAdded={refreshData}
+                addNote={addNote}
+                updateNote={updateNote}
+                deleteNote={deleteNote}
               />
             </motion.div>
           )}
           {activeTab === 'students' && (
             <motion.div key="students" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <StudentsScreen students={students} notes={notes} indicators={indicators} commTypes={commTypes} calendarEvents={calendarEvents} classes={classes} onUpdate={loadData} />
+              <StudentsScreen students={students} notes={notes} reports={reports} indicators={indicators} commTypes={commTypes} calendarEvents={calendarEvents} classes={classes} onUpdate={refreshData} deleteStudent={deleteStudent} deleteNote={deleteNote} addNote={addNote} updateNote={updateNote} updateStudent={updateStudent} addReport={addReport} />
             </motion.div>
           )}
           {activeTab === 'settings' && (
             <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <SettingsScreen
                 indicators={indicators}
-                setIndicators={setIndicators}
+                setIndicators={updateIndicators}
                 commTypes={commTypes}
-                setCommTypes={setCommTypes}
+                setCommTypes={updateCommTypes}
                 classes={classes}
-                setClasses={setClasses}
-                onImportComplete={loadData}
-                onNoteAdded={loadData}
+                setClasses={updateClasses}
+                onImportComplete={refreshData}
+                onNoteAdded={refreshData}
                 userName={userName}
-                setUserName={setUserName}
+                setUserName={(name: string) => saveProfile({ ...profile, userName: name })}
                 schoolName={schoolName}
-                setSchoolName={setSchoolName}
+                setSchoolName={(name: string) => saveProfile({ ...profile, schoolName: name })}
                 calendarEvents={calendarEvents}
-                setCalendarEvents={setCalendarEvents}
+                setCalendarEvents={updateCalendarEvents}
                 rotationMapping={rotationMapping}
-                setRotationMapping={setRotationMapping}
+                setRotationMapping={saveRotationMapping}
                 specialsNames={specialsNames}
-                setSpecialsNames={setSpecialsNames}
+                setSpecialsNames={saveSpecialsNames}
+                students={students}
+                addStudent={addStudent}
+                deleteStudent={deleteStudent}
+                updateStudent={updateStudent}
+                theme={theme}
+                setTheme={setTheme}
               />
             </motion.div>
           )}
@@ -551,12 +542,12 @@ export default function App() {
                   type="text"
                   value={newTaskText}
                   onChange={(e) => setNewTaskText(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addTask()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
                   placeholder="What needs doing?"
                   className="flex-1 px-4 py-2.5 bg-white border border-slate-100 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-sage/20 shadow-inner"
                 />
                 <button
-                  onClick={addTask}
+                  onClick={handleAddTask}
                   className="p-2.5 bg-sage text-white rounded-full hover:bg-sage-dark transition-all shadow-md shadow-sage/10"
                 >
                   <Plus className="w-5 h-5" />
@@ -569,7 +560,7 @@ export default function App() {
                     <p className="text-xs font-medium text-slate-400">All caught up!</p>
                   </div>
                 ) : (
-                  <DragDropContext onDragEnd={onDragEnd}>
+                  <DragDropContext onDragEnd={handleOnDragEnd}>
                     <Droppable droppableId="tasks-list">
                       {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
@@ -593,7 +584,7 @@ export default function App() {
                                   <div className="flex-1 flex items-start gap-4 min-w-0">
                                     <div className="flex flex-col items-center gap-2 mt-0.5 shrink-0">
                                       <button
-                                        onClick={() => toggleTask(task.id)}
+                                        onClick={() => handleToggleTask(task.id)}
                                         className={cn(
                                           "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
                                           task.completed ? "bg-sage border-sage text-white" : "bg-white border-slate-200"
@@ -625,7 +616,7 @@ export default function App() {
                                                   onMouseDown={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
-                                                    setTaskColor(task.id, c);
+                                                    handleSetTaskColor(task.id, c);
                                                   }}
                                                   className={cn(
                                                     "w-5 h-5 rounded-full border-2 transition-transform hover:scale-125",
@@ -643,17 +634,17 @@ export default function App() {
                                       )}
                                     </div>
 
-                                    <div className="flex-1 min-w-0" onClick={() => !task.completed && startEditingTask(task)}>
+                                    <div className="flex-1 min-w-0" onClick={() => !task.completed && handleStartEditingTask(task)}>
                                       {editingTaskId === task.id ? (
                                         <textarea
                                           autoFocus
                                           value={editTaskText}
                                           onChange={(e) => setEditTaskText(e.target.value)}
-                                          onBlur={updateTaskText}
+                                          onBlur={handleUpdateTaskText}
                                           onKeyDown={(e) => {
                                             if (e.key === 'Enter' && !e.shiftKey) {
                                               e.preventDefault();
-                                              updateTaskText();
+                                              handleUpdateTaskText();
                                             }
                                           }}
                                           className="w-full px-2 py-1 bg-white border border-sage rounded-lg text-xs font-medium focus:outline-none min-h-[60px] resize-none"
@@ -694,7 +685,7 @@ export default function App() {
 
               {tasks.some(t => t.completed) && (
                 <button
-                  onClick={clearCompleted}
+                  onClick={handleClearCompleted}
                   className="mt-6 w-full py-3 text-[11px] font-bold text-slate-400 hover:text-terracotta transition-colors border border-dashed border-slate-200 rounded-xl"
                 >
                   Clear Completed
@@ -705,7 +696,13 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <Toaster position="top-center" richColors />
+      <Toaster position="top-center" richColors theme={theme} />
+
+      <FeedbackModal currentView={
+        activeTab === 'pulse' ? 'Pulse Screen' :
+        activeTab === 'students' ? 'Students Screen' :
+        'Settings'
+      } />
 
       <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white shadow-[0_-2px_15px_rgba(0,0,0,0.05)] flex items-center justify-around px-8 z-50 no-print border-t border-slate-100">
         <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Pulse" />
@@ -757,710 +754,8 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
   );
 }
 
-// --- SCREENS ---
-
-function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, onNoteAdded }: { notes: Note[], students: Student[], indicators: any[], commTypes: any[], calendarEvents: CalendarEvent[], onNoteAdded: () => void }) {
-  const [selectedStudent, setSelectedStudent] = useState<string>('');
-  const [studentInput, setStudentInput] = useState('');
-  const [suggestions, setSuggestions] = useState<Student[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [noteContent, setNoteContent] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedComm, setSelectedComm] = useState<string[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const [editStudentName, setEditStudentName] = useState('');
-  const [editTags, setEditTags] = useState<string[]>([]);
-  const [editComm, setEditComm] = useState<string[]>([]);
-
-  const startEditing = (note: Note) => {
-    setEditingNoteId(note.id);
-    setEditContent(note.content);
-    setEditStudentName(note.student_name);
-    setEditTags(note.tags);
-    setEditComm(note.parent_communication_type ? note.parent_communication_type.split(', ') : []);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingNoteId) return;
-    setIsUpdating(true);
-    try {
-      const savedNotes = localStorage.getItem('cp_notes');
-      const allNotes: Note[] = savedNotes ? JSON.parse(savedNotes) : [];
-      const updated = allNotes.map(n =>
-        n.id === editingNoteId
-          ? { ...n, content: editContent, student_name: editStudentName, tags: editTags, is_parent_communication: editComm.length > 0, parent_communication_type: editComm.join(', ') }
-          : n
-      );
-      localStorage.setItem('cp_notes', JSON.stringify(updated));
-      setEditingNoteId(null);
-      toast.success('Note updated successfully');
-      onNoteAdded();
-    } catch (err) {
-      console.error('Error updating note:', err);
-      toast.error('Failed to update note');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const toggleEditTag = (tag: string) => {
-    setEditTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-  };
-
-  const toggleEditComm = (comm: string) => {
-    setEditComm(prev => prev.includes(comm) ? prev.filter(c => c !== comm) : [...prev, comm]);
-  };
-  const [isListening, setIsListening] = useState(false);
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const calendarData = localStorage.getItem('school_calendar');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const noteInputRef = useRef<HTMLTextAreaElement>(null);
-
-  const levenshtein = (a: string, b: string): number => {
-    const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
-    for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
-    for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
-    for (let i = 1; i <= a.length; i++) {
-      for (let j = 1; j <= b.length; j++) {
-        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-        matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
-      }
-    }
-    return matrix[a.length][b.length];
-  };
-
-  const fuzzyMatch = (input: string) => {
-    const normalized = input.toLowerCase().trim();
-    if (!normalized) return null;
-    const exact = students.find(s => s.name.toLowerCase() === normalized);
-    if (exact) return exact;
-    const startsWith = students.filter(s => s.name.toLowerCase().startsWith(normalized));
-    if (startsWith.length === 1) return startsWith[0];
-    let bestMatch = null;
-    let minDistance = 3;
-    for (const s of students) {
-      const dist = levenshtein(normalized, s.name.toLowerCase());
-      if (dist < minDistance) {
-        minDistance = dist;
-        bestMatch = s;
-      }
-    }
-    return bestMatch;
-  };
-
-  const handleStudentInputChange = (val: string) => {
-    setStudentInput(val);
-    if (val.trim().length > 0) {
-      const filtered = students.filter(s => s.name.toLowerCase().includes(val.toLowerCase()));
-      setSuggestions(filtered);
-      setShowSuggestions(true);
-      // Removed auto-select logic to allow natural typing
-      setSelectedStudent('');
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setSelectedStudent('');
-    }
-  };
-
-  const selectStudent = (name: string) => {
-    setSelectedStudent(name);
-    setStudentInput(name);
-    setShowSuggestions(false);
-    setValidationError(null);
-    noteInputRef.current?.focus();
-  };
-
-  const handleClear = () => {
-    setStudentInput('');
-    setSelectedStudent('');
-    setNoteContent('');
-    setSelectedTags([]);
-    setSelectedComm([]);
-    setImage(null);
-    setImagePreview(null);
-    setSuggestions([]);
-    setShowSuggestions(false);
-  };
-
-  const validateSelection = () => {
-    let studentToUse = selectedStudent;
-    if (!studentToUse && studentInput.trim()) {
-      const match = fuzzyMatch(studentInput);
-      if (match) {
-        selectStudent(match.name);
-        studentToUse = match.name;
-      }
-    }
-
-    if (!studentToUse) {
-      setValidationError('Select a student before saving.');
-      setTimeout(() => setValidationError(null), 3000);
-      return false;
-    }
-    return true;
-  };
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-  };
-
-  const toggleComm = (comm: string) => {
-    setSelectedComm(prev => prev.includes(comm) ? prev.filter(c => c !== comm) : [...prev, comm]);
-  };
-
-  const handleVoiceLog = async () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice recognition not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = async (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setIsSaving(true);
-      try {
-        const studentNames = students.map(s => s.name);
-        const indicatorLabels = indicators.map(i => i.label);
-        const result = await parseVoiceLog(transcript, studentNames, indicatorLabels);
-
-        if (result) {
-          if (result.student_name) selectStudent(result.student_name);
-          if (result.content) setNoteContent(result.content);
-          // If tags are returned, we could highlight them or just append them to content
-          if (result.tags && result.tags.length > 0) {
-            setNoteContent(prev => `${prev}\n\nIndicators: ${result.tags.join(', ')}`);
-          }
-        } else {
-          setNoteContent(transcript);
-        }
-      } catch (err) {
-        console.error("Voice parse error:", err);
-        setNoteContent(transcript);
-      } finally {
-        setIsSaving(false);
-      }
-    };
-    recognition.start();
-  };
-
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const compressed = await imageCompression(file, { maxSizeMB: 0.2, maxWidthOrHeight: 1200 });
-    setImage(compressed);
-    setImagePreview(URL.createObjectURL(compressed));
-  };
-
-  const handleSave = async () => {
-    let studentToUse = selectedStudent;
-    if (!studentToUse && studentInput.trim()) {
-      const match = fuzzyMatch(studentInput);
-      if (match) {
-        studentToUse = match.name;
-      } else {
-        studentToUse = studentInput.trim();
-      }
-    }
-
-    if (!studentToUse) {
-      setValidationError('Select a student before saving.');
-      setTimeout(() => setValidationError(null), 3000);
-      return;
-    }
-
-    if (!noteContent.trim() && !image) return;
-    setIsSaving(true);
-    try {
-      // Convert image to base64 data URL for localStorage storage
-      let imageUrl: string | null = null;
-      if (image) {
-        imageUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(image);
-        });
-      }
-
-      let finalTags = [...selectedTags];
-      let isParentComm = selectedComm.length > 0;
-      let commType = selectedComm.join(', ');
-
-      // AI Auto-Tag if no tags selected
-      if (finalTags.length === 0) {
-        const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
-        finalTags = aiResult.tags;
-      }
-
-      // Smart Calendar Auto-Tagging
-      const today = new Date().toISOString().split('T')[0];
-      const todayEvent = calendarEvents?.find(e => e.date === today);
-      if (todayEvent) {
-        finalTags.push(`[${todayEvent.title}]`);
-      }
-
-      const newNote: Note = {
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        content: noteContent,
-        student_name: studentToUse,
-        user_id: 'local',
-        tags: finalTags,
-        is_parent_communication: isParentComm,
-        parent_communication_type: commType,
-        image_url: imageUrl,
-        is_pinned: false,
-        is_checklist: false,
-        checklist_data: [],
-        deadline: null,
-        created_at: new Date().toISOString()
-      };
-
-      const savedNotes = localStorage.getItem('cp_notes');
-      const allNotes: Note[] = savedNotes ? JSON.parse(savedNotes) : [];
-      localStorage.setItem('cp_notes', JSON.stringify([newNote, ...allNotes]));
-
-      handleClear();
-      toast.success('Entry saved successfully');
-      onNoteAdded();
-    } catch (err) {
-      console.error('Error saving note:', err);
-      toast.error('Failed to save entry');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const nextEvent = calendarEvents
-    ?.filter(e => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
-      <AnimatePresence>
-        {nextEvent && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-sage/10 border border-sage/20 px-6 py-3 rounded-2xl flex items-center justify-between group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-sage/20 rounded-full flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-sage" />
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-sage/60">Next School Event</span>
-                <p className="text-xs font-bold text-slate-700">{nextEvent.title} • {new Date(nextEvent.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="px-3 py-1 bg-sage/20 rounded-lg">
-                <span className="text-[10px] font-bold text-sage">{nextEvent.type}</span>
-              </div>
-              {calendarData && (
-                <button
-                  onClick={() => setShowCalendar(true)}
-                  className="p-1.5 bg-white/50 hover:bg-white text-sage rounded-lg transition-colors shadow-sm"
-                  title="View Original Calendar"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showCalendar && calendarData && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/90 flex flex-col"
-          >
-            <div className="flex justify-end p-4">
-              <button onClick={() => setShowCalendar(false)} className="p-2 text-white/70 hover:text-white bg-white/10 rounded-full">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
-              {calendarData.startsWith('data:application/pdf') ? (
-                <iframe src={calendarData} className="w-full h-full rounded-2xl bg-white" />
-              ) : (
-                <img src={calendarData} alt="School Calendar" className="max-w-full max-h-full object-contain rounded-2xl" />
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {validationError && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-24 left-6 right-6 z-[60] bg-terracotta text-white px-6 py-4 rounded-2xl shadow-xl font-bold text-sm text-center flex items-center justify-center gap-2"
-          >
-            <AlertCircle className="w-5 h-5" />
-            {validationError}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6">
-        {calendarData && (
-          <div className="flex justify-end -mt-2 mb-2">
-            <button
-              onClick={() => setShowCalendar(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-sage/10 text-sage rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-sage/20 transition-colors"
-            >
-              <Calendar className="w-4 h-4" /> View Calendar
-            </button>
-          </div>
-        )}
-        <div className="space-y-3 relative max-w-2xl">
-          <label className="text-[13px] font-black text-slate-400 ml-1">Select Student</label>
-          <div className="relative">
-            <input
-              type="text"
-              value={studentInput}
-              onChange={(e) => handleStudentInputChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  validateSelection();
-                }
-              }}
-              placeholder="Start typing a name..."
-              className={cn(
-                "w-full px-6 py-4 bg-slate-50 border rounded-2xl focus:outline-none transition-all text-base pr-12 font-medium",
-                selectedStudent ? "border-sage ring-4 ring-sage/5" : "border-slate-100 focus:ring-4 focus:ring-sage/5 focus:border-sage"
-              )}
-            />
-            {(studentInput || noteContent) && (
-              <button
-                onClick={handleClear}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-terracotta transition-colors"
-                title="Clear all fields"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-            <AnimatePresence>
-              {showSuggestions && suggestions.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden"
-                >
-                  {suggestions.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => selectStudent(s.name)}
-                      className="w-full text-left px-6 py-4 hover:bg-sage/5 transition-colors text-base font-bold border-b border-slate-50 last:border-0"
-                    >
-                      {s.name}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {selectedStudent && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="bg-sage/10 border border-sage/20 rounded-2xl px-4 py-3 flex items-center gap-3">
-                <div className="w-2 h-2 bg-sage rounded-full animate-pulse" />
-                <span className="text-[13px] font-bold text-sage-dark">Selected: <span className="text-slate-900">{selectedStudent}</span></span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="relative max-w-2xl">
-          <textarea
-            ref={noteInputRef}
-            value={noteContent}
-            onChange={(e) => setNoteContent(e.target.value)}
-            placeholder="Type or record a note about the student..."
-            className="w-full min-h-[100px] p-8 py-5 duration-300 bg-white border border-slate-100 rounded-[32px] focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-base shadow-inner resize-none leading-relaxed font-medium"
-          />
-          <div className="absolute right-4 bottom-4 flex gap-2">
-            <button onClick={() => fileInputRef.current?.click()} className="p-2.5 bg-white text-slate-400 rounded-xl shadow-sm border border-slate-100 hover:text-sage transition-all">
-              <ImageIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleVoiceLog}
-              className={cn(
-                "p-2.5 rounded-xl shadow-sm border border-slate-100 transition-all",
-                isListening ? "bg-terracotta text-white animate-pulse" : "bg-white text-slate-400 hover:text-terracotta"
-              )}
-            >
-              <Mic className="w-4 h-4" />
-            </button>
-            <input type="file" ref={fileInputRef} onChange={handleImageSelect} className="hidden" accept="image/*" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 max-w-2xl w-full">
-          <button
-            onClick={handleClear}
-            className="flex-1 py-1.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Clear
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving || (!selectedStudent && !studentInput.trim())}
-            className="flex-[2] py-1.5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-xl hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Save Entry</>}
-          </button>
-        </div>
-
-        {imagePreview && (
-          <div className="relative w-24 h-24">
-            <img src={imagePreview} className="w-full h-full object-cover rounded-2xl border-2 border-white shadow-md" />
-            <button onClick={() => { setImage(null); setImagePreview(null); }} className="absolute -top-2 -right-2 bg-terracotta text-white p-1 rounded-full shadow-lg"><X className="w-3 h-3" /></button>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <h3 className="text-[13px] font-black text-slate-400 ml-1">Positive Indicators</h3>
-          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-2 px-2">
-            {indicators.filter(b => b.type === 'positive').map(b => (
-              <button
-                key={b.label}
-                onClick={() => toggleTag(b.label)}
-                className={cn(
-                  "flex-shrink-0 px-2.5 py-1 border-[3px] rounded-full text-base font-black flex items-center gap-3 transition-all pop-feedback shadow-sm",
-                  selectedTags.includes(b.label)
-                    ? "bg-neon-green/10 border-neon-green text-neon-green shadow-md"
-                    : "bg-white border-neon-green text-neon-green hover:bg-neon-green/5"
-                )}
-              >
-                <span>{b.icon}</span> {b.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <h3 className="text-[13px] font-black text-slate-400 ml-1">Neutral Indicators</h3>
-          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-2 px-2">
-            {indicators.filter(b => b.type === 'neutral').map(b => (
-              <button
-                key={b.label}
-                onClick={() => toggleTag(b.label)}
-                className={cn(
-                  "flex-shrink-0 px-2.5 py-1 border-[3px] rounded-full text-base font-black flex items-center gap-3 transition-all pop-feedback shadow-sm",
-                  selectedTags.includes(b.label)
-                    ? "bg-neon-yellow/10 border-neon-yellow text-neon-yellow shadow-md"
-                    : "bg-white border-neon-yellow text-neon-yellow hover:bg-neon-yellow/5"
-                )}
-              >
-                <span>{b.icon}</span> {b.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <h3 className="text-[13px] font-black text-slate-400 ml-1">Areas for Growth</h3>
-          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-2 px-2">
-            {indicators.filter(b => b.type === 'growth').map(b => (
-              <button
-                key={b.label}
-                onClick={() => toggleTag(b.label)}
-                className={cn(
-                  "flex-shrink-0 px-2.5 py-1 border-[3px] rounded-full text-base font-black flex items-center gap-3 transition-all pop-feedback shadow-sm",
-                  selectedTags.includes(b.label)
-                    ? "bg-neon-red/10 border-neon-red text-neon-red shadow-md"
-                    : "bg-white border-neon-red text-neon-red hover:bg-neon-red/5"
-                )}
-              >
-                <span>{b.icon}</span> {b.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-[13px] font-black text-slate-400 ml-1">Family Communication</h3>
-          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-2 px-2">
-            {commTypes.map(b => (
-              <button
-                key={b.label}
-                onClick={() => toggleComm(b.label)}
-                className={cn(
-                  "flex-shrink-0 px-2.5 py-1 border-[3px] rounded-full text-base font-black flex items-center gap-3 transition-all pop-feedback shadow-sm",
-                  selectedComm.includes(b.label)
-                    ? "bg-neon-cyan/10 border-neon-cyan text-neon-cyan shadow-md"
-                    : "bg-white border-neon-cyan text-neon-cyan hover:bg-neon-cyan/5"
-                )}
-              >
-                <span>{b.icon}</span> {b.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button
-          onClick={handleSave}
-          disabled={isSaving || (!selectedStudent && !studentInput.trim())}
-          className="w-full py-1.5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-xl tracking-tight hover:brightness-110 transition-all shadow-xl shadow-orange-200 flex items-center justify-center gap-3 disabled:opacity-50"
-        >
-          {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Finalize & Save</>}
-        </button>
-      </div>
-
-      <div className="space-y-4 pb-20">
-        <h2 className="text-[13px] font-black text-slate-400 ml-1">Recent Activity</h2>
-        {notes.slice(0, 5).map(note => (
-          <div key={note.id} className="bg-white p-6 rounded-[32px] card-shadow border border-slate-100 flex items-start gap-4">
-            <div className="w-10 h-10 bg-sage/10 rounded-xl flex items-center justify-center flex-shrink-0">
-              <User className="text-sage w-5 h-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="font-black text-slate-900 text-base truncate">{note.student_name}</h4>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-slate-300 tracking-tight">{new Date(note.created_at).toLocaleDateString()}</span>
-                  <button
-                    onClick={() => startEditing(note)}
-                    className="p-1 text-slate-300 hover:text-sage transition-all"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {editingNoteId === note.id ? (
-                <div className="space-y-4 pt-2">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      list="edit-student-names"
-                      value={editStudentName}
-                      onChange={(e) => setEditStudentName(e.target.value)}
-                      placeholder="Student Name"
-                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage"
-                    />
-                    <datalist id="edit-student-names">
-                      {students.map(s => (
-                        <option key={s.id} value={s.name} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage min-h-[100px]"
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    {indicators.map(ind => (
-                      <button
-                        key={ind.label}
-                        onClick={() => toggleEditTag(ind.label)}
-                        className={cn(
-                          "px-2 py-1 rounded-xl text-base font-black transition-all border",
-                          editTags.includes(ind.label)
-                            ? "bg-sage text-white border-sage"
-                            : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50"
-                        )}
-                      >
-                        {ind.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {commTypes.map(comm => (
-                      <button
-                        key={comm.label}
-                        onClick={() => toggleEditComm(comm.label)}
-                        className={cn(
-                          "px-2 py-1 rounded-xl text-base font-black transition-all border",
-                          editComm.includes(comm.label)
-                            ? "bg-blue-500 text-white border-blue-500"
-                            : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50"
-                        )}
-                      >
-                        {comm.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleSaveEdit}
-                      disabled={isUpdating}
-                      className="flex-1 py-3 bg-sage text-white rounded-xl font-bold text-xs hover:bg-sage-dark transition-all flex items-center justify-center gap-2"
-                    >
-                      {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
-                    </button>
-                    <button
-                      onClick={() => setEditingNoteId(null)}
-                      className="px-6 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-xs hover:bg-slate-200 transition-all"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed">{note.content}</p>
-                  <div className="flex gap-1.5 mt-3 flex-wrap">
-                    {note.tags.map(t => {
-                      const indicator = indicators.find(i => i.label === t);
-                      const isComm = note.is_parent_communication && note.parent_communication_type?.includes(t);
-
-                      let colorClass = "bg-slate-50 text-slate-400 border-slate-100";
-                      if (indicator?.type === 'positive') colorClass = "bg-sage/10 text-sage border-sage/20";
-                      if (indicator?.type === 'growth') colorClass = "bg-terracotta/10 text-terracotta border-terracotta/20";
-                      if (indicator?.type === 'neutral') colorClass = "bg-amber-100 text-amber-600 border-amber-200";
-                      if (isComm) colorClass = "bg-blue-50 text-blue-500 border-blue-100";
-
-                      return (
-                        <span key={t} className={cn("px-2.5 py-1 rounded-md text-[10px] font-black border", colorClass)}>
-                          {t}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-function StudentsScreen({ students, notes, indicators, commTypes, calendarEvents, classes, onUpdate }: { students: Student[], notes: Note[], indicators: any[], commTypes: any[], calendarEvents: CalendarEvent[], classes: string[], onUpdate: () => void }) {
+function StudentsScreen({ students, notes, reports, indicators, commTypes, calendarEvents, classes, onUpdate, deleteStudent, deleteNote, addNote, updateNote, updateStudent, addReport }: { students: Student[], notes: Note[], reports: Report[], indicators: any[], commTypes: any[], calendarEvents: CalendarEvent[], classes: string[], onUpdate: () => void, deleteStudent: (id: string) => Promise<void>, deleteNote: (id: string) => Promise<void>, addNote: (note: any) => Promise<any>, updateNote: (id: string, updates: any) => Promise<void>, updateStudent: (id: string, updates: any) => Promise<void>, addReport: (r: Omit<Report, 'id' | 'created_at'>) => Promise<Report | null> }) {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-  const [reports, setReports] = useState<Report[]>(() => {
-    const saved = localStorage.getItem('classroom_pulse_reports');
-    return saved ? JSON.parse(saved) : [];
-  });
   const [filter, setFilter] = useState<string>('All');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1470,28 +765,30 @@ function StudentsScreen({ students, notes, indicators, commTypes, calendarEvents
   const studentNotes = notes.filter(n => n.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const studentReports = reports.filter(r => r.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+
   const handleGenerateReport = async (length: 'Quick Pulse' | 'Standard' | 'Detailed', filteredNotes: Note[]) => {
     if (!selectedStudent) return;
     const summary = await summarizeNotes(filteredNotes, length);
-    const newReport: Report = {
-      id: Math.random().toString(36).substr(2, 9),
+    await addReport({
       student_name: selectedStudent.name,
-      user_id: 'current-user', // In a real app, get from session
+      user_id: 'local',
       content: summary,
       length,
-      created_at: new Date().toISOString()
-    };
-    const updatedReports = [newReport, ...reports];
-    setReports(updatedReports);
-    localStorage.setItem('classroom_pulse_reports', JSON.stringify(updatedReports));
+    });
     return summary;
   };
 
   const handleDeleteAll = async () => {
     setIsDeleting(true);
     try {
-      localStorage.setItem('cp_students', JSON.stringify([]));
-      localStorage.setItem('cp_notes', JSON.stringify([]));
+      // Delete all students
+      for (const student of students) {
+        await deleteStudent(student.id);
+      }
+      // Delete all notes
+      for (const note of notes) {
+        await deleteNote(note.id);
+      }
       toast.success('All students deleted successfully');
       setIsCleanupModalOpen(false);
       onUpdate();
@@ -1506,10 +803,11 @@ function StudentsScreen({ students, notes, indicators, commTypes, calendarEvents
     if (filter === 'All') return;
     setIsDeleting(true);
     try {
-      const savedStudents = localStorage.getItem('cp_students');
-      const allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-      const filtered = allStudents.filter(s => s.class_id !== filter && s.class_period !== filter);
-      localStorage.setItem('cp_students', JSON.stringify(filtered));
+      // Delete students in this class
+      const classStudents = students.filter(s => s.class_period === filter || s.class_id === filter);
+      for (const student of classStudents) {
+        await deleteStudent(student.id);
+      }
       toast.success(`Class Period ${filter} students deleted`);
       setIsCleanupModalOpen(false);
       onUpdate();
@@ -1550,6 +848,10 @@ function StudentsScreen({ students, notes, indicators, commTypes, calendarEvents
         onBack={() => { setSelectedStudentId(null); }}
         onGenerateReport={handleGenerateReport}
         onNoteUpdate={onUpdate}
+        addNote={addNote}
+        updateNote={updateNote}
+        updateStudent={updateStudent}
+        deleteNote={deleteNote}
       />
     );
   }
@@ -1706,7 +1008,11 @@ function StudentDetailView({
   calendarEvents,
   onBack,
   onGenerateReport,
-  onNoteUpdate
+  onNoteUpdate,
+  addNote,
+  updateNote,
+  updateStudent,
+  deleteNote
 }: {
   student: Student,
   students: Student[],
@@ -1717,7 +1023,11 @@ function StudentDetailView({
   calendarEvents: CalendarEvent[],
   onBack: () => void,
   onGenerateReport: (length: 'Quick Pulse' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<string | undefined>,
-  onNoteUpdate: () => void
+  onNoteUpdate: () => void,
+  addNote: (note: any) => Promise<any>,
+  updateNote: (id: string, updates: any) => Promise<void>,
+  updateStudent: (id: string, updates: any) => Promise<void>,
+  deleteNote: (id: string) => Promise<void>
 }) {
   const [reportLength, setReportLength] = useState<'Quick Pulse' | 'Standard' | 'Detailed'>('Standard');
   const [timeRange, setTimeRange] = useState('Last 7 Days');
@@ -1857,9 +1167,16 @@ function StudentDetailView({
         created_at: new Date().toISOString()
       };
 
-      const savedNotes = localStorage.getItem('cp_notes');
-      const allNotes: Note[] = savedNotes ? JSON.parse(savedNotes) : [];
-      localStorage.setItem('cp_notes', JSON.stringify([newNote, ...allNotes]));
+      // Save to Supabase
+      await addNote({
+        student_id: student.id,
+        content: noteContent,
+        tags: finalTags,
+        is_parent_communication: isParentComm,
+        parent_communication_type: commType || null,
+        image_url: imageUrl,
+        is_pinned: false,
+      });
 
       handleClearNote();
       toast.success('Note added successfully');
@@ -1939,17 +1256,11 @@ function StudentDetailView({
     );
   };
 
-  const deleteArchive = (id: string, e: React.MouseEvent) => {
+  const deleteArchive = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this archived summary?")) {
-      const savedStudents = localStorage.getItem('cp_students');
-      const allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-      const updatedStudents = allStudents.map(s =>
-        s.id === student.id
-          ? { ...s, archivedSummaries: (s.archivedSummaries || []).filter(a => a.id !== id) }
-          : s
-      );
-      localStorage.setItem('cp_students', JSON.stringify(updatedStudents));
+      const updatedSummaries = (student.archivedSummaries || []).filter((a: any) => a.id !== id);
+      await updateStudent(student.id, { archivedSummaries: updatedSummaries });
       toast.success('Archived summary deleted!');
       onNoteUpdate();
       setSelectedArchiveIds(prev => prev.filter(aId => aId !== id));
@@ -2029,25 +1340,22 @@ function StudentDetailView({
   };
 
   const [parentName, setParentName] = useState(student.parent_guardian_names?.[0] || '');
-  const [parentEmail, setParentEmail] = useState(typeof student.parent_emails?.[0] === 'object' ? student.parent_emails[0].value : student.parent_emails?.[0] || '');
-  const [parentPhone, setParentPhone] = useState(typeof student.parent_phones?.[0] === 'object' ? student.parent_phones[0].value : student.parent_phones?.[0] || '');
+  const extractContact = (val: any): string => {
+    if (!val) return '';
+    if (typeof val === 'object') return val.value || '';
+    try { const p = JSON.parse(String(val)); return p.value || String(val); } catch { return String(val); }
+  };
+  const [parentEmail, setParentEmail] = useState(() => extractContact(student.parent_emails?.[0]));
+  const [parentPhone, setParentPhone] = useState(() => extractContact(student.parent_phones?.[0]));
 
   const handleSaveContact = async () => {
     setIsUpdatingContact(true);
     try {
-      const savedStudents = localStorage.getItem('cp_students');
-      const allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-      const updated = allStudents.map(s =>
-        s.id === student.id
-          ? {
-            ...s,
-            parent_guardian_names: [parentName],
-            parent_emails: [{ value: parentEmail, label: 'Primary' }],
-            parent_phones: [{ value: parentPhone, label: 'Primary' }]
-          }
-          : s
-      );
-      localStorage.setItem('cp_students', JSON.stringify(updated));
+      await updateStudent(student.id, {
+        parent_guardian_names: [parentName],
+        parent_emails: parentEmail ? [parentEmail] : [],
+        parent_phones: parentPhone ? [parentPhone] : []
+      });
       toast.success('Contact info updated!');
       onNoteUpdate();
     } catch (err: any) {
@@ -2058,56 +1366,60 @@ function StudentDetailView({
     }
   };
 
-  const clearStudentNotes = () => {
+  const clearStudentNotes = async () => {
     if (window.confirm("Are you sure you want to delete all notes for " + student.name + "? This cannot be undone.")) {
-      const savedNotes = localStorage.getItem('cp_notes');
-      const allNotes: Note[] = savedNotes ? JSON.parse(savedNotes) : [];
-      const updated = allNotes.filter(n => n.student_name !== student.name);
-      localStorage.setItem('cp_notes', JSON.stringify(updated));
-      toast.success('Notes cleared for ' + student.name);
-      onNoteUpdate();
+      try {
+        // Get all notes for this student
+        const studentNotesToDelete = notes.filter(n => n.student_name === student.name);
+        // Delete each note
+        await Promise.all(studentNotesToDelete.map(note => deleteNote(note.id)));
+        toast.success('Notes cleared for ' + student.name);
+        onNoteUpdate();
+      } catch (err) {
+        console.error('Error clearing notes:', err);
+        toast.error('Failed to clear notes');
+      }
     }
   };
 
-  const archiveAndClearNotes = () => {
+  const archiveAndClearNotes = async () => {
     if (!currentReport) return;
     if (window.confirm("Are you sure you want to archive this summary for " + student.name + " AND clear their current notes?")) {
-      const archived = { id: Date.now().toString(), content: currentReport, date: new Date().toISOString() };
-      const savedStudents = localStorage.getItem('cp_students');
-      const allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-      const updatedStudents = allStudents.map(s =>
-        s.id === student.id
-          ? { ...s, archivedSummaries: [...(s.archivedSummaries || []), archived] }
-          : s
-      );
-      localStorage.setItem('cp_students', JSON.stringify(updatedStudents));
+      try {
+        const archived = { id: Date.now().toString(), content: currentReport, date: new Date().toISOString() };
+        await updateStudent(student.id, {
+          archivedSummaries: [...(student.archivedSummaries || []), archived]
+        });
 
-      const savedNotes = localStorage.getItem('cp_notes');
-      const allNotes: Note[] = savedNotes ? JSON.parse(savedNotes) : [];
-      const updatedNotes = allNotes.filter(n => n.student_name !== student.name);
-      localStorage.setItem('cp_notes', JSON.stringify(updatedNotes));
+        // Get all notes for this student and delete them
+        const studentNotesToDelete = notes.filter(n => n.student_name === student.name);
+        await Promise.all(studentNotesToDelete.map(note => deleteNote(note.id)));
 
-      toast.success('Summary archived & notes cleared!');
-      setCurrentReport(null);
-      onNoteUpdate();
+        toast.success('Summary archived & notes cleared!');
+        setCurrentReport(null);
+        onNoteUpdate();
+      } catch (err) {
+        console.error('Error archiving and clearing notes:', err);
+        toast.error('Failed to archive and clear notes');
+      }
     }
   };
 
-  const archiveAndKeepNotes = () => {
+  const archiveAndKeepNotes = async () => {
     if (!currentReport) return;
-    const archived = { id: Date.now().toString(), content: currentReport, date: new Date().toISOString() };
-    const savedStudents = localStorage.getItem('cp_students');
-    const allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-    const updatedStudents = allStudents.map(s =>
-      s.id === student.id
-        ? { ...s, archivedSummaries: [...(s.archivedSummaries || []), archived] }
-        : s
-    );
-    localStorage.setItem('cp_students', JSON.stringify(updatedStudents));
+    try {
+      const archived = { id: Date.now().toString(), content: currentReport, date: new Date().toISOString() };
+      await updateStudent(student.id, {
+        archivedSummaries: [...(student.archivedSummaries || []), archived]
+      });
 
-    toast.success('Summary archived! Notes were kept.');
-    setCurrentReport(null);
-    onNoteUpdate();
+      toast.success('Summary archived! Notes were kept.');
+      setCurrentReport(null);
+      onNoteUpdate();
+    } catch (err) {
+      console.error('Error archiving summary:', err);
+      toast.error('Failed to archive summary');
+    }
   };
 
   const handleEmailReport = () => {
@@ -2204,19 +1516,19 @@ function StudentDetailView({
     if (!editingNoteId) return;
     setIsUpdating(true);
     try {
-      const savedNotes = localStorage.getItem('cp_notes');
-      const allNotes: Note[] = savedNotes ? JSON.parse(savedNotes) : [];
-      const updated = allNotes.map(n =>
-        n.id === editingNoteId
-          ? { ...n, content: editContent, student_name: editStudentName, tags: editTags, is_parent_communication: editComm.length > 0, parent_communication_type: editComm.join(', ') }
-          : n
-      );
-      localStorage.setItem('cp_notes', JSON.stringify(updated));
+      await updateNote(editingNoteId, {
+        content: editContent,
+        student_id: students.find(s => s.name === editStudentName)?.id || '',
+        tags: editTags,
+        is_parent_communication: editComm.length > 0,
+        parent_communication_type: editComm.length > 0 ? editComm.join(', ') : null,
+      });
       setEditingNoteId(null);
+      toast.success('Note updated successfully');
       onNoteUpdate();
     } catch (err) {
       console.error('Error updating note:', err);
-      alert('Failed to update note.');
+      toast.error('Failed to update note');
     } finally {
       setIsUpdating(false);
     }
@@ -2433,7 +1745,7 @@ function StudentDetailView({
                     : "bg-white border-slate-100 text-slate-500 hover:border-slate-300"
                 )}
               >
-                <span>{b.icon}</span> {b.label}
+                <span>{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
               </button>
             ))}
           </div>
@@ -2450,7 +1762,7 @@ function StudentDetailView({
                     : "bg-white border-slate-100 text-slate-500 hover:border-slate-300"
                 )}
               >
-                <span>{c.icon}</span> {c.label}
+                <span>{c.icon ?? getIconForName(c.icon_name, 'neutral')}</span> {c.label}
               </button>
             ))}
           </div>
@@ -2518,6 +1830,18 @@ function StudentDetailView({
                       className="p-1.5 text-slate-300 hover:text-sage transition-all"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this note? This cannot be undone.')) {
+                          deleteNote(note.id);
+                        }
+                      }}
+                      className="p-1.5 text-slate-300 hover:text-terracotta transition-all"
+                      title="Delete Note"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -2967,7 +2291,7 @@ function StudentDetailView({
   );
 }
 
-function ImportScreen({ onImportComplete, classes }: { onImportComplete: () => void, classes: string[] }) {
+function ImportScreen({ onImportComplete, classes, students, addStudent, updateStudent }: { onImportComplete: () => void, classes: string[], students: Student[], addStudent: (s: Omit<Student, 'id'>) => Promise<Student | null>, updateStudent: (id: string, updates: Partial<Student>) => Promise<void> }) {
   const [rosterText, setRosterText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [matches, setMatches] = useState<{ imported: any, existing: any }[]>([]);
@@ -2993,8 +2317,8 @@ function ImportScreen({ onImportComplete, classes }: { onImportComplete: () => v
         const phoneMatch = line.match(/\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}/);
         return {
           name,
-          parent_emails: emailMatch ? [{ value: emailMatch[0] }] : [],
-          parent_phones: phoneMatch ? [{ value: phoneMatch[0] }] : [],
+          parent_emails: emailMatch ? [emailMatch[0]] : [],
+          parent_phones: phoneMatch ? [phoneMatch[0]] : [],
           parent_guardian_names: []
         };
       })
@@ -3019,8 +2343,7 @@ function ImportScreen({ onImportComplete, classes }: { onImportComplete: () => v
       toast.info(`Simple import: ${data.length} students found.`, { duration: 3000 });
     }
     try {
-      const savedStudents = localStorage.getItem('cp_students');
-      const existingStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
+      const existingStudents: Student[] = students;
 
       const foundMatches: { imported: any, existing: any }[] = [];
       const foundNew: any[] = [];
@@ -3063,11 +2386,14 @@ function ImportScreen({ onImportComplete, classes }: { onImportComplete: () => v
   const handleConfirm = async () => {
     setIsProcessing(true);
     try {
-      const savedStudents = localStorage.getItem('cp_students');
-      let allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-
       let updatedCount = 0;
       let addedCount = 0;
+
+      const extractString = (val: any) => {
+        if (!val) return val;
+        if (typeof val === 'object') return val.value || val.label || '';
+        return String(val);
+      };
 
       // Update existing matched students
       for (const match of matches) {
@@ -3088,35 +2414,29 @@ function ImportScreen({ onImportComplete, classes }: { onImportComplete: () => v
             }
           });
         }
-        allStudents = allStudents.map(s =>
-          s.id === existing.id
-            ? { ...s, parent_emails: updatedEmails, parent_phones: updatedPhones, class_id: defaultClassPeriod, class_period: defaultClassPeriod }
-            : s
-        );
+        await updateStudent(existing.id, {
+          parent_emails: updatedEmails,
+          parent_phones: updatedPhones,
+          class_id: defaultClassPeriod,
+          class_period: defaultClassPeriod,
+        });
         updatedCount++;
       }
 
       // Add brand-new students
-      const extractString = (val: any) => {
-        if (!val) return val;
-        if (typeof val === 'object') return val.value || val.label || '';
-        return String(val);
-      };
-      const newStudentsToSave = newStudents.map(s => ({
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        name: extractString(s.name),
-        class_id: defaultClassPeriod,
-        class_period: defaultClassPeriod,
-        parent_guardian_names: Array.isArray(s.parent_guardian_names) ? s.parent_guardian_names.map(extractString) : [],
-        parent_emails: Array.isArray(s.parent_emails) ? s.parent_emails : [],
-        parent_phones: Array.isArray(s.parent_phones) ? s.parent_phones : [],
-        user_id: 'local',
-        created_at: new Date().toISOString()
-      }));
-
-      allStudents = [...allStudents, ...newStudentsToSave];
-      localStorage.setItem('cp_students', JSON.stringify(allStudents));
-      addedCount = newStudentsToSave.length;
+      for (const s of newStudents) {
+        await addStudent({
+          name: extractString(s.name),
+          class_id: defaultClassPeriod,
+          class_period: defaultClassPeriod,
+          parent_guardian_names: Array.isArray(s.parent_guardian_names) ? s.parent_guardian_names.map(extractString) : [],
+          parent_emails: Array.isArray(s.parent_emails) ? s.parent_emails : [],
+          parent_phones: Array.isArray(s.parent_phones) ? s.parent_phones : [],
+          user_id: 'local',
+          created_at: new Date().toISOString(),
+        } as Omit<Student, 'id'>);
+        addedCount++;
+      }
 
       setImportSummary({ updated: updatedCount, added: addedCount });
       setStep('success');
@@ -3289,7 +2609,13 @@ function SettingsScreen({
   rotationMapping,
   setRotationMapping,
   specialsNames,
-  setSpecialsNames
+  setSpecialsNames,
+  students,
+  addStudent,
+  deleteStudent,
+  updateStudent,
+  theme,
+  setTheme,
 }: {
   indicators: any[];
   setIndicators: (val: any[]) => void,
@@ -3308,7 +2634,13 @@ function SettingsScreen({
   rotationMapping: Record<string, string>,
   setRotationMapping: (val: Record<string, string>) => void,
   specialsNames: Record<string, string>,
-  setSpecialsNames: (val: Record<string, string>) => void
+  setSpecialsNames: (val: Record<string, string>) => void,
+  students: Student[],
+  addStudent: (student: Omit<Student, 'id'>) => Promise<Student | null>,
+  deleteStudent: (id: string) => Promise<void>,
+  updateStudent: (id: string, updates: Partial<Student>) => Promise<void>,
+  theme: 'light' | 'dark',
+  setTheme: (val: 'light' | 'dark') => void,
 }) {
   const [view, setView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation'>('main');
   const [newIndicator, setNewIndicator] = useState('');
@@ -3320,11 +2652,11 @@ function SettingsScreen({
   const [draftEvents, setDraftEvents] = useState<(CalendarEvent & { selected: boolean })[] | null>(null);
   const [newComm, setNewComm] = useState('');
   const [isScanningRotation, setIsScanningRotation] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationDone, setMigrationDone] = useState(false);
 
   const handleUpdateSpecial = (letter: string, special: string) => {
-    const updated = { ...specialsNames, [letter]: special };
-    setSpecialsNames(updated);
-    localStorage.setItem('specialsNames', JSON.stringify(updated));
+    setSpecialsNames({ ...specialsNames, [letter]: special });
   };
 
   const handleScanRotation = async (file: File) => {
@@ -3342,7 +2674,6 @@ function SettingsScreen({
 
           if (mapping && Object.keys(mapping).length > 0) {
             setRotationMapping(mapping);
-            localStorage.setItem('rotationMapping', JSON.stringify(mapping));
             toast.success(`Succesfully extracted ${Object.keys(mapping).length} date mappings!`, { id: loadingToast });
           } else {
             toast.error('AI could not find a rotation schedule in this file.', { id: loadingToast });
@@ -3378,9 +2709,7 @@ function SettingsScreen({
   };
 
   const handleDeleteEvent = (id: string) => {
-    const updated = calendarEvents.filter(e => e.id !== id);
-    setCalendarEvents(updated);
-    localStorage.setItem('cp_calendar_events', JSON.stringify(updated));
+    setCalendarEvents(calendarEvents.filter(e => e.id !== id));
     toast.success('Event deleted');
     onNoteAdded();
   };
@@ -3396,10 +2725,8 @@ function SettingsScreen({
     const updated = calendarEvents.map(e =>
       e.id === editingEventId ? { ...e, title: editEventTitle, date: editEventDate } : e
     );
-    // Sort after update
     updated.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     setCalendarEvents(updated);
-    localStorage.setItem('cp_calendar_events', JSON.stringify(updated));
     setEditingEventId(null);
     toast.success('Event updated');
     onNoteAdded();
@@ -3414,7 +2741,6 @@ function SettingsScreen({
   const handleClearAllEvents = () => {
     if (!confirm('Are you sure you want to clear all school events?')) return;
     setCalendarEvents([]);
-    localStorage.setItem('cp_calendar_events', JSON.stringify([]));
     toast.success('All events cleared');
     onNoteAdded();
   };
@@ -3432,12 +2758,7 @@ function SettingsScreen({
 
     const newCalendarEvents = [...calendarEvents, ...selectedEvents];
     newCalendarEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    localStorage.setItem('cp_calendar_events', JSON.stringify(newCalendarEvents));
     setCalendarEvents(newCalendarEvents);
-    // We are in SettingsScreen, so we don't have direct access to setTasks.
-    // However, App.tsx will re-read from localStorage on the next reload,
-    // or we can add a custom event/callback, but for now reload persistence is key.
-
     setDraftEvents(null);
     toast.success(`Saved ${selectedEvents.length} events to your School Calendar.`);
     onNoteAdded();
@@ -3460,23 +2781,18 @@ function SettingsScreen({
   const [isAddingClass, setIsAddingClass] = useState(false);
 
   useEffect(() => {
-    if (view === 'roster') fetchRoster();
-  }, [view]);
+    if (view === 'roster') setRosterStudents([...students].sort((a, b) => a.name.localeCompare(b.name)));
+  }, [view, students]);
 
   const fetchRoster = () => {
-    const savedStudents = localStorage.getItem('cp_students');
-    const all: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-    setRosterStudents(all.sort((a, b) => a.name.localeCompare(b.name)));
+    setRosterStudents([...students].sort((a, b) => a.name.localeCompare(b.name)));
   };
 
   const handleAddStudent = async () => {
     if (!newStudentName.trim()) return;
     setIsAddingStudent(true);
     try {
-      const savedStudents = localStorage.getItem('cp_students');
-      const allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-      const newStudent: Student = {
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      const result = await addStudent({
         name: newStudentName.trim(),
         class_id: newStudentSection,
         class_period: newStudentSection,
@@ -3484,16 +2800,16 @@ function SettingsScreen({
         created_at: new Date().toISOString(),
         parent_guardian_names: [],
         parent_emails: [],
-        parent_phones: []
-      };
-      localStorage.setItem('cp_students', JSON.stringify([...allStudents, newStudent]));
+        parent_phones: [],
+      } as Omit<Student, 'id'>);
+      if (!result) throw new Error('Failed to add student');
       setNewStudentName('');
       toast.success('Student added to roster');
       fetchRoster();
       onImportComplete();
     } catch (err: any) {
       console.error('Add student error:', err);
-      toast.error(`Failed to add student`);
+      toast.error('Failed to add student');
     } finally {
       setIsAddingStudent(false);
     }
@@ -3533,14 +2849,7 @@ function SettingsScreen({
   const executeRemoveStudent = async (id: string, name: string) => {
     const loadingToast = toast.loading(`Removing ${name}...`);
     try {
-      const savedStudents = localStorage.getItem('cp_students');
-      const allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-      localStorage.setItem('cp_students', JSON.stringify(allStudents.filter(s => s.id !== id)));
-
-      const savedNotes = localStorage.getItem('cp_notes');
-      const allNotes: Note[] = savedNotes ? JSON.parse(savedNotes) : [];
-      localStorage.setItem('cp_notes', JSON.stringify(allNotes.filter(n => n.student_name !== name)));
-
+      await deleteStudent(id); // notes cascade-delete in DB
       toast.dismiss(loadingToast);
       toast.success(`${name} and all associated records have been deleted.`, { duration: 5000 });
       fetchRoster();
@@ -3552,14 +2861,9 @@ function SettingsScreen({
     }
   };
 
-  const handleUpdateSection = (id: string, section: string) => {
+  const handleUpdateSection = async (id: string, section: string) => {
     try {
-      const savedStudents = localStorage.getItem('cp_students');
-      const allStudents: Student[] = savedStudents ? JSON.parse(savedStudents) : [];
-      const updated = allStudents.map(s =>
-        s.id === id ? { ...s, class_id: section, class_period: section } : s
-      );
-      localStorage.setItem('cp_students', JSON.stringify(updated));
+      await updateStudent(id, { class_id: section, class_period: section });
       toast.success('Student section updated');
       fetchRoster();
       onImportComplete();
@@ -3570,13 +2874,9 @@ function SettingsScreen({
   };
 
   const handleSaveProfile = () => {
-    try {
-      localStorage.setItem('cp_profile', JSON.stringify({ userName, schoolName }));
-      toast.success('Profile updated successfully');
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      toast.error('Failed to update profile');
-    }
+    setUserName(userName);
+    setSchoolName(schoolName);
+    toast.success('Profile updated successfully');
   };
 
   const addIndicator = () => {
@@ -3585,8 +2885,8 @@ function SettingsScreen({
       toast.error('An indicator with this name already exists.');
       return;
     }
-    const iconName = newIndicatorType === 'positive' ? 'Sparkles' :
-      newIndicatorType === 'growth' ? 'AlertCircle' : 'Activity';
+    const iconName = newIndicatorType === 'positive' ? 'Smile' :
+      newIndicatorType === 'growth' ? 'Frown' : 'Meh';
     const newInd = {
       id: Date.now().toString(36),
       label: newIndicator.trim(),
@@ -3598,23 +2898,12 @@ function SettingsScreen({
     };
     const updatedIndicators = [...indicators, { ...newInd, icon: getIconForName(iconName, newIndicatorType) }];
     setIndicators(updatedIndicators);
-    const toSave = [
-      ...updatedIndicators.map(({ icon, ...rest }: any) => ({ ...rest, category: 'behavior' })),
-      ...commTypes.map(({ icon, ...rest }: any) => ({ ...rest, category: 'communication', type: 'neutral' }))
-    ];
-    localStorage.setItem('cp_indicators', JSON.stringify(toSave));
     setNewIndicator('');
     toast.success('Indicator added');
   };
 
   const removeIndicator = (label: string) => {
-    const updated = indicators.filter(i => i.label !== label);
-    setIndicators(updated);
-    const toSave = [
-      ...updated.map(({ icon, ...rest }: any) => ({ ...rest, category: 'behavior' })),
-      ...commTypes.map(({ icon, ...rest }: any) => ({ ...rest, category: 'communication', type: 'neutral' }))
-    ];
-    localStorage.setItem('cp_indicators', JSON.stringify(toSave));
+    setIndicators(indicators.filter(i => i.label !== label));
     toast.success('Indicator removed');
   };
 
@@ -3633,25 +2922,13 @@ function SettingsScreen({
       user_id: 'local',
       created_at: new Date().toISOString()
     };
-    const updatedComm = [...commTypes, { ...newC, icon: <MessageSquare className="w-4 h-4" /> }];
-    setCommTypes(updatedComm);
-    const toSave = [
-      ...indicators.map(({ icon, ...rest }: any) => ({ ...rest, category: 'behavior' })),
-      ...updatedComm.map(({ icon, ...rest }: any) => ({ ...rest, category: 'communication', type: 'neutral' }))
-    ];
-    localStorage.setItem('cp_indicators', JSON.stringify(toSave));
+    setCommTypes([...commTypes, { ...newC, icon: <MessageSquare className="w-4 h-4" /> }]);
     setNewComm('');
     toast.success('Communication type added');
   };
 
   const removeComm = (label: string) => {
-    const updated = commTypes.filter(c => c.label !== label);
-    setCommTypes(updated);
-    const toSave = [
-      ...indicators.map(({ icon, ...rest }: any) => ({ ...rest, category: 'behavior' })),
-      ...updated.map(({ icon, ...rest }: any) => ({ ...rest, category: 'communication', type: 'neutral' }))
-    ];
-    localStorage.setItem('cp_indicators', JSON.stringify(toSave));
+    setCommTypes(commTypes.filter(c => c.label !== label));
     toast.success('Communication type removed');
   };
 
@@ -3659,9 +2936,7 @@ function SettingsScreen({
     if (!newClassName.trim()) return;
     setIsAddingClass(true);
     try {
-      const updated = [...classes, newClassName.trim()];
-      setClasses(updated);
-      localStorage.setItem('cp_classes', JSON.stringify(updated));
+      setClasses([...classes, newClassName.trim()]);
       setNewClassName('');
       toast.success(`Class "${newClassName}" added`);
       onImportComplete();
@@ -3706,9 +2981,7 @@ function SettingsScreen({
   const executeRemoveClass = (name: string) => {
     const loadingToast = toast.loading(`Removing class ${name}...`);
     try {
-      const updated = classes.filter(c => c !== name);
-      setClasses(updated);
-      localStorage.setItem('cp_classes', JSON.stringify(updated));
+      setClasses(classes.filter(c => c !== name));
       toast.dismiss(loadingToast);
       toast.success(`Class ${name} removed`);
       onImportComplete();
@@ -3755,11 +3028,6 @@ function SettingsScreen({
     try {
       setIndicators(DEFAULT_BEHAVIOR_BUTTONS);
       setCommTypes(DEFAULT_COMM_BUTTONS);
-      const toSave = [
-        ...DEFAULT_BEHAVIOR_BUTTONS.map(b => ({ id: b.label, label: b.label, type: b.type, icon_name: b.icon_name, category: 'behavior', user_id: 'local', created_at: new Date().toISOString() })),
-        ...DEFAULT_COMM_BUTTONS.map(c => ({ id: c.label, label: c.label, icon_name: c.icon_name, category: 'communication', type: 'neutral', user_id: 'local', created_at: new Date().toISOString() }))
-      ];
-      localStorage.setItem('cp_indicators', JSON.stringify(toSave));
       onNoteAdded();
       toast.dismiss(loadingToast);
       toast.success('Success: All indicators have been restored to Factory Settings.', { duration: 5000 });
@@ -3811,15 +3079,35 @@ function SettingsScreen({
               </div>
             </div>
 
+            <a
+              href="https://buymeacoffee.com/YOUR_USERNAME"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 flex items-start gap-4 p-6 bg-white rounded-[32px] card-shadow border border-slate-100 hover:border-amber-200 hover:shadow-amber-100/50 transition-all group no-print"
+            >
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-100 transition-colors">
+                <Coffee className="w-5 h-5 text-amber-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors">Support the Project</p>
+                <p className="text-[11px] text-slate-400 font-medium leading-relaxed mt-1">
+                  Core features are free to use. If Classroom Pulse is already saving you time, contributions help cover AI and hosting costs while the app continues to grow.
+                </p>
+                <span className="inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-black text-amber-500 group-hover:text-amber-600 transition-colors">
+                  Buy me a coffee <Coffee className="w-3 h-3" />
+                </span>
+              </div>
+            </a>
+
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6 mt-6">
               <h3 className="text-[13px] font-black text-terracotta ml-1">Danger Zone</h3>
 
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (window.confirm('Are you sure you want to clear ALL notes for EVERY student? This cannot be undone.')) {
-                    localStorage.setItem('cp_notes', JSON.stringify([]));
+                    await supabase.from('notes').delete().not('id', 'is', null);
                     toast.success('All class notes cleared.');
-                    window.location.reload();
+                    onNoteAdded();
                   }
                 }}
                 className="w-full py-2 bg-terracotta/10 border-2 border-terracotta/20 text-terracotta rounded-full font-black text-sm hover:bg-terracotta hover:text-white transition-all shadow-sm flex items-center justify-center gap-3"
@@ -3828,9 +3116,19 @@ function SettingsScreen({
               </button>
 
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (window.confirm('⚠️ This will erase ALL your student data, notes, and settings. Are you sure?')) {
-                    ['cp_notes', 'cp_students', 'cp_indicators', 'cp_classes', 'cp_calendar_events', 'cp_profile', 'school_calendar', 'classroom_pulse_reports'].forEach(key => localStorage.removeItem(key));
+                    await Promise.all([
+                      supabase.from('notes').delete().not('id', 'is', null),
+                      supabase.from('students').delete().not('id', 'is', null),
+                      supabase.from('indicators').delete().not('id', 'is', null),
+                      supabase.from('comm_types').delete().not('id', 'is', null),
+                      supabase.from('classes').delete().not('id', 'is', null),
+                      supabase.from('calendar_events').delete().not('id', 'is', null),
+                      supabase.from('reports').delete().not('id', 'is', null),
+                      supabase.from('settings').delete().not('key', 'is', null),
+                    ]);
+                    localStorage.clear();
                     window.location.reload();
                   }
                 }}
@@ -4046,7 +3344,7 @@ function SettingsScreen({
                                       i.type === 'neutral' ? "bg-amber-100 text-amber-600" :
                                         "bg-terracotta/10 text-terracotta"
                                   )}>
-                                    {i.icon}
+                                    {i.icon ?? getIconForName(i.icon_name, i.type)}
                                   </div>
                                   <span className="text-sm font-semibold text-slate-700">{i.label}</span>
                                 </div>
@@ -4089,7 +3387,7 @@ function SettingsScreen({
                     <div key={c.label} className="flex items-center justify-between p-4 bg-white rounded-[32px] border border-slate-100 card-shadow">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
-                          {c.icon}
+                          {c.icon ?? getIconForName(c.icon_name, 'neutral')}
                         </div>
                         <span className="text-sm font-semibold text-slate-700">{c.label}</span>
                       </div>
@@ -4228,6 +3526,28 @@ function SettingsScreen({
                   className="w-full py-4 bg-sage text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-sage-dark transition-all shadow-lg shadow-sage/20"
                 >
                   Save Changes
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100">
+              <h3 className="text-[11px] font-bold text-slate-400 ml-1 mb-6">Appearance</h3>
+              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">Dark Mode</h4>
+                  <p className="text-[10px] text-slate-400 font-medium">Switch between light and dark theme</p>
+                </div>
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className={cn(
+                    "w-12 h-6 rounded-full transition-all relative",
+                    theme === 'dark' ? "bg-sage" : "bg-slate-300"
+                  )}
+                >
+                  <motion.div
+                    animate={{ x: theme === 'dark' ? 24 : 4 }}
+                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                  />
                 </button>
               </div>
             </div>
@@ -4780,7 +4100,57 @@ function SettingsScreen({
               <span className="text-[11px] font-bold">Back to Settings</span>
             </button>
 
-            <ImportScreen onImportComplete={() => { onImportComplete(); setView('main'); }} classes={classes} />
+            <ImportScreen onImportComplete={() => { onImportComplete(); setView('main'); }} classes={classes} students={students} addStudent={addStudent} updateStudent={updateStudent} />
+
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
+              <div>
+                <h3 className="text-[13px] font-black text-slate-400 ml-1">Migrate to Supabase</h3>
+                <p className="text-xs text-slate-400 mt-2 ml-1 leading-relaxed">
+                  One-time migration. Copies all your students, notes, tasks, and settings from this browser into the cloud database. Your local data stays untouched as a backup.
+                </p>
+              </div>
+
+              {migrationDone && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-sage/10 border border-sage/20 rounded-2xl">
+                  <CheckCircle2 className="w-4 h-4 text-sage flex-shrink-0" />
+                  <span className="text-xs font-bold text-sage">Migration complete! Check Supabase Table Editor to verify your data.</span>
+                </div>
+              )}
+
+              <button
+                disabled={isMigrating || migrationDone}
+                onClick={async () => {
+                  if (!window.confirm('This will copy all your localStorage data into Supabase. Run this once. Continue?')) return;
+                  setIsMigrating(true);
+                  const loadingToast = toast.loading('Migrating your data to Supabase...');
+                  try {
+                    const result = await migrateFromLocalStorage();
+                    toast.dismiss(loadingToast);
+                    if (result.errors.length > 0) {
+                      toast.error(`Migration had ${result.errors.length} error(s). Check console for details.`, { duration: 8000 });
+                    } else {
+                      toast.success(`Migrated: ${result.students} students, ${result.notes} notes, ${result.tasks} tasks.`, { duration: 6000 });
+                      setMigrationDone(true);
+                    }
+                  } catch (err) {
+                    toast.dismiss(loadingToast);
+                    toast.error('Migration failed. Check console for details.');
+                    console.error('Migration error:', err);
+                  } finally {
+                    setIsMigrating(false);
+                  }
+                }}
+                className="w-full py-3 bg-sage text-white rounded-full font-black text-sm hover:bg-sage-dark transition-all shadow-md shadow-sage/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isMigrating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Migrating...</>
+                ) : migrationDone ? (
+                  <><CheckCircle2 className="w-4 h-4" /> Migration Complete</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> Migrate localStorage → Supabase</>
+                )}
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
