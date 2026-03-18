@@ -273,6 +273,31 @@ export default function App() {
     setEditTaskText('');
   };
 
+  const handleCopyTasks = () => {
+    const text = tasks.map(t => `${t.completed ? '✓' : '○'} ${t.text}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => toast.success('Tasks copied to clipboard!'));
+  };
+
+  const handleExportTasksPDF = () => {
+    const doc = new jsPDF();
+    const date = new Date().toLocaleDateString();
+    doc.setFontSize(16);
+    doc.text('Daily Tasks', 20, 20);
+    doc.setFontSize(10);
+    doc.text(date, 20, 30);
+    let y = 45;
+    tasks.forEach(task => {
+      const line = `${task.completed ? '✓' : '○'}  ${task.text}`;
+      const lines = doc.splitTextToSize(line, 170);
+      lines.forEach((l: string) => {
+        doc.text(l, 20, y);
+        y += 8;
+        if (y > 270) { doc.addPage(); y = 20; }
+      });
+    });
+    doc.save('tasks.pdf');
+  };
+
   const handleOnDragEnd = async (result: any) => {
     if (!result.destination) return;
     const items = Array.from(tasks);
@@ -546,9 +571,17 @@ export default function App() {
                   </div>
                   <h2 className="text-lg font-bold text-sage-dark">Daily Tasks</h2>
                 </div>
-                <button onClick={() => setShowTasks(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full">
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={handleCopyTasks} title="Copy to clipboard" className="p-2 text-slate-400 hover:text-sage rounded-full transition-colors">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleExportTasksPDF} title="Export as PDF" className="p-2 text-slate-400 hover:text-sage rounded-full transition-colors">
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setShowTasks(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex gap-2 mb-6">
@@ -1367,33 +1400,30 @@ function StudentDetailView({
     toast.success('Copied selected summaries to clipboard');
   };
 
-  const triggerEmail = (text: string, subjectTitle: string) => {
+  const triggerEmail = (text: string, _subjectTitle?: string) => {
     const recipient = parentEmail || '';
-    const date = new Date().toLocaleDateString();
-    const subject = encodeURIComponent(`${subjectTitle} - ${date}`);
+    const firstName = student.name.split(' ')[0];
+    const subject = encodeURIComponent(`A note about ${firstName}`);
 
-    // 1. Copy FULL text to clipboard immediately
-    navigator.clipboard.writeText(text);
-    toast.success('Report copied to clipboard! Opening Gmail...');
+    // Copy full text to clipboard first
+    navigator.clipboard.writeText(text).catch(() => {});
+    toast.success('Copied to clipboard! Opening email…');
 
-    // 2. Prepare truncated body for URL
+    // mailto: works on both desktop and mobile (opens default mail app / Gmail app)
     let bodyText = text;
-    if (bodyText.length > 1000) {
-      bodyText = bodyText.substring(0, 1000) + "\n\n[Report truncated due to length. Please paste the full version from your clipboard.]";
+    if (bodyText.length > 1800) {
+      bodyText = bodyText.substring(0, 1800) + '\n\n[Full text copied to clipboard — paste to see the rest]';
     }
     const body = encodeURIComponent(bodyText);
 
-    const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipient}&su=${subject}&body=${body}`;
-
-    // 3. Open Standalone Gmail Compose Tab
-    window.open(gmailLink, '_blank');
+    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
   };
 
   const handleEmailSelected = () => {
     if (!student.archivedSummaries) return;
     const selected = student.archivedSummaries.filter(s => selectedArchiveIds.includes(s.id));
     const bodyText = selected.map(s => `[${new Date(s.date).toLocaleDateString()}]\n${s.content}`).join('\n\n---\n\n');
-    triggerEmail(bodyText, `Progress Update for ${student.name}`);
+    triggerEmail(bodyText);
   };
 
   const handleDownloadPDF = () => {
@@ -1515,7 +1545,7 @@ function StudentDetailView({
 
   const handleEmailReport = () => {
     if (!currentReport) return;
-    triggerEmail(currentReport, `Report for ${student.name}`);
+    triggerEmail(currentReport);
   };
 
   const handleCopyReport = () => {
@@ -1530,7 +1560,7 @@ function StudentDetailView({
   };
 
   const handleEmailText = (text: string) => {
-    triggerEmail(text, `Report for ${student.name}`);
+    triggerEmail(text);
   };
 
   const handleTextReport = () => {
@@ -4320,19 +4350,18 @@ function SettingsScreen({
               {/* Add new abbreviation */}
               <div className="space-y-3 bg-slate-50 rounded-2xl p-4">
                 <p className="text-xs font-black text-slate-500 uppercase tracking-wide">Add New</p>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
                   <input
                     value={newAbbr}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAbbr(e.target.value)}
                     placeholder="Shortcut (e.g. ss)"
-                    className="flex-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
-                  <span className="self-center text-slate-400 font-bold">→</span>
                   <input
                     value={newExpansion}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewExpansion(e.target.value)}
                     placeholder="Expands to (e.g. Social Studies)"
-                    className="flex-[2] px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
                 </div>
                 <div className="flex items-center justify-between">
