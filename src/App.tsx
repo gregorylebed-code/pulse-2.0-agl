@@ -7,6 +7,7 @@ import { migrateFromLocalStorage } from './utils/migrateFromLocalStorage';
 import { useClassroomData } from './hooks/useClassroomData';
 import { supabase } from './lib/supabase';
 import PulseScreen from './components/PulseScreen';
+import SummaryView from './components/SummaryView';
 import FeedbackModal from './components/FeedbackModal';
 import ClassroomPulseLogo from './components/ClassroomPulseLogo';
 
@@ -176,6 +177,7 @@ export default function App() {
   }, [theme]);
 
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'settings'>('pulse');
+  const [pulseView, setPulseView] = useState<'log' | 'summary'>('log');
   const [taskUndoToast, setTaskUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
   const taskUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showTasks, setShowTasks] = useState(false);
@@ -479,20 +481,50 @@ export default function App() {
       <main className="flex-1 px-6 pb-24 overflow-y-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'pulse' && (
-            <motion.div key="pulse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <PulseScreen
-                notes={notes}
-                students={students}
-                indicators={indicators}
-                commTypes={commTypes}
-                calendarEvents={calendarEvents}
-                classes={classes}
-                onNoteAdded={refreshData}
-                addNote={addNote}
-                updateNote={updateNote}
-                deleteNote={deleteNote}
-                abbreviations={abbreviations}
-              />
+            <motion.div key="pulse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+              {/* Sub-tab toggle */}
+              <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
+                <button
+                  onClick={() => setPulseView('log')}
+                  className={cn(
+                    'flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all',
+                    pulseView === 'log' ? 'bg-white text-sage shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                  )}
+                >
+                  Log Note
+                </button>
+                <button
+                  onClick={() => setPulseView('summary')}
+                  className={cn(
+                    'flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all',
+                    pulseView === 'summary' ? 'bg-white text-sage shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                  )}
+                >
+                  Summary
+                </button>
+              </div>
+
+              {pulseView === 'log' ? (
+                <PulseScreen
+                  notes={notes}
+                  students={students}
+                  indicators={indicators}
+                  commTypes={commTypes}
+                  calendarEvents={calendarEvents}
+                  classes={classes}
+                  onNoteAdded={refreshData}
+                  addNote={addNote}
+                  updateNote={updateNote}
+                  deleteNote={deleteNote}
+                  abbreviations={abbreviations}
+                />
+              ) : (
+                <SummaryView
+                  notes={notes}
+                  students={students}
+                  classes={classes}
+                />
+              )}
             </motion.div>
           )}
           {activeTab === 'students' && (

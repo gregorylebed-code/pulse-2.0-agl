@@ -409,3 +409,27 @@ Return as a JSON array: [{ "abbreviation": "ss", "expansion": "Social Studies" }
     return [];
   }
 }
+
+export async function summarizeClassPeriod(notes: Note[], className: string): Promise<string> {
+  const notesText = notes
+    .map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name || n.class_name || 'Class'}: ${n.content}`)
+    .join('\n');
+
+  const prompt = `You are summarizing observation notes for a class period called "${className}" for a teacher.
+
+Notes:
+${notesText}
+
+Write a concise, clear summary (3-6 sentences) of what was observed across this class during this period. Group themes — highlight what went well, any patterns of concern, and any standout moments. Use plain language, no jargon. Do not address parents — this is for the teacher's own record.`;
+
+  let responseText = '';
+  try {
+    const response = await throttledGenerate(() =>
+      ai.models.generateContent({ model: 'gemini-2.0-flash', contents: prompt })
+    );
+    responseText = response.text || '';
+  } catch (geminiErr) {
+    responseText = await callGroqBackup(prompt, false);
+  }
+  return responseText.trim();
+}
