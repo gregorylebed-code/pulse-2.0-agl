@@ -112,10 +112,10 @@ const getGreeting = (name: string) => {
   const isFriday = new Date().getDay() === 5;
   let base = "";
 
-  if (hour < 12) base = `Good morning, ${name}! Let’s make a difference today.`;
-  else base = `Good afternoon, ${name}! You’re doing great—finish strong.`;
+  if (hour < 12) base = `Good morning, ${name}!`;
+  else base = `Good afternoon, ${name}!`;
 
-  if (isFriday) base += " Happy Friday! You've earned the weekend.";
+  if (isFriday) base += " Happy Friday! 🎉";
   return base;
 };
 
@@ -347,7 +347,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20">
-      <header className="px-6 pt-10 pb-6 no-print">
+      <header className="px-4 pt-3 pb-1 no-print">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1">
             {userName === 'Teacher' && !localStorage.getItem('cp_profile')?.includes('userName') ? (
@@ -370,7 +370,7 @@ export default function App() {
             ) : (
               <div className="group relative">
                 <div className="flex items-center gap-2 pr-8">
-                  <h1 className="text-lg font-bold text-sage-dark leading-tight">
+                  <h1 className="text-sm font-bold text-sage-dark leading-tight">
                     {getGreeting(userName)}
                   </h1>
                   <button
@@ -381,25 +381,14 @@ export default function App() {
                     <Edit2 className="w-3 h-3" />
                   </button>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Sparkles className="w-3 h-3 text-terracotta animate-pulse" />
-                  <p className="text-[10px] font-medium text-slate-400 italic">
-                    "{quote}"
-                  </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Sparkles className="w-2.5 h-2.5 text-terracotta" />
+                  <p className="text-[9px] font-medium text-slate-400 italic truncate max-w-[180px]">"{quote}"</p>
+                  <ClassroomPulseLogo size={14} />
+                  <span className="text-[8px] font-semibold text-slate-300">v2.0</span>
                 </div>
               </div>
             )}
-            <div className="mt-4 flex items-center gap-2">
-              <span className="px-2 py-0.5 bg-sage/10 text-sage text-[9px] font-bold rounded-full">
-                {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} View
-              </span>
-              <div className="flex items-center gap-1.5">
-                <ClassroomPulseLogo size={22} />
-                <span className="text-[9px] font-semibold text-slate-300">
-                  Pulse v2.0
-                </span>
-              </div>
-            </div>
           </div>
           <div className="flex items-center gap-2 ml-4">
             {/* Rotation Dashboard Badge */}
@@ -996,17 +985,17 @@ function StudentsScreen({ students, notes, reports, indicators, commTypes, calen
               Class Period {section}
               <span className="flex-1 h-[1px] bg-slate-200" />
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2">
               {groupedStudents[section].map(s => (
                 <div
                   key={s.id}
                   onClick={() => setSelectedStudentId(s.id)}
-                  className="bg-white p-6 rounded-[32px] card-shadow border border-slate-100 flex flex-col items-center justify-center gap-3 group cursor-pointer hover:border-sage/30 hover:-translate-y-1 transition-all text-center"
+                  className="bg-white p-2 rounded-2xl card-shadow border border-slate-100 flex flex-col items-center justify-center gap-1.5 group cursor-pointer hover:border-sage/30 hover:-translate-y-0.5 transition-all text-center"
                 >
-                  <div className={cn("w-16 h-16 rounded-full flex items-center justify-center font-black text-xl border", getAvatarColor(s.name))}>
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-black text-xs border", getAvatarColor(s.name))}>
                     {s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                   </div>
-                  <h4 className="font-bold text-slate-900 line-clamp-2 leading-tight">{s.name}</h4>
+                  <h4 className="text-[10px] font-bold text-slate-900 line-clamp-2 leading-tight">{s.name}</h4>
                 </div>
               ))}
             </div>

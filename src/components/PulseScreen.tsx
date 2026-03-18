@@ -462,29 +462,16 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </div>
         )}
 
-        {/* Mode toggle */}
-        <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl">
+        {/* Mode toggle — Student Note is default, Class Note is a secondary link */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+            {noteMode === 'class' ? 'Class Note' : 'Student Note'}
+          </span>
           <button
-            onClick={() => setNoteMode('student')}
-            className={cn(
-              "flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-              noteMode === 'student'
-                ? "bg-white text-sage shadow-sm"
-                : "text-slate-400 hover:text-slate-600"
-            )}
+            onClick={() => setNoteMode(noteMode === 'class' ? 'student' : 'class')}
+            className="text-[10px] font-bold text-slate-400 hover:text-blue-500 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50 flex items-center gap-1"
           >
-            Student Note
-          </button>
-          <button
-            onClick={() => setNoteMode('class')}
-            className={cn(
-              "flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-              noteMode === 'class'
-                ? "bg-white text-blue-500 shadow-sm"
-                : "text-slate-400 hover:text-slate-600"
-            )}
-          >
-            Class Note
+            {noteMode === 'class' ? '← Switch to Student Note' : 'Switch to Class Note →'}
           </button>
         </div>
 
@@ -627,13 +614,13 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
         <div className="space-y-2">
           <h3 className="text-[13px] font-black text-slate-400 ml-1">Positive Indicators</h3>
-          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-2 px-2">
+          <div className="flex flex-wrap gap-1.5">
             {indicators.filter(b => b.type === 'positive').map(b => (
               <button
                 key={b.label}
                 onClick={() => toggleTag(b.label)}
                 className={cn(
-                  "flex-shrink-0 px-2.5 py-1 border-[3px] rounded-full text-base font-black flex items-center gap-3 transition-all pop-feedback shadow-sm",
+                  "px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback",
                   selectedTags.includes(b.label)
                     ? "bg-neon-green/10 border-neon-green text-neon-green shadow-md"
                     : "bg-white border-neon-green text-neon-green hover:bg-neon-green/5"
@@ -647,13 +634,13 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
         <div className="space-y-2">
           <h3 className="text-[13px] font-black text-slate-400 ml-1">Neutral Indicators</h3>
-          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-2 px-2">
+          <div className="flex flex-wrap gap-1.5">
             {indicators.filter(b => b.type === 'neutral').map(b => (
               <button
                 key={b.label}
                 onClick={() => toggleTag(b.label)}
                 className={cn(
-                  "flex-shrink-0 px-2.5 py-1 border-[3px] rounded-full text-base font-black flex items-center gap-3 transition-all pop-feedback shadow-sm",
+                  "px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback",
                   selectedTags.includes(b.label)
                     ? "bg-neon-yellow/10 border-neon-yellow text-neon-yellow shadow-md"
                     : "bg-white border-neon-yellow text-neon-yellow hover:bg-neon-yellow/5"
@@ -667,13 +654,13 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
         <div className="space-y-2">
           <h3 className="text-[13px] font-black text-slate-400 ml-1">Areas for Growth</h3>
-          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-2 px-2">
+          <div className="flex flex-wrap gap-1.5">
             {indicators.filter(b => b.type === 'growth').map(b => (
               <button
                 key={b.label}
                 onClick={() => toggleTag(b.label)}
                 className={cn(
-                  "flex-shrink-0 px-2.5 py-1 border-[3px] rounded-full text-base font-black flex items-center gap-3 transition-all pop-feedback shadow-sm",
+                  "px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback",
                   selectedTags.includes(b.label)
                     ? "bg-neon-red/10 border-neon-red text-neon-red shadow-md"
                     : "bg-white border-neon-red text-neon-red hover:bg-neon-red/5"
@@ -685,15 +672,15 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h3 className="text-[13px] font-black text-slate-400 ml-1">Family Communication</h3>
-          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-2 px-2">
+          <div className="flex flex-wrap gap-1.5">
             {commTypes.map(b => (
               <button
                 key={b.label}
                 onClick={() => toggleComm(b.label)}
                 className={cn(
-                  "flex-shrink-0 px-2.5 py-1 border-[3px] rounded-full text-base font-black flex items-center gap-3 transition-all pop-feedback shadow-sm",
+                  "px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback",
                   selectedComm.includes(b.label)
                     ? "bg-neon-cyan/10 border-neon-cyan text-neon-cyan shadow-md"
                     : "bg-white border-neon-cyan text-neon-cyan hover:bg-neon-cyan/5"
