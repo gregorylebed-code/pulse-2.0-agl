@@ -371,3 +371,41 @@ export async function parseVoiceLog(transcript: string, students: string[], indi
     return null;
   }
 }
+
+export async function suggestAbbreviations(noteContents: string[]): Promise<Array<{ abbreviation: string; expansion: string }>> {
+  const sample = noteContents.slice(0, 50).join('\n');
+  const prompt = `Analyze these teacher observation notes and identify short abbreviations or acronyms that appear frequently and could save time if auto-expanded.
+
+Notes:
+${sample}
+
+Return a JSON array of up to 8 suggestions, each with:
+- abbreviation: the short form found in the notes (e.g. "ss", "ela", "iep", "sw")
+- expansion: what it likely means in a classroom context (e.g. "Social Studies", "English Language Arts", "Individualized Education Program", "social worker")
+
+Only suggest abbreviations that appear at least twice OR are very common classroom abbreviations. Do not suggest single letters.
+Return as a JSON array: [{ "abbreviation": "ss", "expansion": "Social Studies" }, ...]`;
+
+  const responseText = await safeGenerateContent({
+    prompt,
+    isJson: true,
+    schema: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          abbreviation: { type: Type.STRING },
+          expansion: { type: Type.STRING },
+        },
+        required: ['abbreviation', 'expansion'],
+      },
+    },
+  });
+
+  try {
+    const parsed = JSON.parse(responseText || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}

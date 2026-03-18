@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-import { categorizeNote, summarizeNotes, refineReport, magicImport, draftParentSquareMessage, parseVoiceLog, performSmartScan, extractRotationMapping } from './lib/gemini';
+import { categorizeNote, summarizeNotes, refineReport, magicImport, draftParentSquareMessage, parseVoiceLog, performSmartScan, extractRotationMapping, suggestAbbreviations } from './lib/gemini';
+import { expandAbbreviations, Abbreviation } from './utils/expandAbbreviations';
 import { Note, Student, Report, ContactEntry, CalendarEvent } from './types';
 import { migrateFromLocalStorage } from './utils/migrateFromLocalStorage';
 import { useClassroomData } from './hooks/useClassroomData';
@@ -152,9 +153,12 @@ export default function App() {
     updateTask,
     deleteTask,
     addReport,
+    deleteReport,
     saveProfile,
     saveRotationMapping,
     saveSpecialsNames,
+    saveAbbreviations,
+    abbreviations,
     updateIndicators,
     updateCommTypes,
     updateClasses,
@@ -172,6 +176,8 @@ export default function App() {
   }, [theme]);
 
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'settings'>('pulse');
+  const [taskUndoToast, setTaskUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
+  const taskUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showTasks, setShowTasks] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [tempName, setTempName] = useState('');
@@ -471,12 +477,13 @@ export default function App() {
                 addNote={addNote}
                 updateNote={updateNote}
                 deleteNote={deleteNote}
+                abbreviations={abbreviations}
               />
             </motion.div>
           )}
           {activeTab === 'students' && (
             <motion.div key="students" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <StudentsScreen students={students} notes={notes} reports={reports} indicators={indicators} commTypes={commTypes} calendarEvents={calendarEvents} classes={classes} onUpdate={refreshData} deleteStudent={deleteStudent} deleteNote={deleteNote} addNote={addNote} updateNote={updateNote} updateStudent={updateStudent} addReport={addReport} />
+              <StudentsScreen students={students} notes={notes} reports={reports} indicators={indicators} commTypes={commTypes} calendarEvents={calendarEvents} classes={classes} onUpdate={refreshData} deleteStudent={deleteStudent} deleteNote={deleteNote} addNote={addNote} updateNote={updateNote} updateStudent={updateStudent} addReport={addReport} deleteReport={deleteReport} abbreviations={abbreviations} />
             </motion.div>
           )}
           {activeTab === 'settings' && (
@@ -506,6 +513,9 @@ export default function App() {
                 updateStudent={updateStudent}
                 theme={theme}
                 setTheme={setTheme}
+                abbreviations={abbreviations}
+                saveAbbreviations={saveAbbreviations}
+                notes={notes}
               />
             </motion.div>
           )}
@@ -670,7 +680,15 @@ export default function App() {
                                   </div>
 
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const snapshot = { ...task };
+                                      if (taskUndoTimerRef.current) clearTimeout(taskUndoTimerRef.current);
+                                      setTaskUndoToast({ label: 'Task deleted', onUndo: () => {} });
+                                      const timer = setTimeout(() => { deleteTask(snapshot.id); setTaskUndoToast(null); }, 5000);
+                                      taskUndoTimerRef.current = timer;
+                                      setTaskUndoToast({ label: 'Task deleted', onUndo: () => { clearTimeout(timer); setTaskUndoToast(null); } });
+                                    }}
                                     className="mt-0.5 p-1 text-slate-300 hover:text-terracotta transition-colors"
                                   >
                                     <X className="w-4 h-4" />
@@ -701,6 +719,25 @@ export default function App() {
       </AnimatePresence>
 
       <Toaster position="top-center" richColors theme={theme} />
+
+      <AnimatePresence>
+        {taskUndoToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full flex items-center gap-4 shadow-xl z-50"
+          >
+            <span className="text-sm font-medium">{taskUndoToast.label}</span>
+            <button
+              onClick={() => { taskUndoToast.onUndo(); setTaskUndoToast(null); }}
+              className="text-teal-400 font-bold text-sm hover:text-teal-300 transition-colors"
+            >
+              Undo
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <FeedbackModal currentView={
         activeTab === 'pulse' ? 'Pulse Screen' :
@@ -758,7 +795,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
   );
 }
 
-function StudentsScreen({ students, notes, reports, indicators, commTypes, calendarEvents, classes, onUpdate, deleteStudent, deleteNote, addNote, updateNote, updateStudent, addReport }: { students: Student[], notes: Note[], reports: Report[], indicators: any[], commTypes: any[], calendarEvents: CalendarEvent[], classes: string[], onUpdate: () => void, deleteStudent: (id: string) => Promise<void>, deleteNote: (id: string) => Promise<void>, addNote: (note: any) => Promise<any>, updateNote: (id: string, updates: any) => Promise<void>, updateStudent: (id: string, updates: any) => Promise<void>, addReport: (r: Omit<Report, 'id' | 'created_at'>) => Promise<Report | null> }) {
+function StudentsScreen({ students, notes, reports, indicators, commTypes, calendarEvents, classes, onUpdate, deleteStudent, deleteNote, addNote, updateNote, updateStudent, addReport, deleteReport, abbreviations }: { students: Student[], notes: Note[], reports: Report[], indicators: any[], commTypes: any[], calendarEvents: CalendarEvent[], classes: string[], onUpdate: () => void, deleteStudent: (id: string) => Promise<void>, deleteNote: (id: string) => Promise<void>, addNote: (note: any) => Promise<any>, updateNote: (id: string, updates: any) => Promise<void>, updateStudent: (id: string, updates: any) => Promise<void>, addReport: (r: Omit<Report, 'id' | 'created_at'>) => Promise<Report | null>, deleteReport: (id: string) => Promise<void>, abbreviations: Abbreviation[] }) {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('All');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
@@ -856,6 +893,8 @@ function StudentsScreen({ students, notes, reports, indicators, commTypes, calen
         updateNote={updateNote}
         updateStudent={updateStudent}
         deleteNote={deleteNote}
+        deleteReport={deleteReport}
+        abbreviations={abbreviations}
       />
     );
   }
@@ -1016,7 +1055,9 @@ function StudentDetailView({
   addNote,
   updateNote,
   updateStudent,
-  deleteNote
+  deleteNote,
+  deleteReport,
+  abbreviations,
 }: {
   student: Student,
   students: Student[],
@@ -1031,7 +1072,9 @@ function StudentDetailView({
   addNote: (note: any) => Promise<any>,
   updateNote: (id: string, updates: any) => Promise<void>,
   updateStudent: (id: string, updates: any) => Promise<void>,
-  deleteNote: (id: string) => Promise<void>
+  deleteNote: (id: string) => Promise<void>,
+  deleteReport: (id: string) => Promise<void>,
+  abbreviations: Abbreviation[],
 }) {
   const [reportLength, setReportLength] = useState<'Quick Pulse' | 'Standard' | 'Detailed'>('Standard');
   const [timeRange, setTimeRange] = useState('Last 7 Days');
@@ -1060,7 +1103,14 @@ function StudentDetailView({
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
 
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
-  const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]); const [activeSection, setActiveSection] = useState<'timeline' | 'ai-report' | 'history'>('timeline');
+  const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]);
+  const [activeSection, setActiveSection] = useState<'timeline' | 'ai-report' | 'history'>('timeline');
+  const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingDeleteNoteIds, setPendingDeleteNoteIds] = useState<Set<string>>(new Set());
+  const [pendingDeleteArchiveIds, setPendingDeleteArchiveIds] = useState<Set<string>>(new Set());
+  const [editingStudentName, setEditingStudentName] = useState(false);
+  const [studentNameDraft, setStudentNameDraft] = useState(student.name);
   const timelineRef = useRef<HTMLDivElement>(null);
   const aiReportRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
@@ -1071,6 +1121,49 @@ function StudentDetailView({
     setSelectedComm([]);
     setImage(null);
     setImagePreview(null);
+  };
+
+  const showUndo = (label: string, onUndo: () => void) => {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setUndoToast({ label, onUndo });
+    undoTimerRef.current = setTimeout(() => setUndoToast(null), 5000);
+  };
+
+  const softDeleteNote = (note: Note) => {
+    // Remove from UI immediately
+    // We rely on the parent filtering — signal via a local hidden set
+    setPendingDeleteNoteIds(prev => new Set(prev).add(note.id));
+    showUndo('Note deleted', () => {
+      setPendingDeleteNoteIds(prev => { const s = new Set(prev); s.delete(note.id); return s; });
+    });
+    undoTimerRef.current = setTimeout(() => {
+      deleteNote(note.id);
+      setPendingDeleteNoteIds(prev => { const s = new Set(prev); s.delete(note.id); return s; });
+    }, 5000);
+  };
+
+  const softDeleteArchive = (archiveId: string) => {
+    setPendingDeleteArchiveIds(prev => new Set(prev).add(archiveId));
+    showUndo('Summary deleted', () => {
+      setPendingDeleteArchiveIds(prev => { const s = new Set(prev); s.delete(archiveId); return s; });
+    });
+    undoTimerRef.current = setTimeout(async () => {
+      const updatedSummaries = (student.archivedSummaries || []).filter((a: any) => a.id !== archiveId);
+      await updateStudent(student.id, { archivedSummaries: updatedSummaries });
+      setPendingDeleteArchiveIds(prev => { const s = new Set(prev); s.delete(archiveId); return s; });
+      onNoteUpdate();
+    }, 5000);
+  };
+
+  const handleSaveStudentName = async () => {
+    if (!studentNameDraft.trim() || studentNameDraft === student.name) {
+      setEditingStudentName(false);
+      return;
+    }
+    await updateStudent(student.id, { name: studentNameDraft.trim() });
+    toast.success('Student name updated!');
+    setEditingStudentName(false);
+    onNoteUpdate();
   };
 
   const toggleTag = (tag: string) => {
@@ -1129,6 +1222,7 @@ function StudentDetailView({
   const handleSaveNote = async () => {
     if (!noteContent.trim() && !image) return;
     setIsSavingNote(true);
+    const expandedContent = expandAbbreviations(noteContent, abbreviations);
     try {
       let imageUrl: string | null = null;
       if (image) {
@@ -1146,7 +1240,7 @@ function StudentDetailView({
 
       if (finalTags.length === 0) {
         try {
-          const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
+          const aiResult = await categorizeNote(expandedContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
           finalTags = aiResult.tags ?? [];
         } catch {
           // AI unavailable — save note without tags
@@ -1161,7 +1255,7 @@ function StudentDetailView({
 
       const newNote: Note = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        content: noteContent,
+        content: expandedContent,
         student_name: student.name,
         user_id: 'local',
         tags: finalTags,
@@ -1178,7 +1272,7 @@ function StudentDetailView({
       // Save to Supabase
       await addNote({
         student_id: student.id,
-        content: noteContent,
+        content: expandedContent,
         tags: finalTags,
         is_parent_communication: isParentComm,
         parent_communication_type: commType || null,
@@ -1264,17 +1358,6 @@ function StudentDetailView({
     );
   };
 
-  const deleteArchive = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this archived summary?")) {
-      const updatedSummaries = (student.archivedSummaries || []).filter((a: any) => a.id !== id);
-      await updateStudent(student.id, { archivedSummaries: updatedSummaries });
-      toast.success('Archived summary deleted!');
-      onNoteUpdate();
-      setSelectedArchiveIds(prev => prev.filter(aId => aId !== id));
-      setExpandedArchiveIds(prev => prev.filter(aId => aId !== id));
-    }
-  };
 
   const handleCopySelected = () => {
     if (!student.archivedSummaries) return;
@@ -1524,8 +1607,9 @@ function StudentDetailView({
     if (!editingNoteId) return;
     setIsUpdating(true);
     try {
+      const expandedEditContent = expandAbbreviations(editContent, abbreviations);
       await updateNote(editingNoteId, {
-        content: editContent,
+        content: expandedEditContent,
         student_id: students.find(s => s.name === editStudentName)?.id || '',
         tags: editTags,
         is_parent_communication: editComm.length > 0,
@@ -1578,8 +1662,28 @@ function StudentDetailView({
         <div className="w-20 h-20 bg-cream-dark rounded-[28px] flex items-center justify-center text-terracotta font-bold text-3xl shadow-inner">
           {student.name.split(' ').map(n => n[0]).join('')}
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-sage-dark">{student.name}</h2>
+        <div className="flex-1">
+          {editingStudentName ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={studentNameDraft}
+                onChange={e => setStudentNameDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveStudentName(); if (e.key === 'Escape') setEditingStudentName(false); }}
+                autoFocus
+                className="text-xl font-bold text-sage-dark bg-sage/5 border border-sage/30 rounded-xl px-3 py-1 focus:outline-none focus:ring-2 focus:ring-sage/20"
+              />
+              <button onClick={handleSaveStudentName} className="text-[11px] font-bold text-sage hover:text-sage-dark">Save</button>
+              <button onClick={() => setEditingStudentName(false)} className="text-[11px] font-bold text-slate-400 hover:text-slate-600">Cancel</button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group">
+              <h2 className="text-2xl font-bold text-sage-dark">{student.name}</h2>
+              <button onClick={() => { setStudentNameDraft(student.name); setEditingStudentName(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-300 hover:text-sage" title="Edit name">
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
           <div className="flex gap-3 mt-1">
             <span className="px-3 py-1 bg-sage/10 text-sage text-[10px] font-bold rounded-lg">
               Class Period {typeof student.class_id === 'object' ? (student.class_id as any)?.label || (student.class_id as any)?.value : student.class_id}
@@ -1802,7 +1906,7 @@ function StudentDetailView({
           <h3 className="text-[13px] font-black text-slate-400 ml-1">Observation Timeline</h3>
         </div>
         <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-          {notes.map((note, idx) => (
+          {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).map((note) => (
             <div key={note.id} className="relative">
               <div className="absolute -left-[29px] top-1 w-6 h-6 bg-white border-2 border-sage rounded-full flex items-center justify-center z-10 shadow-sm">
                 <div className="w-2 h-2 bg-sage rounded-full" />
@@ -1841,11 +1945,7 @@ function StudentDetailView({
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this note? This cannot be undone.')) {
-                          deleteNote(note.id);
-                        }
-                      }}
+                      onClick={() => softDeleteNote(note)}
                       className="p-1.5 text-slate-300 hover:text-terracotta transition-all"
                       title="Delete Note"
                     >
@@ -2216,7 +2316,7 @@ function StudentDetailView({
                   <p className="text-xs text-slate-400 font-medium">No history or archived summaries yet.</p>
                 </div>
               ) : (
-                student.archivedSummaries.map((s, idx) => {
+                student.archivedSummaries.filter((s: any) => !pendingDeleteArchiveIds.has(s.id)).map((s: any) => {
                   const isExpanded = expandedArchiveIds.includes(s.id);
                   const isSelected = selectedArchiveIds.includes(s.id);
 
@@ -2261,7 +2361,7 @@ function StudentDetailView({
                                 <Mail className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={(e) => deleteArchive(s.id, e)}
+                                onClick={(e) => { e.stopPropagation(); softDeleteArchive(s.id); }}
                                 className="p-1.5 text-slate-400 hover:text-terracotta hover:bg-terracotta/10 rounded-lg transition-colors"
                                 title="Delete Archive"
                               >
@@ -2295,6 +2395,26 @@ function StudentDetailView({
           </div>
         </div>
       </div>
+
+      {/* Undo delete toast */}
+      <AnimatePresence>
+        {undoToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full flex items-center gap-4 shadow-xl z-50"
+          >
+            <span className="text-sm font-medium">{undoToast.label}</span>
+            <button
+              onClick={() => { undoToast.onUndo(); setUndoToast(null); if (undoTimerRef.current) clearTimeout(undoTimerRef.current); }}
+              className="text-teal-400 font-bold text-sm hover:text-teal-300 transition-colors"
+            >
+              Undo
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -2624,6 +2744,9 @@ function SettingsScreen({
   updateStudent,
   theme,
   setTheme,
+  abbreviations,
+  saveAbbreviations,
+  notes,
 }: {
   indicators: any[];
   setIndicators: (val: any[]) => void,
@@ -2649,10 +2772,18 @@ function SettingsScreen({
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>,
   theme: 'light' | 'dark',
   setTheme: (val: 'light' | 'dark') => void,
+  abbreviations: Abbreviation[],
+  saveAbbreviations: (val: Abbreviation[]) => Promise<void>,
+  notes: Note[],
 }) {
-  const [view, setView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation'>('main');
+  const [view, setView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
+  // Abbreviations state
+  const [newAbbr, setNewAbbr] = useState('');
+  const [newExpansion, setNewExpansion] = useState('');
+  const [newCaseSensitive, setNewCaseSensitive] = useState(false);
+  const [isSuggestingAbbr, setIsSuggestingAbbr] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<string[]>([]);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editEventTitle, setEditEventTitle] = useState('');
@@ -3084,6 +3215,7 @@ function SettingsScreen({
                 <SettingsItem icon={<Calendar />} label="School Calendar" onClick={() => setView('calendar')} />
                 <SettingsItem icon={<School />} label="Rotation & Specials" onClick={() => setView('rotation')} />
                 <SettingsItem icon={<FileInput />} label="Data Management" onClick={() => setView('data-management')} />
+                <SettingsItem icon={<MessageSquare />} label="Abbreviations" onClick={() => setView('abbreviations')} />
               </div>
             </div>
 
@@ -4161,6 +4293,128 @@ function SettingsScreen({
             </div>
           </motion.div>
         )}
+        {view === 'abbreviations' && (
+          <motion.div
+            key="abbreviations"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="space-y-6 max-w-3xl mx-auto"
+          >
+            <button onClick={() => setView('main')} className="flex items-center gap-2 text-slate-400 hover:text-sage transition-colors mb-2">
+              <X className="w-4 h-4" />
+              <span className="text-[11px] font-bold">Back to Settings</span>
+            </button>
+
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl">
+                  <MessageSquare className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-800">Abbreviations</h2>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">Shortcuts auto-expand when you save a note</p>
+                </div>
+              </div>
+
+              {/* Add new abbreviation */}
+              <div className="space-y-3 bg-slate-50 rounded-2xl p-4">
+                <p className="text-xs font-black text-slate-500 uppercase tracking-wide">Add New</p>
+                <div className="flex gap-2">
+                  <input
+                    value={newAbbr}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAbbr(e.target.value)}
+                    placeholder="Shortcut (e.g. ss)"
+                    className="flex-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  />
+                  <span className="self-center text-slate-400 font-bold">→</span>
+                  <input
+                    value={newExpansion}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewExpansion(e.target.value)}
+                    placeholder="Expands to (e.g. Social Studies)"
+                    className="flex-[2] px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-xs text-slate-500 font-medium cursor-pointer select-none">
+                    <div
+                      onClick={() => setNewCaseSensitive((v: boolean) => !v)}
+                      className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5 cursor-pointer ${newCaseSensitive ? 'bg-teal-500' : 'bg-slate-200'}`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${newCaseSensitive ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </div>
+                    Case-sensitive
+                  </label>
+                  <button
+                    onClick={() => {
+                      if (!newAbbr.trim() || !newExpansion.trim()) return;
+                      const updated = [...abbreviations, { id: Date.now().toString(36), abbreviation: newAbbr.trim(), expansion: newExpansion.trim(), caseSensitive: newCaseSensitive }];
+                      saveAbbreviations(updated);
+                      setNewAbbr('');
+                      setNewExpansion('');
+                      setNewCaseSensitive(false);
+                      toast.success('Abbreviation saved');
+                    }}
+                    className="px-4 py-1.5 bg-teal-500 text-white text-sm font-black rounded-full hover:bg-teal-600 transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* AI Suggest */}
+              <button
+                onClick={async () => {
+                  if (notes.length === 0) { toast.error('No notes yet to analyze'); return; }
+                  setIsSuggestingAbbr(true);
+                  try {
+                    const suggestions = await suggestAbbreviations(notes.map(n => n.content));
+                    if (suggestions.length === 0) { toast.info('No new abbreviations found in your notes'); return; }
+                    const existing = new Set(abbreviations.map(a => a.abbreviation.toLowerCase()));
+                    const newOnes = suggestions.filter(s => !existing.has(s.abbreviation.toLowerCase()));
+                    if (newOnes.length === 0) { toast.info('All suggestions already added'); return; }
+                    const added = newOnes.map(s => ({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), abbreviation: s.abbreviation, expansion: s.expansion, caseSensitive: false }));
+                    saveAbbreviations([...abbreviations, ...added]);
+                    toast.success(`Added ${added.length} AI suggestion${added.length > 1 ? 's' : ''} — review and delete any that don't apply`);
+                  } catch {
+                    toast.error('AI suggestion failed');
+                  } finally {
+                    setIsSuggestingAbbr(false);
+                  }
+                }}
+                disabled={isSuggestingAbbr}
+                className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-teal-200 rounded-2xl text-teal-600 text-sm font-black hover:bg-teal-50 transition-colors disabled:opacity-50"
+              >
+                {isSuggestingAbbr ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {isSuggestingAbbr ? 'Analyzing your notes…' : 'Suggest from My Notes (AI)'}
+              </button>
+
+              {/* Existing abbreviations */}
+              {abbreviations.length === 0 ? (
+                <p className="text-center text-sm text-slate-400 font-medium py-4">No abbreviations yet. Add one above or let AI suggest some.</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-wide">Active ({abbreviations.length})</p>
+                  {abbreviations.map(abbr => (
+                    <div key={abbr.id} className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-2xl group">
+                      <span className="text-sm font-black text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 min-w-[48px] text-center">{abbr.abbreviation}</span>
+                      <ArrowRight className="w-3 h-3 text-slate-300 flex-shrink-0" />
+                      <span className="flex-1 text-sm text-slate-600 font-medium">{abbr.expansion}</span>
+                      {abbr.caseSensitive && <span className="text-[10px] font-black text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">Aa</span>}
+                      <button
+                        onClick={() => { saveAbbreviations(abbreviations.filter(a => a.id !== abbr.id)); toast.success('Removed'); }}
+                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
       </AnimatePresence>
     </div>
   );

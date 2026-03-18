@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Note, Student, CalendarEvent } from '../types';
 import { parseVoiceLog, categorizeNote } from '../lib/gemini';
+import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations';
 import imageCompression from 'browser-image-compression';
 import {
   Mic, Image as ImageIcon, Send, Trash2, Edit2, Copy,
@@ -26,9 +27,10 @@ interface PulseScreenProps {
   addNote: (note: any) => Promise<any>;
   updateNote: (id: string, updates: any) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
+  abbreviations: Abbreviation[];
 }
 
-function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote }: PulseScreenProps) {
+function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations }: PulseScreenProps) {
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [studentInput, setStudentInput] = useState('');
   const [suggestions, setSuggestions] = useState<Student[]>([]);
@@ -56,8 +58,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     if (!editingNoteId) return;
     setIsUpdating(true);
     try {
+      const expandedEditContent = expandAbbreviations(editContent, abbreviations);
       await updateNote(editingNoteId, {
-        content: editContent,
+        content: expandedEditContent,
         student_id: students.find(s => s.name === editStudentName)?.id || '',
         tags: editTags,
         is_parent_communication: editComm.length > 0,
@@ -86,6 +89,25 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [selectedClass, setSelectedClass] = useState<string>('');
 
   const [isListening, setIsListening] = useState(false);
+  const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingDeleteNoteIds, setPendingDeleteNoteIds] = useState<Set<string>>(new Set());
+
+  const softDeleteNote = (note: any) => {
+    setPendingDeleteNoteIds(prev => new Set(prev).add(note.id));
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    const timer = setTimeout(() => {
+      deleteNote(note.id);
+      setPendingDeleteNoteIds(prev => { const s = new Set(prev); s.delete(note.id); return s; });
+      setUndoToast(null);
+    }, 5000);
+    undoTimerRef.current = timer;
+    setUndoToast({ label: 'Note deleted', onUndo: () => {
+      clearTimeout(timer);
+      setPendingDeleteNoteIds(prev => { const s = new Set(prev); s.delete(note.id); return s; });
+      setUndoToast(null);
+    }});
+  };
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -245,10 +267,11 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       }
       setIsSaving(true);
       try {
+        const expandedContent = expandAbbreviations(noteContent, abbreviations);
         let finalTags = [...selectedTags];
         if (finalTags.length === 0) {
           try {
-            const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), false, indicators.map(i => i.label));
+            const aiResult = await categorizeNote(expandedContent, new Date().toLocaleString(), false, indicators.map(i => i.label));
             finalTags = aiResult.tags ?? [];
           } catch {
             // AI unavailable — save note without tags
@@ -261,7 +284,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         await addNote({
           student_id: null,
           class_name: selectedClass,
-          content: noteContent,
+          content: expandedContent,
           tags: finalTags,
           is_parent_communication: false,
           parent_communication_type: null,
@@ -299,6 +322,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
     setIsSaving(true);
     try {
+      const expandedContent = expandAbbreviations(noteContent, abbreviations);
       let imageUrl: string | null = null;
       if (image) {
         imageUrl = await new Promise<string>((resolve, reject) => {
@@ -315,7 +339,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
       if (finalTags.length === 0) {
         try {
-          const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
+          const aiResult = await categorizeNote(expandedContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
           finalTags = aiResult.tags ?? [];
         } catch {
           // AI unavailable — save note without tags
@@ -329,7 +353,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       const student = students.find(s => s.name === studentToUse);
       await addNote({
         student_id: student?.id || '',
-        content: noteContent,
+        content: expandedContent,
         tags: finalTags,
         is_parent_communication: isParentComm,
         parent_communication_type: commType || null,
@@ -692,7 +716,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
       <div className="space-y-4 pb-20">
         <h2 className="text-[13px] font-black text-slate-400 ml-1">Recent Activity</h2>
-        {notes.slice(0, 5).map(note => (
+        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, 5).map(note => (
           <div key={note.id} className={cn(
             "bg-white p-6 rounded-[32px] card-shadow border flex items-start gap-4",
             note.class_name ? "border-blue-100" : "border-slate-100"
@@ -724,11 +748,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => {
-                      if (window.confirm('Are you sure you want to delete this note? This cannot be undone.')) {
-                        deleteNote(note.id);
-                      }
-                    }}
+                    onClick={() => softDeleteNote(note)}
                     className="p-1 text-slate-300 hover:text-terracotta transition-all"
                     title="Delete Note"
                   >
@@ -834,6 +854,25 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </div>
         ))}
       </div>
+
+      <AnimatePresence>
+        {undoToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full flex items-center gap-4 shadow-xl z-50"
+          >
+            <span className="text-sm font-medium">{undoToast.label}</span>
+            <button
+              onClick={() => undoToast.onUndo()}
+              className="text-teal-400 font-bold text-sm hover:text-teal-300 transition-colors"
+            >
+              Undo
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

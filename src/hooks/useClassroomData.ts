@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Note, Student, CalendarEvent, Report } from '../types';
+import { Abbreviation } from '../utils/expandAbbreviations';
 
 interface Task {
   id: string;
@@ -56,6 +57,7 @@ interface ClassroomDataState {
   profile: Profile;
   rotationMapping: Record<string, string>;
   specialsNames: Record<string, string>;
+  abbreviations: Abbreviation[];
   loading: boolean;
   error: string | null;
 }
@@ -71,9 +73,11 @@ interface ClassroomDataActions {
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   addReport: (report: Omit<Report, 'id' | 'created_at'>) => Promise<Report | null>;
+  deleteReport: (id: string) => Promise<void>;
   saveProfile: (profile: Profile) => Promise<void>;
   saveRotationMapping: (mapping: Record<string, string>) => Promise<void>;
   saveSpecialsNames: (names: Record<string, string>) => Promise<void>;
+  saveAbbreviations: (abbreviations: Abbreviation[]) => Promise<void>;
   updateIndicators: (indicators: Indicator[]) => Promise<void>;
   updateCommTypes: (commTypes: Indicator[]) => Promise<void>;
   updateClasses: (classes: string[]) => Promise<void>;
@@ -94,6 +98,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
     profile: DEFAULT_PROFILE,
     rotationMapping: {},
     specialsNames: DEFAULT_SPECIALS,
+    abbreviations: [],
     loading: true,
     error: null,
   });
@@ -143,6 +148,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         ?? (localStorage.getItem('rotationMapping') ? JSON.parse(localStorage.getItem('rotationMapping')!) : {});
       const specialsNames = settingsMap['specials_names']
         ?? (localStorage.getItem('specialsNames') ? JSON.parse(localStorage.getItem('specialsNames')!) : DEFAULT_SPECIALS);
+      const abbreviations: Abbreviation[] = settingsMap['abbreviations'] ?? [];
 
       // Map student IDs to names for note display
       const studentMap = new Map((studentsData || []).map((s: any) => [s.id, s.name]));
@@ -182,6 +188,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         profile,
         rotationMapping,
         specialsNames,
+        abbreviations,
         loading: false,
       }));
 
@@ -365,6 +372,16 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
 
   // ─── Reports ────────────────────────────────────────────────────────────────
 
+  const deleteReport = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase.from('reports').delete().eq('id', id);
+      if (error) throw error;
+      setState(prev => ({ ...prev, reports: prev.reports.filter(r => r.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting report:', error);
+    }
+  }, []);
+
   const addReport = useCallback(async (report: Omit<Report, 'id' | 'created_at'>) => {
     try {
       const { data, error } = await supabase
@@ -407,6 +424,15 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       setState(prev => ({ ...prev, specialsNames: names }));
     } catch (error) {
       console.error('Error saving specials names:', error);
+    }
+  }, []);
+
+  const saveAbbreviations = useCallback(async (abbreviations: Abbreviation[]) => {
+    try {
+      await supabase.from('settings').upsert({ key: 'abbreviations', value: abbreviations });
+      setState(prev => ({ ...prev, abbreviations }));
+    } catch (error) {
+      console.error('Error saving abbreviations:', error);
     }
   }, []);
 
@@ -484,9 +510,11 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
     updateTask,
     deleteTask,
     addReport,
+    deleteReport,
     saveProfile,
     saveRotationMapping,
     saveSpecialsNames,
+    saveAbbreviations,
     updateIndicators,
     updateCommTypes,
     updateClasses,
