@@ -7,6 +7,7 @@ import { useClassroomData } from './hooks/useClassroomData';
 import { supabase } from './lib/supabase';
 import PulseScreen from './components/PulseScreen';
 import FeedbackModal from './components/FeedbackModal';
+import ClassroomPulseLogo from './components/ClassroomPulseLogo';
 
 interface Task {
   id: string;
@@ -361,9 +362,12 @@ export default function App() {
               <span className="px-2 py-0.5 bg-sage/10 text-sage text-[9px] font-bold rounded-full">
                 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} View
               </span>
-              <span className="text-[9px] font-semibold text-slate-300">
-                Pulse v2.0
-              </span>
+              <div className="flex items-center gap-1.5">
+                <ClassroomPulseLogo size={22} />
+                <span className="text-[9px] font-semibold text-slate-300">
+                  Pulse v2.0
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 ml-4">
@@ -1141,8 +1145,12 @@ function StudentDetailView({
       let commType = selectedComm.join(', ');
 
       if (finalTags.length === 0) {
-        const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
-        finalTags = aiResult.tags;
+        try {
+          const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
+          finalTags = aiResult.tags ?? [];
+        } catch {
+          // AI unavailable — save note without tags
+        }
       }
 
       const today = new Date().toISOString().split('T')[0];

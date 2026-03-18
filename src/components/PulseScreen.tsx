@@ -247,8 +247,12 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       try {
         let finalTags = [...selectedTags];
         if (finalTags.length === 0) {
-          const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), false, indicators.map(i => i.label));
-          finalTags = aiResult.tags;
+          try {
+            const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), false, indicators.map(i => i.label));
+            finalTags = aiResult.tags ?? [];
+          } catch {
+            // AI unavailable — save note without tags
+          }
         }
         const today = new Date().toISOString().split('T')[0];
         const todayEvent = calendarEvents?.find(e => e.date === today);
@@ -310,8 +314,12 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       let commType = selectedComm.join(', ');
 
       if (finalTags.length === 0) {
-        const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
-        finalTags = aiResult.tags;
+        try {
+          const aiResult = await categorizeNote(noteContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
+          finalTags = aiResult.tags ?? [];
+        } catch {
+          // AI unavailable — save note without tags
+        }
       }
 
       const today = new Date().toISOString().split('T')[0];

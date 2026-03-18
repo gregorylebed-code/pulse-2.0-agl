@@ -1,9 +1,21 @@
-import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Note } from "../types";
 
-const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY || ''
+const ai = new GoogleGenAI({
+  // @ts-ignore
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY || ''
 });
+
+// Throttle: max 1 request/sec to stay well under Gemini's 15 RPM free limit
+let lastCallTime = 0;
+const MIN_GAP_MS = 1000;
+async function throttledGenerate(fn: () => Promise<any>) {
+  const now = Date.now();
+  const wait = Math.max(0, MIN_GAP_MS - (now - lastCallTime));
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastCallTime = Date.now();
+  return fn();
+}
 
 // Helper for Groq/Llama fallback
 async function callGroqBackup(prompt: string, isJson: boolean) {
@@ -65,11 +77,11 @@ async function safeGenerateContent(config: {
       };
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+    const response = await throttledGenerate(() => ai.models.generateContent({
+      model: "gemini-2.0-flash",
       contents,
       config: config.isJson ? { responseMimeType: "application/json", responseSchema: config.schema } : undefined
-    });
+    }));
 
     return response.text;
   } catch (err: any) {
@@ -253,7 +265,9 @@ export async function refineReport(currentContent: string, instructions: string)
 The teacher wants to refine this report with the following instructions:
 "${instructions}"
 
-Please rewrite the report based on these instructions while maintaining the Glow, Grow, Goal structure and the South Jersey Teacher Vibe (8th grade reading level, warm, supportive, no jargon).`;
+Please rewrite the report based on these instructions while maintaining the Glow, Grow, Goal structure and the South Jersey Teacher Vibe (8th grade reading level, warm, supportive, no jargon).
+
+IMPORTANT: Return ONLY the revised report text. Do not include any introduction, explanation, or commentary such as "Here is a revised version..." — the output will be copied directly into a parent email.`;
 
   return await safeGenerateContent({ prompt });
 }
