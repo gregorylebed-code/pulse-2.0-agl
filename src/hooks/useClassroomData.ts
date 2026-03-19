@@ -45,6 +45,11 @@ const DEFAULT_SPECIALS: Record<string, string> = {
   'E': 'STEM',
 };
 
+interface Stats {
+  notes_created: number;
+  reports_generated: number;
+}
+
 interface ClassroomDataState {
   notes: Note[];
   students: Student[];
@@ -58,6 +63,7 @@ interface ClassroomDataState {
   rotationMapping: Record<string, string>;
   specialsNames: Record<string, string>;
   abbreviations: Abbreviation[];
+  stats: Stats;
   loading: boolean;
   error: string | null;
 }
@@ -99,6 +105,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
     rotationMapping: {},
     specialsNames: DEFAULT_SPECIALS,
     abbreviations: [],
+    stats: { notes_created: 0, reports_generated: 0 },
     loading: true,
     error: null,
   });
@@ -149,6 +156,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       const specialsNames = settingsMap['specials_names']
         ?? (localStorage.getItem('specialsNames') ? JSON.parse(localStorage.getItem('specialsNames')!) : DEFAULT_SPECIALS);
       const abbreviations: Abbreviation[] = settingsMap['abbreviations'] ?? [];
+      const stats: Stats = settingsMap['stats'] ?? { notes_created: 0, reports_generated: 0 };
 
       // Map student IDs to names for note display
       const studentMap = new Map((studentsData || []).map((s: any) => [s.id, s.name]));
@@ -189,6 +197,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         rotationMapping,
         specialsNames,
         abbreviations,
+        stats,
         loading: false,
       }));
 
@@ -226,6 +235,16 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
     };
   }, [loadAllData]);
 
+  // ─── Stats ──────────────────────────────────────────────────────────────────
+
+  const incrementStat = useCallback((field: keyof Stats) => {
+    setState(prev => {
+      const updated = { ...prev.stats, [field]: (prev.stats[field] ?? 0) + 1 };
+      supabase.from('settings').upsert({ key: 'stats', value: updated }).then(() => {});
+      return { ...prev, stats: updated };
+    });
+  }, []);
+
   // ─── Notes ─────────────────────────────────────────────────────────────────
 
   const addNote = useCallback(async (note: any) => {
@@ -249,6 +268,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         };
         return { ...prev, notes: [noteWithName, ...prev.notes] };
       });
+      incrementStat('notes_created');
       return data;
     } catch (error) {
       console.error('Error adding note:', error);
@@ -391,12 +411,13 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         .single();
       if (error) throw error;
       setState(prev => ({ ...prev, reports: [data, ...prev.reports] }));
+      incrementStat('reports_generated');
       return data;
     } catch (error) {
       console.error('Error adding report:', error);
       return null;
     }
-  }, []);
+  }, [incrementStat]);
 
   // ─── Settings ───────────────────────────────────────────────────────────────
 

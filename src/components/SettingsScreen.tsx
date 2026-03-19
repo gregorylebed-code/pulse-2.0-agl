@@ -17,6 +17,7 @@ import {
 import { migrateFromLocalStorage } from '../utils/migrateFromLocalStorage';
 import { supabase } from '../lib/supabase';
 import ImportScreen from './ImportScreen';
+import StatsCard from './StatsCard';
 import { cn } from '../utils/cn';
 
 
@@ -112,6 +113,7 @@ interface SettingsScreenProps {
   abbreviations: Abbreviation[];
   saveAbbreviations: (val: Abbreviation[]) => Promise<void>;
   notes: Note[];
+  stats: { notes_created: number; reports_generated: number };
 }
 
 export default function SettingsScreen({
@@ -142,6 +144,7 @@ export default function SettingsScreen({
   abbreviations,
   saveAbbreviations,
   notes,
+  stats,
 }: SettingsScreenProps) {
   const [view, setView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
   const [newIndicator, setNewIndicator] = useState('');
@@ -585,6 +588,11 @@ export default function SettingsScreen({
                 <SettingsItem icon={<MessageSquare />} label="Abbreviations" onClick={() => setView('abbreviations')} />
               </div>
             </div>
+
+            <StatsCard
+              notesCreated={stats.notes_created}
+              reportsGenerated={stats.reports_generated}
+            />
 
             <a
               href="https://buymeacoffee.com/YOUR_USERNAME"

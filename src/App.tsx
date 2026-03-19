@@ -32,7 +32,7 @@ export default function App() {
     addReport, deleteReport,
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
-    updateCalendarEvents, refreshData,
+    updateCalendarEvents, refreshData, stats,
   } = useClassroomData();
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
@@ -173,6 +173,7 @@ export default function App() {
                 theme={theme} setTheme={setTheme}
                 abbreviations={abbreviations} saveAbbreviations={saveAbbreviations}
                 notes={notes}
+                stats={stats}
               />
             </motion.div>
           )}
