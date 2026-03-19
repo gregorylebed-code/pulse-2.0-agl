@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send, Copy } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -55,6 +55,7 @@ export default function StudentsScreen({
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const selectedStudent = students.find(s => s.id === selectedStudentId);
   const studentNotes = notes.filter(n => n.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -111,6 +112,27 @@ export default function StudentsScreen({
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleMicClick = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Speech recognition is not supported in this browser.');
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    setIsListening(true);
+    recognition.start();
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setAiQuery(prev => prev ? `${prev} ${transcript}` : transcript);
+      setIsListening(false);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
   };
 
   const handleAskAI = async (e: React.FormEvent) => {
@@ -233,8 +255,20 @@ export default function StudentsScreen({
             value={aiQuery}
             onChange={(e) => setAiQuery(e.target.value)}
             placeholder="Ask AI about your students..."
-            className="w-full pl-11 pr-12 py-3.5 bg-white border border-orange-100 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-200 text-sm font-medium shadow-sm"
+            className="w-full pl-11 pr-24 py-3.5 bg-white border border-orange-100 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-200 text-sm font-medium shadow-sm"
           />
+          <button
+            type="button"
+            onClick={handleMicClick}
+            disabled={isAiLoading}
+            className={cn(
+              'absolute right-12 top-1/2 -translate-y-1/2 p-2 rounded-full transition-colors disabled:opacity-40',
+              isListening ? 'bg-red-100 text-red-500 animate-pulse' : 'text-slate-300 hover:text-orange-400'
+            )}
+            title="Speak your question"
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
           <button
             type="submit"
             disabled={!aiQuery.trim() || isAiLoading}
