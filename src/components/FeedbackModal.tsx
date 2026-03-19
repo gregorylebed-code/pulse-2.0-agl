@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
 
+const NTFY_TOPIC = 'pulse-feedback-greg-1976';
+
 
 const APP_VERSION = '1.0';
 
@@ -47,6 +49,13 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
         current_view: currentView,
       });
       if (error) throw error;
+
+      await fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+        method: 'POST',
+        headers: { 'Title': `Pulse Feedback — ${category}`, 'Priority': 'default' },
+        body: `${message.trim()}\n\nScreen: ${currentView}`,
+      });
+
       setSubmitted(true);
       setTimeout(() => setIsOpen(false), 2200);
     } catch {
