@@ -12,7 +12,7 @@ import Navigation from './components/Navigation';
 import { cn } from './utils/cn';
 import { getRotationForDate } from './utils/rotationHelpers';
 
-import { Sparkles } from 'lucide-react';
+import { Sparkles, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'sonner';
 
@@ -101,26 +101,28 @@ export default function App() {
         <AnimatePresence mode="wait">
           {activeTab === 'pulse' && (
             <motion.div key="pulse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-              <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
-                <button
-                  onClick={() => setPulseView('log')}
-                  className={cn(
-                    'flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all',
-                    pulseView === 'log' ? 'bg-white text-sage shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                  )}
-                >
-                  Log Note
-                </button>
-                <button
-                  onClick={() => setPulseView('summary')}
-                  className={cn(
-                    'flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all',
-                    pulseView === 'summary' ? 'bg-white text-sage shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                  )}
-                >
-                  Summary
-                </button>
-              </div>
+              {pulseView === 'summary' && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Class Summary</span>
+                  <button
+                    onClick={() => setPulseView('log')}
+                    className="text-xs font-black text-sage hover:text-sage-dark transition-colors"
+                  >
+                    ← Back to Log
+                  </button>
+                </div>
+              )}
+
+              {pulseView === 'log' && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setPulseView('summary')}
+                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 hover:text-sage transition-colors uppercase tracking-widest"
+                  >
+                    <BarChart2 className="w-3.5 h-3.5" /> Class Summary
+                  </button>
+                </div>
+              )}
 
               {pulseView === 'log' ? (
                 <PulseScreen

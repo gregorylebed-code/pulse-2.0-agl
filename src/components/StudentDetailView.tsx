@@ -5,7 +5,7 @@ import {
   ChevronLeft, Edit2, Send, Mic, Image as ImageIcon, Loader2,
   Trash2, Copy, Mail, MessageSquare, CheckCircle2, Archive,
   X, Sparkles, ClipboardList, FileText, Download,
-  Smile, Meh, Frown, Users, Phone
+  Smile, Meh, Frown, Users, Phone, Tag, ChevronDown, Settings2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
@@ -104,6 +104,8 @@ export default function StudentDetailView({
   const [selectedComm, setSelectedComm] = useState<string[]>([]);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [showTags, setShowTags] = useState(false);
+  const [showReportOptions, setShowReportOptions] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -817,40 +819,44 @@ export default function StudentDetailView({
           </div>
         )}
 
-        <div className="space-y-4 pt-2">
-          <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar px-1">
-            {indicators.map(b => (
-              <button
-                key={b.label}
-                onClick={() => toggleTag(b.label)}
-                className={cn(
-                  "flex-shrink-0 px-4 py-2 border-2 rounded-full text-base font-black flex items-center gap-2 transition-all shadow-sm",
-                  selectedTags.includes(b.label)
-                    ? b.type === 'positive' ? "bg-sage/15 border-sage text-sage-dark shadow-md" : b.type === 'neutral' ? "bg-amber-500/15 border-amber-500 text-amber-700 shadow-md" : "bg-terracotta/15 border-terracotta text-terracotta-dark shadow-md"
-                    : "bg-white border-slate-100 text-slate-500 hover:border-slate-300"
-                )}
-              >
-                <span>{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
-              </button>
-            ))}
-          </div>
+        <div className="space-y-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setShowTags(v => !v)}
+            className="flex items-center gap-2 text-slate-400 hover:text-slate-600 transition-colors text-xs font-black uppercase tracking-widest"
+          >
+            <Tag className="w-3.5 h-3.5" />
+            {showTags ? 'Hide tags' : 'Add tags'}
+            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', showTags && 'rotate-180')} />
+          </button>
 
-          <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar px-1">
-            {commTypes.map(c => (
-              <button
-                key={c.label}
-                onClick={() => toggleComm(c.label)}
-                className={cn(
-                  "flex-shrink-0 px-4 py-2 border-2 rounded-full text-base font-black flex items-center gap-2 transition-all shadow-sm",
-                  selectedComm.includes(c.label)
-                    ? "bg-blue-500/15 border-blue-500 text-blue-700 shadow-md"
-                    : "bg-white border-slate-100 text-slate-500 hover:border-slate-300"
-                )}
-              >
-                <span>{c.icon ?? getIconForName(c.icon_name, 'neutral')}</span> {c.label}
-              </button>
-            ))}
-          </div>
+          {!showTags && (selectedTags.length > 0 || selectedComm.length > 0) && (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedTags.map(t => <span key={t} className="px-2 py-0.5 bg-sage/10 text-sage text-xs font-bold rounded-full">{t}</span>)}
+              {selectedComm.map(t => <span key={t} className="px-2 py-0.5 bg-blue-50 text-blue-500 text-xs font-bold rounded-full">{t}</span>)}
+            </div>
+          )}
+
+          <AnimatePresence>
+            {showTags && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
+                <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar px-1">
+                  {indicators.map(b => (
+                    <button key={b.label} onClick={() => toggleTag(b.label)} className={cn("flex-shrink-0 px-4 py-2 border-2 rounded-full text-base font-black flex items-center gap-2 transition-all shadow-sm", selectedTags.includes(b.label) ? b.type === 'positive' ? "bg-sage/15 border-sage text-sage-dark shadow-md" : b.type === 'neutral' ? "bg-amber-500/15 border-amber-500 text-amber-700 shadow-md" : "bg-terracotta/15 border-terracotta text-terracotta-dark shadow-md" : "bg-white border-slate-100 text-slate-500 hover:border-slate-300")}>
+                      <span>{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar px-1">
+                  {commTypes.map(c => (
+                    <button key={c.label} onClick={() => toggleComm(c.label)} className={cn("flex-shrink-0 px-4 py-2 border-2 rounded-full text-base font-black flex items-center gap-2 transition-all shadow-sm", selectedComm.includes(c.label) ? "bg-blue-500/15 border-blue-500 text-blue-700 shadow-md" : "bg-white border-slate-100 text-slate-500 hover:border-slate-300")}>
+                      <span>{c.icon ?? getIconForName(c.icon_name, 'neutral')}</span> {c.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">
@@ -1052,76 +1058,8 @@ export default function StudentDetailView({
 
       <div id="ai-report" ref={aiReportRef} className="space-y-6 pt-4 scroll-mt-header">
         <div className="bg-cream/30 p-8 rounded-[40px] border border-sage/10 space-y-6">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">1. Select Timeframe</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {['Today', 'Last 7 Days', '15 Days', 'Last 30 Days', '60 Days', 'Whole Year', 'Custom Range'].map(range => (
-                  <button
-                    key={range}
-                    onClick={() => setTimeRange(range)}
-                    className={cn(
-                      "py-2.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border-2",
-                      timeRange === range ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
-                    )}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-
-              {timeRange === 'Custom Range' && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-4 pt-2">
-                  <div className="space-y-1">
-                    <label htmlFor="custom_start_date" className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Start Date</label>
-                    <input
-                      id="custom_start_date"
-                      name="custom_start_date"
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      autoComplete="off"
-                      data-1p-ignore
-                      data-lpignore="true"
-                      className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[10px] focus:outline-none focus:ring-2 focus:ring-sage/20"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="custom_end_date" className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">End Date</label>
-                    <input
-                      id="custom_end_date"
-                      name="custom_end_date"
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      autoComplete="off"
-                      data-1p-ignore
-                      data-lpignore="true"
-                      className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[10px] focus:outline-none focus:ring-2 focus:ring-sage/20"
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">2. Select Report Type</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {(['Quick Pulse', 'Standard', 'Detailed'] as const).map(len => (
-                  <button
-                    key={len}
-                    onClick={() => setReportLength(len)}
-                    className={cn(
-                      "py-3 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border-2",
-                      reportLength === len ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
-                    )}
-                  >
-                    {len}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <div className="space-y-4">
+            {/* Primary action — always visible */}
             <button
               type="button"
               onClick={handleGenerate}
@@ -1131,6 +1069,56 @@ export default function StudentDetailView({
               {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Generate Report</>}
             </button>
             {notes.length === 0 && <p className="text-[10px] text-center text-slate-400 italic">No notes available to generate a report.</p>}
+
+            {/* Customize options — hidden by default */}
+            <button
+              type="button"
+              onClick={() => setShowReportOptions(v => !v)}
+              className="flex items-center gap-1.5 mx-auto text-slate-400 hover:text-slate-600 transition-colors text-[10px] font-black uppercase tracking-widest"
+            >
+              <Settings2 className="w-3 h-3" />
+              Customize ({timeRange}, {reportLength})
+              <ChevronDown className={cn('w-3 h-3 transition-transform', showReportOptions && 'rotate-180')} />
+            </button>
+
+            <AnimatePresence>
+              {showReportOptions && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-6 overflow-hidden">
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Timeframe</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Today', 'Last 7 Days', '15 Days', 'Last 30 Days', '60 Days', 'Whole Year', 'Custom Range'].map(range => (
+                        <button key={range} onClick={() => setTimeRange(range)} className={cn("py-2.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border-2", timeRange === range ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
+                          {range}
+                        </button>
+                      ))}
+                    </div>
+                    {timeRange === 'Custom Range' && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1">
+                          <label htmlFor="custom_start_date" className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Start Date</label>
+                          <input id="custom_start_date" name="custom_start_date" type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[10px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
+                        </div>
+                        <div className="space-y-1">
+                          <label htmlFor="custom_end_date" className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">End Date</label>
+                          <input id="custom_end_date" name="custom_end_date" type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[10px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Report Type</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['Quick Pulse', 'Standard', 'Detailed'] as const).map(len => (
+                        <button key={len} onClick={() => setReportLength(len)} className={cn("py-3 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border-2", reportLength === len ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
+                          {len}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {currentReport && (
