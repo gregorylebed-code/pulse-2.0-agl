@@ -1,0 +1,313 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Loader2, Sparkles, CheckCircle2, ArrowRight, Mail, Phone } from 'lucide-react';
+import { toast } from 'sonner';
+import { magicImport } from '../lib/gemini';
+import { Student } from '../types';
+
+interface ImportScreenProps {
+  onImportComplete: () => void;
+  classes: string[];
+  students: Student[];
+  addStudent: (s: Omit<Student, 'id'>) => Promise<Student | null>;
+  updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
+}
+
+export default function ImportScreen({ onImportComplete, classes, students, addStudent, updateStudent }: ImportScreenProps) {
+  const [rosterText, setRosterText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [matches, setMatches] = useState<{ imported: any, existing: any }[]>([]);
+  const [newStudents, setNewStudents] = useState<any[]>([]);
+  const [step, setStep] = useState<'input' | 'preview' | 'success'>('input');
+  const [importSummary, setImportSummary] = useState<{ updated: number, added: number } | null>(null);
+  const [defaultClassPeriod, setDefaultClassPeriod] = useState(classes[0] || 'Class 1');
+
+  // Simple fallback: reads one student name per line, extracts email/phone if present.
+  // Works with lists like: "John Smith" or "Maria G - maria@email.com - 555-1234"
+  const parseRosterManually = (text: string): any[] => {
+    return text
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => {
+        // Strip leading numbers/bullets
+        const cleaned = line.replace(/^[\d]+[.)]\s*/, '').replace(/^[-*•]\s*/, '');
+        const parts = cleaned.split(/\s*[-–|]\s*|\s*[,]\s*/);
+        const name = parts[0].trim();
+        if (!name) return null;
+        const emailMatch = line.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i);
+        const phoneMatch = line.match(/\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}/);
+        return {
+          name,
+          parent_emails: emailMatch ? [emailMatch[0]] : [],
+          parent_phones: phoneMatch ? [phoneMatch[0]] : [],
+          parent_guardian_names: []
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const handleProcess = async () => {
+    if (!rosterText.trim()) return;
+    setIsProcessing(true);
+    let data: any[] = [];
+    try {
+      data = await magicImport(rosterText);
+      if (!data || data.length === 0) throw new Error('AI returned empty');
+    } catch (aiError) {
+      console.warn('AI import unavailable, using line parser:', aiError);
+      data = parseRosterManually(rosterText);
+      if (data.length === 0) {
+        toast.error('No names found. Put each student on a separate line.');
+        setIsProcessing(false);
+        return;
+      }
+      toast.info(`Simple import: ${data.length} students found.`, { duration: 3000 });
+    }
+    try {
+      const existingStudents: Student[] = students;
+
+      const foundMatches: { imported: any, existing: any }[] = [];
+      const foundNew: any[] = [];
+
+      data.forEach((importedStudent: any) => {
+        const importedName = importedStudent.name.trim();
+        const match = existingStudents.find(s => {
+          const sName = s.name.trim().toLowerCase();
+          const iName = importedName.toLowerCase();
+          if (sName === iName) return true;
+          const sParts = sName.split(' ');
+          const iParts = iName.split(' ');
+          const sFirstName = sParts[0];
+          const iFirstName = iParts[0];
+          if (sFirstName !== iFirstName) return false;
+          const sLastName = sParts.slice(1).join(' ');
+          const iLastName = iParts.slice(1).join(' ');
+          if (!sLastName || !iLastName) return true;
+          if (sLastName[0] === iLastName[0]) return true;
+          return false;
+        });
+        if (match) {
+          foundMatches.push({ imported: importedStudent, existing: match });
+        } else {
+          foundNew.push(importedStudent);
+        }
+      });
+
+      setMatches(foundMatches);
+      setNewStudents(foundNew);
+      setStep('preview');
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('Failed to parse text.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    setIsProcessing(true);
+    try {
+      let updatedCount = 0;
+      let addedCount = 0;
+
+      const extractString = (val: any) => {
+        if (!val) return val;
+        if (typeof val === 'object') return val.value || val.label || '';
+        return String(val);
+      };
+
+      // Update existing matched students
+      for (const match of matches) {
+        const { imported, existing } = match;
+        const updatedEmails = [...(existing.parent_emails || [])];
+        if (imported.parent_emails) {
+          imported.parent_emails.forEach((e: any) => {
+            if (!updatedEmails.some(ex => (typeof ex === 'object' ? ex.value : ex) === (typeof e === 'object' ? e.value : e))) {
+              updatedEmails.push(e);
+            }
+          });
+        }
+        const updatedPhones = [...(existing.parent_phones || [])];
+        if (imported.parent_phones) {
+          imported.parent_phones.forEach((p: any) => {
+            if (!updatedPhones.some(ex => (typeof ex === 'object' ? ex.value : ex) === (typeof p === 'object' ? p.value : p))) {
+              updatedPhones.push(p);
+            }
+          });
+        }
+        await updateStudent(existing.id, {
+          parent_emails: updatedEmails,
+          parent_phones: updatedPhones,
+          class_id: defaultClassPeriod,
+          class_period: defaultClassPeriod,
+        });
+        updatedCount++;
+      }
+
+      // Add brand-new students
+      for (const s of newStudents) {
+        await addStudent({
+          name: extractString(s.name),
+          class_id: defaultClassPeriod,
+          class_period: defaultClassPeriod,
+          parent_guardian_names: Array.isArray(s.parent_guardian_names) ? s.parent_guardian_names.map(extractString) : [],
+          parent_emails: Array.isArray(s.parent_emails) ? s.parent_emails : [],
+          parent_phones: Array.isArray(s.parent_phones) ? s.parent_phones : [],
+          user_id: 'local',
+          created_at: new Date().toISOString(),
+        } as Omit<Student, 'id'>);
+        addedCount++;
+      }
+
+      setImportSummary({ updated: updatedCount, added: addedCount });
+      setStep('success');
+      toast.success('Import completed successfully!');
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('An error occurred during import.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+      <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6">
+        {step === 'input' && (
+          <>
+            <div>
+              <h2 className="text-xl font-bold text-sage-dark">Batch Import Roster</h2>
+              <p className="text-xs text-slate-500 mt-1">Paste names, emails, and phone numbers below. Our AI will extract the details for you.</p>
+            </div>
+
+            <textarea
+              value={rosterText}
+              onChange={(e) => setRosterText(e.target.value)}
+              placeholder="e.g. John Smith - jsmith@email.com&#10;Brianna S. (brianna.s@web.com)..."
+              className="w-full min-h-[240px] p-6 bg-slate-50 border border-slate-100 rounded-3xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm resize-none leading-relaxed"
+            />
+
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Assign to Class Period:</label>
+                <select
+                  value={defaultClassPeriod}
+                  onChange={(e) => setDefaultClassPeriod(e.target.value)}
+                  className="flex-1 sm:w-40 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-600 focus:outline-none"
+                >
+                  {classes.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={handleProcess}
+                disabled={isProcessing || !rosterText.trim()}
+                className="w-full sm:w-auto px-8 py-3.5 bg-slate-400 text-white rounded-[24px] font-bold text-sm uppercase tracking-widest hover:bg-slate-500 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 disabled:opacity-50"
+              >
+                {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Process with AI</>}
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 'preview' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-sage-dark">Review Matches</h2>
+              <button onClick={() => setStep('input')} className="text-xs text-terracotta font-bold hover:underline">
+                Cancel
+              </button>
+            </div>
+
+            {matches.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-700">Matches Found ({matches.length})</h3>
+                <p className="text-xs text-slate-500">These imported students match existing roster entries. Their profiles will be updated.</p>
+                {matches.map((m, i) => (
+                  <div key={i} className="bg-sage/5 p-4 rounded-2xl border border-sage/20 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-sage-dark text-sm">{m.imported.name} <span className="text-slate-400 font-normal text-xs ml-2">(Existing: {m.existing.name})</span></h4>
+                      <div className="flex flex-wrap gap-3 mt-1">
+                        {m.imported.parent_emails && m.imported.parent_emails.map((email: any, idx: number) => {
+                          const emailStr = typeof email === 'object' ? email.value : email;
+                          return emailStr ? <span key={`email-${idx}`} className="text-[9px] text-slate-500 flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> {emailStr}</span> : null;
+                        })}
+                        {m.imported.parent_phones && m.imported.parent_phones.map((phone: any, idx: number) => {
+                          const phoneStr = typeof phone === 'object' ? phone.value : phone;
+                          return phoneStr ? <span key={`phone-${idx}`} className="text-[9px] text-slate-500 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {phoneStr}</span> : null;
+                        })}
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-sage/20 text-sage-dark text-[8px] font-bold uppercase tracking-widest rounded-md">
+                      Update
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {newStudents.length > 0 && (
+              <div className="space-y-3 mt-6">
+                <h3 className="text-sm font-bold text-slate-700">New Students ({newStudents.length})</h3>
+                <p className="text-xs text-slate-500">These students will be added as new entries.</p>
+                {newStudents.map((s, i) => (
+                  <div key={i} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{s.name}</h4>
+                      <div className="flex flex-wrap gap-3 mt-1">
+                        {s.parent_emails && s.parent_emails.map((email: any, idx: number) => {
+                          const emailStr = typeof email === 'object' ? email.value : email;
+                          return emailStr ? <span key={`email-${idx}`} className="text-[9px] text-slate-400 flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> {emailStr}</span> : null;
+                        })}
+                        {s.parent_phones && s.parent_phones.map((phone: any, idx: number) => {
+                          const phoneStr = typeof phone === 'object' ? phone.value : phone;
+                          return phoneStr ? <span key={`phone-${idx}`} className="text-[9px] text-slate-400 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {phoneStr}</span> : null;
+                        })}
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-slate-200 text-slate-600 text-[8px] font-bold uppercase tracking-widest rounded-md">
+                      New
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={handleConfirm}
+              disabled={isProcessing}
+              className="w-full py-5 bg-sage text-white rounded-[24px] font-bold text-sm uppercase tracking-widest hover:bg-sage-dark transition-all shadow-xl shadow-sage/20 flex items-center justify-center gap-3 disabled:opacity-50 mt-6"
+            >
+              {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5" /> Confirm All</>}
+            </button>
+          </div>
+        )}
+
+        {step === 'success' && importSummary && (
+          <div className="space-y-6">
+            <div className="p-6 bg-sage/10 border border-sage/20 rounded-3xl flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 bg-sage/20 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-sage" />
+              </div>
+              <div>
+                <h4 className="text-xl font-bold text-sage-dark">Import Complete</h4>
+                <p className="text-sm text-sage mt-2">
+                  Updated {importSummary.updated} existing students.<br />
+                  Added {importSummary.added} new students.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onImportComplete}
+              className="w-full py-5 bg-sage text-white rounded-[24px] font-bold text-sm uppercase tracking-widest hover:bg-sage-dark transition-all shadow-xl shadow-sage/20 flex items-center justify-center gap-3"
+            >
+              Go to Roster <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
