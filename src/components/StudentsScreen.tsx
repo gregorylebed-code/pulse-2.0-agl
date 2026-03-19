@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2 } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes } from '../lib/gemini';
+import { askAboutStudents } from '../utils/aiAssistant';
 import StudentDetailView from './StudentDetailView';
 import { cn } from '../utils/cn';
 
@@ -51,6 +52,9 @@ export default function StudentsScreen({
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const selectedStudent = students.find(s => s.id === selectedStudentId);
   const studentNotes = notes.filter(n => n.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -106,6 +110,21 @@ export default function StudentsScreen({
       toast.error(`Failed to delete class: ${err.message}`);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleAskAI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiQuery.trim() || isAiLoading) return;
+    setIsAiLoading(true);
+    setAiResponse(null);
+    try {
+      const answer = await askAboutStudents(aiQuery, notes, students);
+      setAiResponse(answer);
+    } catch {
+      setAiResponse('Could not get a response. Please try again.');
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -203,6 +222,58 @@ export default function StudentsScreen({
           placeholder="Search by student name..."
           className="w-full p-4 bg-white border border-slate-100 rounded-full focus:outline-none focus:ring-2 focus:ring-sage/20 text-sm font-medium shadow-inner"
         />
+      </div>
+
+      {/* AI Ask Box */}
+      <div className="px-2">
+        <form onSubmit={handleAskAI} className="relative">
+          <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
+          <input
+            type="text"
+            value={aiQuery}
+            onChange={(e) => setAiQuery(e.target.value)}
+            placeholder="Ask AI about your students..."
+            className="w-full pl-11 pr-12 py-3.5 bg-white border border-orange-100 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-200 text-sm font-medium shadow-sm"
+          />
+          <button
+            type="submit"
+            disabled={!aiQuery.trim() || isAiLoading}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-orange-400 text-white rounded-full hover:bg-orange-500 transition-colors disabled:opacity-40"
+          >
+            {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </button>
+        </form>
+
+        <AnimatePresence>
+          {(aiResponse || isAiLoading) && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mt-3 p-4 bg-orange-50 border border-orange-100 rounded-[20px] relative"
+            >
+              {isAiLoading ? (
+                <div className="flex items-center gap-2 text-orange-400 text-sm font-medium py-1">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Thinking...
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { setAiResponse(null); setAiQuery(''); }}
+                    className="absolute top-3 right-3 p-1 text-orange-300 hover:text-orange-500 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <div className="flex gap-3 pr-6">
+                    <Sparkles className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-slate-700 leading-relaxed font-medium">{aiResponse}</p>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="space-y-10">

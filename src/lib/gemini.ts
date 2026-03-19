@@ -433,3 +433,8 @@ Write a concise, clear summary (3-6 sentences) of what was observed across this 
   }
   return responseText.trim();
 }
+
+export async function queryStudentInsights(prompt: string): Promise<string> {
+  const result = await safeGenerateContent({ prompt });
+  return (result || '').trim();
+}
