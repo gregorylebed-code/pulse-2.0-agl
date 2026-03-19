@@ -50,11 +50,12 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
       });
       if (error) throw error;
 
-      await fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+      // Fire-and-forget — don't let ntfy failure block the submission
+      fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
         method: 'POST',
         headers: { 'Title': `Pulse Feedback — ${category}`, 'Priority': 'default' },
         body: `${message.trim()}\n\nScreen: ${currentView}`,
-      });
+      }).catch(() => {});
 
       setSubmitted(true);
       setTimeout(() => setIsOpen(false), 2200);
