@@ -24,7 +24,7 @@ interface StudentsScreenProps {
   addNote: (note: any) => Promise<any>;
   updateNote: (id: string, updates: any) => Promise<void>;
   updateStudent: (id: string, updates: any) => Promise<void>;
-  addReport: (r: Omit<Report, 'id' | 'created_at'>) => Promise<Report | null>;
+  addReport: (r: Omit<Report, 'id' | 'created_at' | 'user_id'>) => Promise<Report | null>;
   deleteReport: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
   selectedStudentId: string | null;
@@ -70,7 +70,6 @@ export default function StudentsScreen({
     const summary = await summarizeNotes(filteredNotes, length);
     await addReport({
       student_name: selectedStudent.name,
-      user_id: 'local',
       content: summary,
       length,
     });

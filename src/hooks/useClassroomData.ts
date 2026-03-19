@@ -69,16 +69,16 @@ interface ClassroomDataState {
 }
 
 interface ClassroomDataActions {
-  addNote: (note: any) => Promise<Note | null>;
+  addNote: (note: Omit<Note, 'id' | 'created_at' | 'user_id'>) => Promise<Note | null>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
-  addStudent: (student: Omit<Student, 'id'>) => Promise<Student | null>;
+  addStudent: (student: Omit<Student, 'id' | 'created_at' | 'user_id'>) => Promise<Student | null>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'created_at'>) => Promise<Task | null>;
+  addTask: (task: Omit<Task, 'id' | 'created_at' | 'user_id'>) => Promise<Task | null>;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
-  addReport: (report: Omit<Report, 'id' | 'created_at'>) => Promise<Report | null>;
+  addReport: (report: Omit<Report, 'id' | 'created_at' | 'user_id'>) => Promise<Report | null>;
   deleteReport: (id: string) => Promise<void>;
   saveProfile: (profile: Profile) => Promise<void>;
   saveRotationMapping: (mapping: Record<string, string>) => Promise<void>;
@@ -91,7 +91,7 @@ interface ClassroomDataActions {
   refreshData: () => Promise<void>;
 }
 
-export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
+export function useClassroomData(userId: string): ClassroomDataState & ClassroomDataActions {
   const [state, setState] = useState<ClassroomDataState>({
     notes: [],
     students: [],
@@ -127,15 +127,15 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         { data: reportsData },
         { data: settingsData },
       ] = await Promise.all([
-        supabase.from('notes').select('*').order('created_at', { ascending: false }),
-        supabase.from('students').select('*'),
-        supabase.from('indicators').select('*'),
-        supabase.from('comm_types').select('*'),
-        supabase.from('tasks').select('*').order('created_at', { ascending: false }),
-        supabase.from('classes').select('*'),
-        supabase.from('calendar_events').select('*'),
-        supabase.from('reports').select('*').order('created_at', { ascending: false }),
-        supabase.from('settings').select('*'),
+        supabase.from('notes').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('students').select('*').eq('user_id', userId),
+        supabase.from('indicators').select('*').eq('user_id', userId),
+        supabase.from('comm_types').select('*').eq('user_id', userId),
+        supabase.from('tasks').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('classes').select('*').eq('user_id', userId),
+        supabase.from('calendar_events').select('*').eq('user_id', userId),
+        supabase.from('reports').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('settings').select('*').eq('user_id', userId),
       ]);
 
       if (notesError) throw new Error(`Notes: ${notesError.message}`);
@@ -164,7 +164,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       const notesWithNames = (notesData || []).map((note: any) => ({
         ...note,
         student_name: studentMap.get(note.student_id) || 'Unknown',
-        user_id: note.user_id ?? 'local',
+        user_id: note.user_id ?? userId,
         is_checklist: note.is_checklist ?? false,
         checklist_data: note.checklist_data ?? [],
         deadline: note.deadline ?? null,
@@ -210,7 +210,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         error: error instanceof Error ? error.message : 'Unknown error',
       }));
     }
-  }, []);
+  }, [userId]);
 
   const setupSubscriptions = useCallback(() => {
     subscriptionsRef.current.forEach(sub => sub?.unsubscribe?.());
@@ -245,17 +245,20 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       return { ...prev, stats: updated };
     });
     if (updatedStats) {
-      await supabase.from('settings').upsert({ key: 'stats', value: updatedStats });
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'stats', value: updatedStats },
+        { onConflict: 'user_id,key' }
+      );
     }
-  }, []);
+  }, [userId]);
 
   // ─── Notes ─────────────────────────────────────────────────────────────────
 
-  const addNote = useCallback(async (note: any) => {
+  const addNote = useCallback(async (note: Omit<Note, 'id' | 'created_at' | 'user_id'>) => {
     try {
       const { data, error } = await supabase
         .from('notes')
-        .insert([{ ...note, created_at: new Date().toISOString() }])
+        .insert([{ ...note, user_id: userId, created_at: new Date().toISOString() }])
         .select()
         .single();
       if (error) throw error;
@@ -265,7 +268,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         const noteWithName: Note = {
           ...data,
           student_name: student?.name || 'Unknown',
-          user_id: 'local',
+          user_id: userId,
           is_checklist: false,
           checklist_data: [],
           deadline: null,
@@ -278,7 +281,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       console.error('Error adding note:', error);
       return null;
     }
-  }, []);
+  }, [userId, incrementStat]);
 
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     try {
@@ -305,9 +308,13 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
 
   // ─── Students ───────────────────────────────────────────────────────────────
 
-  const addStudent = useCallback(async (student: Omit<Student, 'id'>) => {
+  const addStudent = useCallback(async (student: Omit<Student, 'id' | 'created_at' | 'user_id'>) => {
     try {
-      const { data, error } = await supabase.from('students').insert([student]).select().single();
+      const { data, error } = await supabase
+        .from('students')
+        .insert([{ ...student, user_id: userId, created_at: new Date().toISOString() }])
+        .select()
+        .single();
       if (error) throw error;
       setState(prev => ({ ...prev, students: [...prev.students, data] }));
       return data;
@@ -315,7 +322,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       console.error('Error adding student:', error);
       return null;
     }
-  }, []);
+  }, [userId]);
 
   const updateStudent = useCallback(async (id: string, updates: Partial<Student>) => {
     try {
@@ -355,11 +362,11 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
 
   // ─── Tasks ──────────────────────────────────────────────────────────────────
 
-  const addTask = useCallback(async (task: Omit<Task, 'id' | 'created_at'>) => {
+  const addTask = useCallback(async (task: Omit<Task, 'id' | 'created_at' | 'user_id'>) => {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert([{ ...task, created_at: new Date().toISOString() }])
+        .insert([{ ...task, user_id: userId, created_at: new Date().toISOString() }])
         .select()
         .single();
       if (error) throw error;
@@ -369,7 +376,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       console.error('Error adding task:', error);
       return null;
     }
-  }, []);
+  }, [userId]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
@@ -406,11 +413,11 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
     }
   }, []);
 
-  const addReport = useCallback(async (report: Omit<Report, 'id' | 'created_at'>) => {
+  const addReport = useCallback(async (report: Omit<Report, 'id' | 'created_at' | 'user_id'>) => {
     try {
       const { data, error } = await supabase
         .from('reports')
-        .insert([{ ...report, created_at: new Date().toISOString() }])
+        .insert([{ ...report, user_id: userId, created_at: new Date().toISOString() }])
         .select()
         .single();
       if (error) throw error;
@@ -421,45 +428,57 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       console.error('Error adding report:', error);
       return null;
     }
-  }, [incrementStat]);
+  }, [userId, incrementStat]);
 
   // ─── Settings ───────────────────────────────────────────────────────────────
 
   const saveProfile = useCallback(async (profile: Profile) => {
     try {
-      await supabase.from('settings').upsert({ key: 'profile', value: profile });
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'profile', value: profile },
+        { onConflict: 'user_id,key' }
+      );
       setState(prev => ({ ...prev, profile }));
     } catch (error) {
       console.error('Error saving profile:', error);
     }
-  }, []);
+  }, [userId]);
 
   const saveRotationMapping = useCallback(async (mapping: Record<string, string>) => {
     try {
-      await supabase.from('settings').upsert({ key: 'rotation_mapping', value: mapping });
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'rotation_mapping', value: mapping },
+        { onConflict: 'user_id,key' }
+      );
       setState(prev => ({ ...prev, rotationMapping: mapping }));
     } catch (error) {
       console.error('Error saving rotation mapping:', error);
     }
-  }, []);
+  }, [userId]);
 
   const saveSpecialsNames = useCallback(async (names: Record<string, string>) => {
     try {
-      await supabase.from('settings').upsert({ key: 'specials_names', value: names });
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'specials_names', value: names },
+        { onConflict: 'user_id,key' }
+      );
       setState(prev => ({ ...prev, specialsNames: names }));
     } catch (error) {
       console.error('Error saving specials names:', error);
     }
-  }, []);
+  }, [userId]);
 
   const saveAbbreviations = useCallback(async (abbreviations: Abbreviation[]) => {
     try {
-      await supabase.from('settings').upsert({ key: 'abbreviations', value: abbreviations });
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'abbreviations', value: abbreviations },
+        { onConflict: 'user_id,key' }
+      );
       setState(prev => ({ ...prev, abbreviations }));
     } catch (error) {
       console.error('Error saving abbreviations:', error);
     }
-  }, []);
+  }, [userId]);
 
   // ─── Bulk Updates (delete-all + re-insert) ──────────────────────────────────
 
@@ -468,8 +487,9 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
       const toSave = newIndicators.map(({ icon, ...rest }) => ({
         label: rest.label,
         type: rest.type || 'neutral',
+        user_id: userId,
       }));
-      await supabase.from('indicators').delete().not('id', 'is', null);
+      await supabase.from('indicators').delete().eq('user_id', userId);
       if (toSave.length > 0) {
         await supabase.from('indicators').insert(toSave);
       }
@@ -477,14 +497,15 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
     } catch (error) {
       console.error('Error updating indicators:', error);
     }
-  }, []);
+  }, [userId]);
 
   const updateCommTypes = useCallback(async (newCommTypes: Indicator[]) => {
     try {
       const toSave = newCommTypes.map(({ icon, ...rest }) => ({
         label: rest.label,
+        user_id: userId,
       }));
-      await supabase.from('comm_types').delete().not('id', 'is', null);
+      await supabase.from('comm_types').delete().eq('user_id', userId);
       if (toSave.length > 0) {
         await supabase.from('comm_types').insert(toSave);
       }
@@ -492,32 +513,32 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
     } catch (error) {
       console.error('Error updating comm types:', error);
     }
-  }, []);
+  }, [userId]);
 
   const updateClasses = useCallback(async (newClasses: string[]) => {
     try {
-      await supabase.from('classes').delete().not('id', 'is', null);
+      await supabase.from('classes').delete().eq('user_id', userId);
       if (newClasses.length > 0) {
-        await supabase.from('classes').insert(newClasses.map(name => ({ name })));
+        await supabase.from('classes').insert(newClasses.map(name => ({ name, user_id: userId })));
       }
       setState(prev => ({ ...prev, classes: newClasses }));
     } catch (error) {
       console.error('Error updating classes:', error);
     }
-  }, []);
+  }, [userId]);
 
   const updateCalendarEvents = useCallback(async (newEvents: CalendarEvent[]) => {
     try {
-      await supabase.from('calendar_events').delete().not('id', 'is', null);
+      await supabase.from('calendar_events').delete().eq('user_id', userId);
       if (newEvents.length > 0) {
-        const toSave = newEvents.map(({ id: _id, user_id: _uid, ...rest }) => rest);
+        const toSave = newEvents.map(({ id: _id, user_id: _uid, ...rest }) => ({ ...rest, user_id: userId }));
         await supabase.from('calendar_events').insert(toSave);
       }
       setState(prev => ({ ...prev, calendarEvents: newEvents }));
     } catch (error) {
       console.error('Error updating calendar events:', error);
     }
-  }, []);
+  }, [userId]);
 
   const refreshData = useCallback(async () => {
     await loadAllData();

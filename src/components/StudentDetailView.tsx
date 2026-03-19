@@ -266,7 +266,7 @@ export default function StudentDetailView({
         id: Date.now().toString(36) + Math.random().toString(36).substr(2),
         content: expandedContent,
         student_name: student.name,
-        user_id: 'local',
+        user_id: '',
         tags: finalTags,
         is_parent_communication: isParentComm,
         parent_communication_type: commType,

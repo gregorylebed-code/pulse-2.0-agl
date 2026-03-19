@@ -11,9 +11,10 @@ interface ImportScreenProps {
   students: Student[];
   addStudent: (s: Omit<Student, 'id'>) => Promise<Student | null>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
+  userId: string;
 }
 
-export default function ImportScreen({ onImportComplete, classes, students, addStudent, updateStudent }: ImportScreenProps) {
+export default function ImportScreen({ onImportComplete, classes, students, addStudent, updateStudent, userId }: ImportScreenProps) {
   const [rosterText, setRosterText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [matches, setMatches] = useState<{ imported: any, existing: any }[]>([]);
@@ -154,7 +155,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
           parent_guardian_names: Array.isArray(s.parent_guardian_names) ? s.parent_guardian_names.map(extractString) : [],
           parent_emails: Array.isArray(s.parent_emails) ? s.parent_emails : [],
           parent_phones: Array.isArray(s.parent_phones) ? s.parent_phones : [],
-          user_id: 'local',
+          user_id: userId,
           created_at: new Date().toISOString(),
         } as Omit<Student, 'id'>);
         addedCount++;

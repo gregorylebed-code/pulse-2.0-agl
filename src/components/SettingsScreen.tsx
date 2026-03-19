@@ -6,7 +6,8 @@ import {
   User, MessageCircle, Shield, Sparkles, Users2, Folder, TrendingUp, Calendar,
   School, FileInput, MessageSquare, Trash2, Plus, X, Loader2, CheckCircle2,
   GripVertical, CalendarX, Edit2, ChevronDown, Upload, ArrowRight, Coffee,
-  Smile, Meh, Frown, Activity, AlertCircle, Users, Clock, Mail, Phone, ChevronRight
+  Smile, Meh, Frown, Activity, AlertCircle, Users, Clock, Mail, Phone, ChevronRight,
+  LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, CalendarEvent } from '../types';
@@ -114,6 +115,9 @@ interface SettingsScreenProps {
   saveAbbreviations: (val: Abbreviation[]) => Promise<void>;
   notes: Note[];
   stats: { notes_created: number; reports_generated: number };
+  userId: string;
+  userEmail: string;
+  onSignOut: () => Promise<any>;
 }
 
 export default function SettingsScreen({
@@ -145,6 +149,9 @@ export default function SettingsScreen({
   saveAbbreviations,
   notes,
   stats,
+  userId,
+  userEmail,
+  onSignOut,
 }: SettingsScreenProps) {
   const [view, setView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
   const [newIndicator, setNewIndicator] = useState('');
@@ -305,7 +312,7 @@ export default function SettingsScreen({
         name: newStudentName.trim(),
         class_id: newStudentSection,
         class_period: newStudentSection,
-        user_id: 'local',
+        user_id: userId,
         created_at: new Date().toISOString(),
         parent_guardian_names: [],
         parent_emails: [],
@@ -402,7 +409,7 @@ export default function SettingsScreen({
       type: newIndicatorType,
       icon_name: iconName,
       category: 'behavior',
-      user_id: 'local',
+      user_id: userId,
       created_at: new Date().toISOString()
     };
     const updatedIndicators = [...indicators, { ...newInd, icon: getIconForName(iconName, newIndicatorType) }];
@@ -428,7 +435,7 @@ export default function SettingsScreen({
       icon_name: 'MessageSquare',
       category: 'communication',
       type: 'neutral',
-      user_id: 'local',
+      user_id: userId,
       created_at: new Date().toISOString()
     };
     setCommTypes([...commTypes, { ...newC, icon: <MessageSquare className="w-4 h-4" /> }]);
@@ -566,6 +573,20 @@ export default function SettingsScreen({
             exit={{ opacity: 0, scale: 0.95 }}
             className="space-y-8 max-w-3xl mx-auto"
           >
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
+              <h3 className="text-[13px] font-black text-slate-400 uppercase tracking-widest">Account</h3>
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
+                <p className="text-sm font-bold text-slate-700">{userEmail}</p>
+              </div>
+              <button
+                onClick={async () => { await onSignOut(); }}
+                className="flex items-center gap-2 text-sm font-black text-red-400 hover:text-red-600 transition-colors"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
+
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
               <h3 className="text-[13px] font-black text-slate-400 ml-1">Account</h3>
               <div className="space-y-1">
@@ -1207,7 +1228,7 @@ export default function SettingsScreen({
                               const eventsWithIds = futureEvents.map((event: any) => ({
                                 ...event,
                                 id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                                user_id: 'local',
+                                user_id: userId,
                                 created_at: new Date().toISOString(),
                                 selected: false
                               }));
@@ -1265,7 +1286,7 @@ export default function SettingsScreen({
                               const eventsWithIds = futureEvents.map((event: any) => ({
                                 ...event,
                                 id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                                user_id: 'local',
+                                user_id: userId,
                                 created_at: new Date().toISOString(),
                                 selected: false
                               }));
@@ -1615,7 +1636,7 @@ export default function SettingsScreen({
               <span className="text-[11px] font-bold">Back to Settings</span>
             </button>
 
-            <ImportScreen onImportComplete={() => { onImportComplete(); setView('main'); }} classes={classes} students={students} addStudent={addStudent} updateStudent={updateStudent} />
+            <ImportScreen onImportComplete={() => { onImportComplete(); setView('main'); }} classes={classes} students={students} addStudent={addStudent} updateStudent={updateStudent} userId={userId} />
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
               <div>

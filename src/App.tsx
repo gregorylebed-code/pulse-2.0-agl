@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { useClassroomData } from './hooks/useClassroomData';
+import { useAuth, signOut } from './lib/auth';
+import AuthScreen from './components/AuthScreen';
+import { migrateLocalDataToUser } from './utils/migrateLocalData';
 import PulseScreen from './components/PulseScreen';
 import SummaryView from './components/SummaryView';
 import FeedbackModal from './components/FeedbackModal';
@@ -22,7 +25,7 @@ const QUOTES = [
   "Every child is one caring adult away from being a success story."
 ];
 
-export default function App() {
+function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: string }) {
   const {
     notes, students, indicators, commTypes, classes, calendarEvents,
     tasks, reports, profile, rotationMapping, specialsNames,
@@ -33,7 +36,7 @@ export default function App() {
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
     updateCalendarEvents, refreshData, stats,
-  } = useClassroomData();
+  } = useClassroomData(userId);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
     (localStorage.getItem('cp_theme') as 'light' | 'dark') || 'light'
@@ -55,6 +58,10 @@ export default function App() {
 
   const userName = profile.userName;
   const schoolName = profile.schoolName;
+
+  useEffect(() => {
+    migrateLocalDataToUser(userId).then(() => refreshData());
+  }, [userId]);
 
   useEffect(() => {
     const handleFallback = () => {
@@ -206,6 +213,9 @@ export default function App() {
                 abbreviations={abbreviations} saveAbbreviations={saveAbbreviations}
                 notes={notes}
                 stats={stats}
+                userId={userId}
+                userEmail={userEmail}
+                onSignOut={signOut as () => Promise<any>}
               />
             </motion.div>
           )}
@@ -238,4 +248,22 @@ export default function App() {
       )}
     </div>
   );
+}
+
+export default function App() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-4 border-sage border-t-transparent animate-spin" />
+          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return <AuthScreen />;
+  return <AuthenticatedApp userId={user.id} userEmail={user.email ?? ''} />;
 }
