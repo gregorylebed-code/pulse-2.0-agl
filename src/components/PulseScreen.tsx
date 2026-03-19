@@ -566,6 +566,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             ref={noteInputRef}
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
+            onFocus={() => setTimeout(() => noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
             placeholder={noteMode === 'class' ? "Type or record a note about the class..." : "Type or record a note about the student..."}
             className="w-full min-h-[100px] p-8 py-5 duration-300 bg-white border border-slate-100 rounded-[32px] focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-base shadow-inner resize-none leading-relaxed font-medium"
           />

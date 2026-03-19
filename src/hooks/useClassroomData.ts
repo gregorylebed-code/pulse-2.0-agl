@@ -237,12 +237,16 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
 
   // ─── Stats ──────────────────────────────────────────────────────────────────
 
-  const incrementStat = useCallback((field: keyof Stats) => {
+  const incrementStat = useCallback(async (field: keyof Stats) => {
+    let updatedStats: Stats | null = null;
     setState(prev => {
       const updated = { ...prev.stats, [field]: (prev.stats[field] ?? 0) + 1 };
-      supabase.from('settings').upsert({ key: 'stats', value: updated }).then(() => {});
+      updatedStats = updated;
       return { ...prev, stats: updated };
     });
+    if (updatedStats) {
+      await supabase.from('settings').upsert({ key: 'stats', value: updatedStats });
+    }
   }, []);
 
   // ─── Notes ─────────────────────────────────────────────────────────────────
@@ -268,7 +272,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         };
         return { ...prev, notes: [noteWithName, ...prev.notes] };
       });
-      incrementStat('notes_created');
+      await incrementStat('notes_created');
       return data;
     } catch (error) {
       console.error('Error adding note:', error);
@@ -411,7 +415,7 @@ export function useClassroomData(): ClassroomDataState & ClassroomDataActions {
         .single();
       if (error) throw error;
       setState(prev => ({ ...prev, reports: [data, ...prev.reports] }));
-      incrementStat('reports_generated');
+      await incrementStat('reports_generated');
       return data;
     } catch (error) {
       console.error('Error adding report:', error);
