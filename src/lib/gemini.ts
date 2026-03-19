@@ -1,4 +1,4 @@
-import { Note } from "../types";
+import { Note, SELTopic, SELLesson } from "../types";
 
 // @ts-ignore
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
@@ -174,42 +174,84 @@ Return a JSON object:
   }
 }
 
-export async function summarizeNotes(notes: Note[], length: 'Quick Pulse' | 'Standard' | 'Detailed' = 'Standard') {
-  const notesText = notes.map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name}: ${n.content}`).join('\n');
-
-  const toneRules = `
-TONE AND FORMAT RULES:
-- 8th Grade Reading Level: Use simple, direct language. No academic jargon like 'demonstrates,' 'interpersonal skills,' or 'prosocial.'
-- South Jersey Teacher Vibe: Write it like a warm, supportive teacher talking to a parent over coffee. Use phrases like "He's doing great with..." or "We're working on...".
-- Format: Keep the Glow, Grow, Goal structure, but make the headers bold (e.g., **Glow:**).
-- Brevity: Keep each section to 2-3 sentences max.
-- Trend Analysis: Please look at the existing notes and compare them to previous observations to identify any repeating patterns or improvements.
-`;
-
-  let lengthInstruction = "";
-  if (length === 'Quick Pulse') {
-    lengthInstruction = "Make this extra brief, maybe just one sentence per section.";
-  } else if (length === 'Detailed') {
-    lengthInstruction = "You can add a warm opening and closing sentence, but strict 2-3 sentences per section still applies.";
-  }
-
-  const prompt = `Summarize these student observations.\n${toneRules}\n${lengthInstruction}\n\nNotes:\n${notesText}`;
-  return await callGroq(prompt, false);
+export interface ReportData {
+  opening: string;
+  glow: string;
+  grow: string;
+  goal: string;
+  closing: string;
 }
 
-export async function refineReport(currentContent: string, instructions: string) {
-  const prompt = `Here is a student progress report:
+function parseReportJson(raw: string): ReportData | null {
+  try {
+    const parsed = JSON.parse(raw);
+    const { opening, glow, grow, goal, closing } = parsed;
+    if (!opening || !glow || !grow || !goal || !closing) return null;
+    return { opening, glow, grow, goal, closing };
+  } catch {
+    return null;
+  }
+}
 
-"${currentContent}"
+export async function summarizeNotes(notes: Note[], length: 'Quick Pulse' | 'Standard' | 'Detailed' = 'Standard'): Promise<ReportData | null> {
+  const notesText = notes.map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name}: ${n.content}`).join('\n');
+  const studentFirstName = notes[0]?.student_name?.split(' ')[0] || 'your child';
+
+  let lengthInstruction = "Keep each section to 2-3 sentences.";
+  if (length === 'Quick Pulse') {
+    lengthInstruction = "Keep each section to 1 sentence only — very brief.";
+  } else if (length === 'Detailed') {
+    lengthInstruction = "You can write up to 4 sentences per section.";
+  }
+
+  const prompt = `You are a warm, supportive teacher writing a parent communication letter about a student's recent progress in school.
+
+TONE RULES:
+- 8th Grade Reading Level: Use simple, direct language. No academic jargon like 'demonstrates,' 'interpersonal skills,' or 'prosocial.'
+- South Jersey Teacher Vibe: Write like you're talking to a parent over coffee. Use phrases like "He's been doing great with..." or "We're working on...".
+- Trend Analysis: Look at the notes as a whole and identify any patterns or improvements over time.
+- ${lengthInstruction}
+
+Use the Glow / Grow / Goal framework:
+- Glow: a genuine strength or positive observation
+- Grow: one area to work on, framed kindly
+- Goal: a concrete, encouraging next step
+
+Return ONLY valid JSON — no markdown, no extra commentary:
+{
+  "opening": "A warm 1-2 sentence opener addressing the family (e.g. 'Dear ${studentFirstName}\\'s family, I wanted to reach out and share how things have been going in class lately.')",
+  "glow": "The Glow section text only — no label or header.",
+  "grow": "The Grow section text only — no label or header.",
+  "goal": "The Goal section text only — no label or header.",
+  "closing": "A warm 1 sentence closing (e.g. 'Thank you for your continued support — it truly makes a difference.')"
+}
+
+Notes:
+${notesText}`;
+
+  const raw = await callGroq(prompt, true);
+  return parseReportJson(raw);
+}
+
+export async function refineReport(current: ReportData, instructions: string): Promise<ReportData | null> {
+  const prompt = `Here is a student progress report structured as a parent letter with Glow / Grow / Goal sections:
+
+Opening: "${current.opening}"
+Glow: "${current.glow}"
+Grow: "${current.grow}"
+Goal: "${current.goal}"
+Closing: "${current.closing}"
 
 The teacher wants to refine this report with the following instructions:
 "${instructions}"
 
 Please rewrite the report based on these instructions while maintaining the Glow, Grow, Goal structure and the South Jersey Teacher Vibe (8th grade reading level, warm, supportive, no jargon).
 
-IMPORTANT: Return ONLY the revised report text. Do not include any introduction, explanation, or commentary such as "Here is a revised version..." — the output will be copied directly into a parent email.`;
+Return ONLY valid JSON — no markdown, no extra commentary:
+{"opening":"...","glow":"...","grow":"...","goal":"...","closing":"..."}`;
 
-  return await callGroq(prompt, false);
+  const raw = await callGroq(prompt, true);
+  return parseReportJson(raw);
 }
 
 export async function magicImport(rosterText: string) {
@@ -314,4 +356,65 @@ Write a concise, clear summary (3-6 sentences) of what was observed across this 
 export async function queryStudentInsights(prompt: string): Promise<string> {
   const result = await callGroq(prompt, false);
   return (result || '').trim();
+}
+
+export async function suggestSELTopics(notes: Note[], deliveredTitles: string[]): Promise<SELTopic[]> {
+  const notesText = notes.map(n => n.content).join('\n- ');
+  const avoidText = deliveredTitles.length > 0
+    ? `Previously delivered lessons (do NOT suggest similar topics): ${deliveredTitles.join(', ')}`
+    : 'No previous lessons — all topics are available.';
+
+  const prompt = `You are an SEL specialist reviewing anonymized classroom observation notes.
+
+Observations (student names removed):
+- ${notesText}
+
+${avoidText}
+
+Identify 3 SEL lesson topics that would benefit this class based on recurring patterns you see across multiple observations. If you only see 1-2 notes, still suggest relevant topics based on what you observe.
+
+RULES:
+- Focus on whole-class dynamics and teachable moments, not individual incidents
+- Lessons must require only standard classroom supplies (paper, pencil, whiteboard — no special equipment)
+- Be specific: "Managing frustration when work feels hard" beats "Emotions"
+- One topic can celebrate something positive if you see it
+
+Return JSON:
+{"topics":[{"title":"Short lesson title (6 words max)","theme":"One SEL theme word (Empathy, Conflict, Focus, Belonging, Respect, Kindness, etc.)","rationale":"One sentence explaining why this fits the observations"}]}`;
+
+  const raw = await callGroq(prompt, true);
+  try {
+    const parsed = JSON.parse(raw);
+    const topics = Array.isArray(parsed.topics) ? parsed.topics : Array.isArray(parsed) ? parsed : [];
+    return topics.slice(0, 3) as SELTopic[];
+  } catch {
+    return [];
+  }
+}
+
+export async function generateSELLesson(topic: SELTopic): Promise<SELLesson | null> {
+  const prompt = `Generate a 15-minute SEL micro-lesson for an elementary/middle school classroom.
+
+Topic: "${topic.title}"
+Theme: ${topic.theme}
+
+STRICT REQUIREMENTS:
+- Total time: exactly 15 minutes (3-minute opener + 10-minute activity + 2-minute exit ticket)
+- Materials: standard classroom supplies ONLY (paper, pencil, whiteboard, sticky notes — no special equipment)
+- Language appropriate for K-8 students
+- Easy for one teacher to run with zero prep
+- Practical and immediately usable
+
+Return JSON:
+{"materials":["item1","item2"],"opener":"Detailed 3-minute warm-up or discussion starter","activity":"Step-by-step 10-minute main activity","exitTicket":"2-minute reflection or exit ticket description"}`;
+
+  const raw = await callGroq(prompt, true);
+  try {
+    const parsed = JSON.parse(raw);
+    const { materials, opener, activity, exitTicket } = parsed;
+    if (!opener || !activity || !exitTicket) return null;
+    return { materials: Array.isArray(materials) ? materials : [], opener, activity, exitTicket };
+  } catch {
+    return null;
+  }
 }

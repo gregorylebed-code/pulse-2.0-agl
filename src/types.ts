@@ -73,3 +73,22 @@ export interface CalendarEvent {
   user_id: string;
   created_at: string;
 }
+
+export interface SELTopic {
+  title: string;
+  theme: string;
+  rationale: string;
+}
+
+export interface SELLesson {
+  materials: string[];
+  opener: string;
+  activity: string;
+  exitTicket: string;
+}
+
+export interface DeliveredLesson {
+  className: string;
+  title: string;
+  date: string;
+}

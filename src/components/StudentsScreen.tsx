@@ -4,7 +4,7 @@ import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff } from 'lu
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
-import { summarizeNotes } from '../lib/gemini';
+import { summarizeNotes, ReportData } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
 import StudentDetailView from './StudentDetailView';
 import { cn } from '../utils/cn';
@@ -65,15 +65,18 @@ export default function StudentsScreen({
   const studentReports = reports.filter(r => r.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
 
-  const handleGenerateReport = async (length: 'Quick Pulse' | 'Standard' | 'Detailed', filteredNotes: Note[]) => {
+  const reportToText = (report: ReportData): string =>
+    [report.opening, '\nGlow:\n' + report.glow, '\nGrow:\n' + report.grow, '\nGoal:\n' + report.goal, '\n' + report.closing].join('\n');
+
+  const handleGenerateReport = async (length: 'Quick Pulse' | 'Standard' | 'Detailed', filteredNotes: Note[]): Promise<ReportData | undefined> => {
     if (!selectedStudent) return;
-    const summary = await summarizeNotes(filteredNotes, length);
+    const report = await summarizeNotes(filteredNotes, length);
     await addReport({
       student_name: selectedStudent.name,
-      content: summary,
+      content: report ? reportToText(report) : '',
       length,
     });
-    return summary;
+    return report ?? undefined;
   };
 
   const handleDeleteAll = async () => {
@@ -256,7 +259,7 @@ export default function StudentsScreen({
             type="text"
             value={aiQuery}
             onChange={(e) => setAiQuery(e.target.value)}
-            placeholder="Ask AI about your students..."
+            placeholder='Ask AI about your students… e.g. "Who needs the most support?"'
             className="w-full pl-11 pr-24 py-3.5 bg-white border border-orange-100 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-200 text-sm font-medium shadow-sm"
           />
           <button
@@ -344,11 +347,14 @@ export default function StudentsScreen({
         ))}
 
         {students.length === 0 && (
-          <div className="text-center py-20 space-y-4">
+          <div className="text-center py-20 space-y-3 px-4">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
               <Users className="w-8 h-8 text-slate-200" />
             </div>
-            <p className="text-sm text-slate-400 font-medium">No students in your roster yet.</p>
+            <p className="text-sm font-black text-slate-400">Your roster is empty.</p>
+            <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
+              Go to <span className="font-bold text-sage">Settings → Roster Management</span> to add students manually, or use <span className="font-bold text-sage">Data Management</span> to import a class list.
+            </p>
           </div>
         )}
       </div>

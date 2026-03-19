@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Note, Student, CalendarEvent, Report } from '../types';
+import { Note, Student, CalendarEvent, Report, DeliveredLesson } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 
 interface Task {
@@ -64,6 +64,7 @@ interface ClassroomDataState {
   specialsNames: Record<string, string>;
   abbreviations: Abbreviation[];
   stats: Stats;
+  lessonHistory: DeliveredLesson[];
   loading: boolean;
   error: string | null;
 }
@@ -88,6 +89,7 @@ interface ClassroomDataActions {
   updateCommTypes: (commTypes: Indicator[]) => Promise<void>;
   updateClasses: (classes: string[]) => Promise<void>;
   updateCalendarEvents: (events: CalendarEvent[]) => Promise<void>;
+  saveLessonHistory: (history: DeliveredLesson[]) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -106,6 +108,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     specialsNames: DEFAULT_SPECIALS,
     abbreviations: [],
     stats: { notes_created: 0, reports_generated: 0 },
+    lessonHistory: [],
     loading: true,
     error: null,
   });
@@ -157,6 +160,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         ?? (localStorage.getItem('specialsNames') ? JSON.parse(localStorage.getItem('specialsNames')!) : DEFAULT_SPECIALS);
       const abbreviations: Abbreviation[] = settingsMap['abbreviations'] ?? [];
       const stats: Stats = settingsMap['stats'] ?? { notes_created: 0, reports_generated: 0 };
+      const lessonHistory: DeliveredLesson[] = settingsMap['lesson_history'] ?? [];
 
       // Map student IDs to names for note display
       const studentMap = new Map((studentsData || []).map((s: any) => [s.id, s.name]));
@@ -198,6 +202,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         specialsNames,
         abbreviations,
         stats,
+        lessonHistory,
         loading: false,
       }));
 
@@ -480,6 +485,18 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, [userId]);
 
+  const saveLessonHistory = useCallback(async (history: DeliveredLesson[]) => {
+    try {
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'lesson_history', value: history },
+        { onConflict: 'user_id,key' }
+      );
+      setState(prev => ({ ...prev, lessonHistory: history }));
+    } catch (error) {
+      console.error('Error saving lesson history:', error);
+    }
+  }, [userId]);
+
   // ─── Bulk Updates (delete-all + re-insert) ──────────────────────────────────
 
   const updateIndicators = useCallback(async (newIndicators: Indicator[]) => {
@@ -565,6 +582,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     updateCommTypes,
     updateClasses,
     updateCalendarEvents,
+    saveLessonHistory,
     refreshData,
   };
 }

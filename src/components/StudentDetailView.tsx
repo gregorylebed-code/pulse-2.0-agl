@@ -12,7 +12,7 @@ import { jsPDF } from 'jspdf';
 import { Note, Student, Report, CalendarEvent } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
-import { categorizeNote, refineReport, parseVoiceLog } from '../lib/gemini';
+import { categorizeNote, refineReport, parseVoiceLog, ReportData } from '../lib/gemini';
 import { cn } from '../utils/cn';
 
 
@@ -53,7 +53,7 @@ interface StudentDetailViewProps {
   commTypes: any[];
   calendarEvents: CalendarEvent[];
   onBack: () => void;
-  onGenerateReport: (length: 'Quick Pulse' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<string | undefined>;
+  onGenerateReport: (length: 'Quick Pulse' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<ReportData | undefined>;
   onNoteUpdate: () => void;
   addNote: (note: any) => Promise<any>;
   updateNote: (id: string, updates: any) => Promise<void>;
@@ -89,7 +89,9 @@ export default function StudentDetailView({
   const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdatingContact, setIsUpdatingContact] = useState(false);
-  const [currentReport, setCurrentReport] = useState<string | null>(null);
+  const [currentReport, setCurrentReport] = useState<ReportData | null>(null);
+  const reportToText = (report: ReportData): string =>
+    [report.opening, '\nGlow:\n' + report.glow, '\nGrow:\n' + report.grow, '\nGoal:\n' + report.goal, '\n' + report.closing].join('\n');
   const [refineInstructions, setRefineInstructions] = useState('');
   const [isRefining, setIsRefining] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -483,7 +485,7 @@ export default function StudentDetailView({
     if (!currentReport) return;
     if (window.confirm("Are you sure you want to archive this summary for " + student.name + " AND clear their current notes?")) {
       try {
-        const archived = { id: Date.now().toString(), content: currentReport, date: new Date().toISOString() };
+        const archived = { id: Date.now().toString(), content: reportToText(currentReport), date: new Date().toISOString() };
         await updateStudent(student.id, {
           archivedSummaries: [...(student.archivedSummaries || []), archived]
         });
@@ -505,7 +507,7 @@ export default function StudentDetailView({
   const archiveAndKeepNotes = async () => {
     if (!currentReport) return;
     try {
-      const archived = { id: Date.now().toString(), content: currentReport, date: new Date().toISOString() };
+      const archived = { id: Date.now().toString(), content: reportToText(currentReport), date: new Date().toISOString() };
       await updateStudent(student.id, {
         archivedSummaries: [...(student.archivedSummaries || []), archived]
       });
@@ -521,12 +523,12 @@ export default function StudentDetailView({
 
   const handleEmailReport = () => {
     if (!currentReport) return;
-    triggerEmail(currentReport);
+    triggerEmail(reportToText(currentReport));
   };
 
   const handleCopyReport = () => {
     if (!currentReport) return;
-    navigator.clipboard.writeText(currentReport);
+    navigator.clipboard.writeText(reportToText(currentReport));
     toast.success('Copied!');
   };
 
@@ -541,13 +543,12 @@ export default function StudentDetailView({
 
   const handleTextReport = () => {
     if (!currentReport) return;
-    const body = currentReport;
-    window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(body)}`;
+    window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(reportToText(currentReport))}`;
   };
 
   const handleCopyParentSquare = () => {
     if (!currentReport) return;
-    navigator.clipboard.writeText(currentReport);
+    navigator.clipboard.writeText(reportToText(currentReport));
     alert('Report copied for ParentSquare!');
   };
 
@@ -1127,7 +1128,22 @@ export default function StudentDetailView({
                 <span className="text-[10px] font-bold uppercase tracking-widest text-sage">New Summary ({timeRange})</span>
                 <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
               </div>
-              <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap font-medium">{currentReport}</div>
+              <div className="space-y-4">
+                <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.opening}</p>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1.5">Glow</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{currentReport.glow}</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1.5">Grow</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{currentReport.grow}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1.5">Goal</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{currentReport.goal}</p>
+                </div>
+                <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.closing}</p>
+              </div>
 
               {/* Refinement Section */}
               <div className="space-y-3 pt-4 border-t border-slate-50">
@@ -1273,8 +1289,9 @@ export default function StudentDetailView({
 
             <div className="space-y-3 pt-2">
               {!student.archivedSummaries || student.archivedSummaries.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200">
-                  <p className="text-xs text-slate-400 font-medium">No history or archived summaries yet.</p>
+                <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200 px-6 space-y-1.5">
+                  <p className="text-xs font-black text-slate-400">No archived reports yet.</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Generate a report above, then tap <span className="font-bold">Archive</span> to save a snapshot of this student's progress. Archived reports can be emailed, copied, or downloaded as a PDF.</p>
                 </div>
               ) : (
                 student.archivedSummaries.filter((s: any) => !pendingDeleteArchiveIds.has(s.id)).map((s: any) => {

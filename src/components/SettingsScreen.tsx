@@ -809,7 +809,12 @@ export default function SettingsScreen({
                       </button>
                     </div>
                   ))}
-                  {classes.length === 0 && <p className="text-center py-10 text-xs text-slate-400 italic">No classes created.</p>}
+                  {classes.length === 0 && (
+                    <div className="text-center py-8 space-y-1">
+                      <p className="text-xs font-black text-slate-400">No classes yet.</p>
+                      <p className="text-xs text-slate-400 leading-relaxed px-2">Add class periods above (e.g. <span className="font-bold">Homeroom</span>, <span className="font-bold">Period 1</span>, <span className="font-bold">AM</span>). Classes help organize notes and unlock the Class Summary view.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1399,6 +1404,13 @@ export default function SettingsScreen({
                   </div>
                 )}
 
+                {calendarEvents.length === 0 && !draftEvents && (
+                  <div className="pt-4 text-center space-y-1">
+                    <p className="text-xs font-black text-slate-400">No school events added yet.</p>
+                    <p className="text-xs text-slate-400 leading-relaxed">Upload a calendar image or PDF above to automatically import events, or add them manually. Upcoming events will show as a reminder on your home screen.</p>
+                  </div>
+                )}
+
                 {calendarEvents.length > 0 && !draftEvents && (
                   <div className="pt-6 space-y-4">
                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Your Calendar Events</h4>
@@ -1786,7 +1798,10 @@ export default function SettingsScreen({
 
               {/* Existing abbreviations */}
               {abbreviations.length === 0 ? (
-                <p className="text-center text-sm text-slate-400 font-medium py-4">No abbreviations yet. Add one above or let AI suggest some.</p>
+                <div className="text-center py-5 space-y-1">
+                  <p className="text-sm font-black text-slate-400">No shortcuts yet.</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Create quick expansions to speed up note-taking — e.g. <span className="font-bold">hwk</span> → <span className="font-bold">didn't complete homework</span>. Or tap <span className="font-bold text-orange-400">Suggest from My Notes</span> to let AI find common ones automatically.</p>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-xs font-black text-slate-500 uppercase tracking-wide">Active ({abbreviations.length})</p>

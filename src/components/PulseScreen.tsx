@@ -698,6 +698,14 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
       <div className="space-y-4 pb-20">
         <h2 className="text-[13px] font-black text-slate-400 ml-1">Recent Activity</h2>
+        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
+          <div className="text-center py-10 space-y-2 bg-white rounded-[28px] border border-dashed border-slate-200">
+            <p className="text-sm font-black text-slate-400">No observations yet.</p>
+            <p className="text-xs text-slate-400 leading-relaxed px-6">
+              Select a student above, type what you observed, and tap <span className="font-bold">Finalize & Save</span>. Notes will appear here as you add them.
+            </p>
+          </div>
+        )}
         {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, 5).map(note => (
           <div key={note.id} className={cn(
             "bg-white p-6 rounded-[32px] card-shadow border flex items-start gap-4",

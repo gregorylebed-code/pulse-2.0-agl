@@ -35,7 +35,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     addReport, deleteReport,
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
-    updateCalendarEvents, refreshData, stats,
+    updateCalendarEvents, refreshData, stats, lessonHistory, saveLessonHistory,
   } = useClassroomData(userId);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
@@ -174,7 +174,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   abbreviations={abbreviations}
                 />
               ) : (
-                <SummaryView notes={notes} students={students} classes={classes} />
+                <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} />
               )}
             </motion.div>
           )}
