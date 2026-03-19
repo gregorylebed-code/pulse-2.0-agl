@@ -81,6 +81,8 @@ export default function StudentDetailView({
   deleteReport,
   abbreviations,
 }: StudentDetailViewProps) {
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, []);
+
   const [reportLength, setReportLength] = useState<'Quick Pulse' | 'Standard' | 'Detailed'>('Standard');
   const [timeRange, setTimeRange] = useState('Last 7 Days');
   const [customStartDate, setCustomStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0]);
@@ -694,86 +696,55 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-[40px] card-shadow border border-slate-100 flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[13px] font-black text-slate-400 ml-1">Parent Contact Info</h3>
+      <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Parent Contact</h3>
           <button
             type="button"
             onClick={handleSaveContact}
             disabled={isUpdatingContact}
-            className="text-sm font-black text-sage hover:text-sage-dark disabled:opacity-50"
+            className="text-[11px] font-black text-sage hover:text-sage-dark disabled:opacity-50"
           >
-            {isUpdatingContact ? 'Saving...' : 'Save Info'}
+            {isUpdatingContact ? 'Saving...' : 'Save'}
           </button>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="parent_name" className="text-[13px] font-black text-slate-400 ml-1">Parent Name</label>
-            <input
-              id="parent_name"
-              name="parent_name"
-              type="text"
-              value={parentName}
-              onChange={(e) => setParentName(e.target.value)}
-              placeholder="Name..."
-              autoComplete="off"
-              data-1p-ignore
-              data-lpignore="true"
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:outline-none focus:border-sage"
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="parent_email" className="text-[13px] font-black text-slate-400 ml-1">Email</label>
-            <input
-              id="parent_email"
-              name="parent_email"
-              type="email"
-              value={parentEmail}
-              onChange={(e) => setParentEmail(e.target.value)}
-              placeholder="Email..."
-              autoComplete="off"
-              data-1p-ignore
-              data-lpignore="true"
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:outline-none focus:border-sage"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="parent_phone" className="text-[13px] font-black text-slate-400 ml-1">Phone</label>
-              <button
-                type="button"
-                onClick={() => {
-                  const textToCopy = currentReport || (student.archivedSummaries && student.archivedSummaries.length > 0
-                    ? student.archivedSummaries[student.archivedSummaries.length - 1].content
-                    : null);
-
-                  if (textToCopy) {
-                    navigator.clipboard.writeText(textToCopy);
-                    const isArchive = !currentReport;
-                    toast.success(isArchive ? 'Latest archived summary copied!' : 'AI Report copied!');
-                  } else {
-                    toast.error('No report to copy!');
-                  }
-                }}
-                className="text-[11px] font-black text-sage hover:text-sage-dark flex items-center gap-1"
-              >
-                <Copy className="w-2.5 h-2.5" /> Copy for Text
-              </button>
-            </div>
-            <input
-              id="parent_phone"
-              name="parent_phone"
-              type="tel"
-              value={parentPhone}
-              onChange={(e) => setParentPhone(e.target.value)}
-              placeholder="Phone..."
-              autoComplete="off"
-              data-1p-ignore
-              data-lpignore="true"
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-base font-medium focus:outline-none focus:border-sage"
-            />
-          </div>
+        <div className="grid grid-cols-3 gap-2">
+          <input
+            id="parent_name"
+            name="parent_name"
+            type="text"
+            value={parentName}
+            onChange={(e) => setParentName(e.target.value)}
+            placeholder="Parent name..."
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          />
+          <input
+            id="parent_email"
+            name="parent_email"
+            type="email"
+            value={parentEmail}
+            onChange={(e) => setParentEmail(e.target.value)}
+            placeholder="Email..."
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          />
+          <input
+            id="parent_phone"
+            name="parent_phone"
+            type="tel"
+            value={parentPhone}
+            onChange={(e) => setParentPhone(e.target.value)}
+            placeholder="Phone..."
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          />
         </div>
       </div>
 
