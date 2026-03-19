@@ -27,6 +27,8 @@ interface StudentsScreenProps {
   addReport: (r: Omit<Report, 'id' | 'created_at'>) => Promise<Report | null>;
   deleteReport: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
+  selectedStudentId: string | null;
+  setSelectedStudentId: (id: string | null) => void;
 }
 
 export default function StudentsScreen({
@@ -46,8 +48,9 @@ export default function StudentsScreen({
   addReport,
   deleteReport,
   abbreviations,
+  selectedStudentId,
+  setSelectedStudentId,
 }: StudentsScreenProps) {
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('All');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

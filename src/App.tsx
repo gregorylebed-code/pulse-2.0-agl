@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { useClassroomData } from './hooks/useClassroomData';
 import PulseScreen from './components/PulseScreen';
@@ -47,6 +47,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'settings'>('pulse');
   const [pulseView, setPulseView] = useState<'log' | 'summary'>('log');
   const [showTasks, setShowTasks] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [tempName, setTempName] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [isUsingBackup, setIsUsingBackup] = useState(false);
@@ -62,6 +63,33 @@ export default function App() {
     };
     window.addEventListener('gemini-fallback-triggered', handleFallback);
     return () => window.removeEventListener('gemini-fallback-triggered', handleFallback);
+  }, []);
+
+  // Keep refs so the popstate handler never has stale closure values
+  const activeTabRef = useRef(activeTab);
+  const pulseViewRef = useRef(pulseView);
+  const selectedStudentIdRef = useRef(selectedStudentId);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => { pulseViewRef.current = pulseView; }, [pulseView]);
+  useEffect(() => { selectedStudentIdRef.current = selectedStudentId; }, [selectedStudentId]);
+
+  // Android back button — navigate one level deeper → shallower instead of closing the app
+  useEffect(() => {
+    history.pushState(null, '');
+    const handlePopState = () => {
+      if (selectedStudentIdRef.current) {
+        setSelectedStudentId(null);
+      } else if (pulseViewRef.current === 'summary') {
+        setPulseView('log');
+      } else if (activeTabRef.current !== 'pulse') {
+        setActiveTab('pulse');
+      } else {
+        return; // already at home — let Android close the app
+      }
+      history.pushState(null, ''); // re-push so the next back still fires popstate
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const saveName = () => {
@@ -153,6 +181,8 @@ export default function App() {
                 deleteNote={deleteNote} addNote={addNote} updateNote={updateNote}
                 updateStudent={updateStudent} addReport={addReport}
                 deleteReport={deleteReport} abbreviations={abbreviations}
+                selectedStudentId={selectedStudentId}
+                setSelectedStudentId={setSelectedStudentId}
               />
             </motion.div>
           )}
