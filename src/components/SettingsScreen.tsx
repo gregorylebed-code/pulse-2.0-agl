@@ -8,8 +8,6 @@ import {
   GripVertical, CalendarX, Edit2, ChevronDown, Upload, ArrowRight, Coffee
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { Note, Student, CalendarEvent } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import {
@@ -18,10 +16,8 @@ import {
 import { migrateFromLocalStorage } from '../utils/migrateFromLocalStorage';
 import { supabase } from '../lib/supabase';
 import ImportScreen from './ImportScreen';
+import { cn } from '../utils/cn';
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 const DEFAULT_BEHAVIOR_BUTTONS = [
   { label: 'Participation', type: 'positive' as const, icon_name: 'Smile' },

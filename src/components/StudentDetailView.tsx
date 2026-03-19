@@ -8,16 +8,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { Note, Student, Report, CalendarEvent } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
 import { categorizeNote, refineReport, parseVoiceLog } from '../lib/gemini';
+import { cn } from '../utils/cn';
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 // Re-exported from App to avoid circular imports — used for comm button display in edit mode
 const DEFAULT_COMM_BUTTONS = [

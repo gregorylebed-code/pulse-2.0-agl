@@ -3,12 +3,8 @@ import { Sparkles, Loader2, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 import { Note, Student } from '../types';
 import { summarizeClassPeriod } from '../lib/gemini';
 import { toast } from 'sonner';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../utils/cn';
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 type Period = 'today' | 'week' | 'lastWeek';
 type ViewMode = 'notes' | 'summary';
