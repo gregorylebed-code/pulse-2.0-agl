@@ -4,7 +4,8 @@ import imageCompression from 'browser-image-compression';
 import {
   ChevronLeft, Edit2, Send, Mic, Image as ImageIcon, Loader2,
   Trash2, Copy, Mail, MessageSquare, CheckCircle2, Archive,
-  X, Sparkles, ClipboardList, FileText, Download
+  X, Sparkles, ClipboardList, FileText, Download,
+  Smile, Meh, Frown, Users, Phone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
@@ -24,8 +25,6 @@ const DEFAULT_COMM_BUTTONS = [
 ];
 
 const getIconForName = (name: string, type: string): React.ReactNode => {
-  // Import inline icons to avoid circular dep with App
-  const { Smile, Meh, Frown, Users, MessageSquare: MsgSq, Mail: MailIcon, Phone: PhoneIcon } = require('lucide-react');
   switch (name) {
     case 'Sparkles': return <Sparkles className="w-4 h-4" />;
     case 'CheckCircle2': return <CheckCircle2 className="w-4 h-4" />;
@@ -34,14 +33,14 @@ const getIconForName = (name: string, type: string): React.ReactNode => {
     case 'Frown': return <Frown className="w-4 h-4 text-red-500" />;
     case 'ParentSquare': return <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[9px] font-black leading-none">PS</span>;
     case 'Users': return <Users className="w-4 h-4 text-blue-500" />;
-    case 'MessageSquare': return <MsgSq className="w-4 h-4 text-blue-500" />;
-    case 'Mail': return <MailIcon className="w-4 h-4 text-blue-500" />;
-    case 'Phone': return <PhoneIcon className="w-4 h-4 text-blue-500" />;
+    case 'MessageSquare': return <MessageSquare className="w-4 h-4 text-blue-500" />;
+    case 'Mail': return <Mail className="w-4 h-4 text-blue-500" />;
+    case 'Phone': return <Phone className="w-4 h-4 text-blue-500" />;
     default:
       if (type === 'positive') return <Smile className="w-4 h-4 text-emerald-600" />;
       if (type === 'growth') return <Frown className="w-4 h-4 text-red-500" />;
       if (type === 'neutral') return <Meh className="w-4 h-4 text-amber-500" />;
-      return <MsgSq className="w-4 h-4 text-blue-500" />;
+      return <MessageSquare className="w-4 h-4 text-blue-500" />;
   }
 };
 
@@ -689,7 +688,7 @@ export default function StudentDetailView({
           )}
           <div className="flex gap-3 mt-1">
             <span className="px-3 py-1 bg-sage/10 text-sage text-[10px] font-bold rounded-lg">
-              Class Period {typeof student.class_id === 'object' ? (student.class_id as any)?.label || (student.class_id as any)?.value : student.class_id}
+              Class Period {student.class_period || 'Unassigned'}
             </span>
           </div>
         </div>
