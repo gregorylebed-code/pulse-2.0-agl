@@ -80,7 +80,7 @@ export default function App() {
   const todayRotation = getRotationForDate(new Date(), rotationMapping, specialsNames);
 
   return (
-    <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20">
+    <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20 overflow-x-hidden">
       <Header
         userName={userName}
         quote={quote}

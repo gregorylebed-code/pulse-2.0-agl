@@ -5,7 +5,8 @@ import imageCompression from 'browser-image-compression';
 import {
   User, MessageCircle, Shield, Sparkles, Users2, Folder, TrendingUp, Calendar,
   School, FileInput, MessageSquare, Trash2, Plus, X, Loader2, CheckCircle2,
-  GripVertical, CalendarX, Edit2, ChevronDown, Upload, ArrowRight, Coffee
+  GripVertical, CalendarX, Edit2, ChevronDown, Upload, ArrowRight, Coffee,
+  Smile, Meh, Frown, Activity, AlertCircle, Users, Clock, Mail, Phone, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, CalendarEvent } from '../types';
@@ -41,34 +42,32 @@ const DEFAULT_COMM_BUTTONS = [
 ];
 
 const getIconForName = (name: string, type: string): React.ReactNode => {
-  const { Smile, Meh, Frown, Activity, TrendingUp: TU, AlertCircle, Users, Users2: U2, Clock, FileInput: FI, MessageSquare: MsgSq, Mail, Phone, Sparkles: Sp, CheckCircle2: CC2 } = require('lucide-react');
   switch (name) {
-    case 'Sparkles': return <Sp className="w-4 h-4" />;
-    case 'CheckCircle2': return <CC2 className="w-4 h-4" />;
-    case 'TrendingUp': return <TU className="w-4 h-4" />;
+    case 'Sparkles': return <Sparkles className="w-4 h-4" />;
+    case 'CheckCircle2': return <CheckCircle2 className="w-4 h-4" />;
+    case 'TrendingUp': return <TrendingUp className="w-4 h-4" />;
     case 'AlertCircle': return <AlertCircle className="w-4 h-4" />;
-    case 'Users2': return <U2 className="w-4 h-4" />;
+    case 'Users2': return <Users2 className="w-4 h-4" />;
     case 'Clock': return <Clock className="w-4 h-4" />;
-    case 'FileInput': return <FI className="w-4 h-4" />;
+    case 'FileInput': return <FileInput className="w-4 h-4" />;
     case 'Activity': return <Activity className="w-4 h-4" />;
     case 'Smile': return <Smile className="w-4 h-4 text-emerald-600" />;
     case 'Meh': return <Meh className="w-4 h-4 text-amber-500" />;
     case 'Frown': return <Frown className="w-4 h-4 text-red-500" />;
     case 'ParentSquare': return <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[9px] font-black leading-none">PS</span>;
     case 'Users': return <Users className="w-4 h-4 text-blue-500" />;
-    case 'MessageSquare': return <MsgSq className="w-4 h-4 text-blue-500" />;
+    case 'MessageSquare': return <MessageSquare className="w-4 h-4 text-blue-500" />;
     case 'Mail': return <Mail className="w-4 h-4 text-blue-500" />;
     case 'Phone': return <Phone className="w-4 h-4 text-blue-500" />;
     default:
       if (type === 'positive') return <Smile className="w-4 h-4 text-emerald-600" />;
       if (type === 'growth') return <Frown className="w-4 h-4 text-red-500" />;
       if (type === 'neutral') return <Meh className="w-4 h-4 text-amber-500" />;
-      return <MsgSq className="w-4 h-4 text-blue-500" />;
+      return <MessageSquare className="w-4 h-4 text-blue-500" />;
   }
 };
 
 function SettingsItem({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) {
-  const { ChevronRight } = require('lucide-react');
   return (
     <button
       onClick={onClick}

@@ -43,10 +43,7 @@ export default function SummaryView({ notes, students, classes }: Props) {
   const studentClassMap = useMemo(() => {
     const map: Record<string, string> = {};
     students.forEach(s => {
-      const cls = typeof s.class_id === 'object'
-        ? (s.class_id as any)?.label || (s.class_id as any)?.value
-        : s.class_id || s.class_period || 'Unassigned';
-      map[s.name] = cls;
+      map[s.name] = s.class_period || 'Unassigned';
     });
     return map;
   }, [students]);
