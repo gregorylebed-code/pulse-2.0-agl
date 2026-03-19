@@ -3,11 +3,11 @@ import { supabase } from '../lib/supabase';
 const TEXT_TABLES = ['notes','students','tasks','reports','calendar_events','indicators','comm_types','classes'] as const;
 
 export async function migrateLocalDataToUser(userId: string): Promise<void> {
-  const flag = `pulse_migrated_${userId}`;
-  const flagV2 = `pulse_migrated_v2_${userId}`;
-  if (localStorage.getItem(flagV2)) return;
-  // Clear old v1 flag so migration re-runs with the null-row fix
-  localStorage.removeItem(flag);
+  const flagV3 = `pulse_migrated_v3_${userId}`;
+  if (localStorage.getItem(flagV3)) return;
+  // Clear old flags so migration re-runs with all fixes applied
+  localStorage.removeItem(`pulse_migrated_${userId}`);
+  localStorage.removeItem(`pulse_migrated_v2_${userId}`);
 
   const errors: string[] = [];
   for (const table of TEXT_TABLES) {
@@ -24,7 +24,7 @@ export async function migrateLocalDataToUser(userId: string): Promise<void> {
   if (se) errors.push(`settings: ${se.message}`);
 
   if (errors.length === 0) {
-    localStorage.setItem(flagV2, 'true');
+    localStorage.setItem(flagV3, 'true');
   } else {
     console.warn('Migration had errors (will retry next login):', errors);
   }
