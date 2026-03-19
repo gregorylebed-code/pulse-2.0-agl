@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -169,7 +169,7 @@ export default function StudentsScreen({
   }
 
   const filteredStudents = students.filter(s => {
-    const section = typeof s.class_id === 'object' ? (s.class_id as any)?.label || (s.class_id as any)?.value : s.class_id || s.class_period;
+    const section = s.class_period || s.class_id;
     const matchesFilter = filter === 'All' || section === filter;
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
@@ -177,7 +177,7 @@ export default function StudentsScreen({
 
   // Group students by section
   const groupedStudents = filteredStudents.reduce((acc, student) => {
-    const section = typeof student.class_id === 'object' ? (student.class_id as any)?.label || (student.class_id as any)?.value : student.class_id || student.class_period || 'Unassigned';
+    const section = student.class_period || student.class_id || 'Unassigned';
     if (!acc[section]) acc[section] = [];
     acc[section].push(student);
     return acc;
@@ -269,6 +269,12 @@ export default function StudentsScreen({
                     <Sparkles className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-slate-700 leading-relaxed font-medium">{aiResponse}</p>
                   </div>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(aiResponse!); toast.success('Copied!'); }}
+                    className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-orange-400 hover:text-orange-600 transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Copy to clipboard
+                  </button>
                 </>
               )}
             </motion.div>
