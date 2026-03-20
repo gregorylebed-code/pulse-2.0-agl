@@ -13,7 +13,7 @@ import SettingsScreen from './components/SettingsScreen';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import { cn } from './utils/cn';
-import { getRotationForDate } from './utils/rotationHelpers';
+import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
 
 import { Sparkles, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,11 +29,13 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const {
     notes, students, indicators, commTypes, classes, calendarEvents,
     tasks, reports, profile, rotationMapping, specialsNames,
+    specialsMode, dayOfWeekSpecials, rollingStartDate, rollingLetterCount, todayOverride,
     addNote, updateNote, deleteNote,
     addStudent, updateStudent, deleteStudent,
     addTask, updateTask, deleteTask,
     addReport, deleteReport,
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
+    saveSpecialsMode, saveDayOfWeekSpecials, saveRollingConfig, saveTodayOverride,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
     updateCalendarEvents, refreshData, stats, lessonHistory, saveLessonHistory,
   } = useClassroomData(userId);
@@ -63,6 +65,23 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const teacherTitle = profile.teacherTitle ?? 'Mr.';
   const teacherFirstName = profile.teacherFirstName ?? '';
   const teacherLastName = profile.teacherLastName ?? '';
+
+  // Auto-clear todayOverride if it's from a previous day
+  const todayKey = (() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+  })();
+  const effectiveTodayOverride = todayOverride?.date === todayKey ? todayOverride : null;
+
+  const specialsConfig: SpecialsConfig = {
+    mode: specialsMode,
+    specialsNames,
+    rotationMapping,
+    dayOfWeekSpecials,
+    rollingStartDate,
+    rollingLetterCount,
+    todayOverride: effectiveTodayOverride,
+  };
 
   useEffect(() => {
     migrateLocalDataToUser(userId).then(() => refreshData());
@@ -126,7 +145,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     toast.info('Name reset. What should I call you?');
   };
 
-  const todayRotation = getRotationForDate(new Date(), rotationMapping, specialsNames);
+  const todayRotation = getRotationForDate(new Date(), specialsConfig);
 
   const mainRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -146,8 +165,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         todayRotation={todayRotation}
         showRotationForecast={showRotationForecast}
         setShowRotationForecast={setShowRotationForecast}
-        rotationMapping={rotationMapping}
-        specialsNames={specialsNames}
+        specialsConfig={specialsConfig}
+        onSetTodayOverride={(letter) => saveTodayOverride(letter ? { date: todayKey, letter } : null)}
         tasks={tasks}
         setShowTasks={setShowTasks}
       />
@@ -235,6 +254,11 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 calendarEvents={calendarEvents} setCalendarEvents={updateCalendarEvents}
                 rotationMapping={rotationMapping} setRotationMapping={saveRotationMapping}
                 specialsNames={specialsNames} setSpecialsNames={saveSpecialsNames}
+                specialsMode={specialsMode} setSpecialsMode={saveSpecialsMode}
+                dayOfWeekSpecials={dayOfWeekSpecials} setDayOfWeekSpecials={saveDayOfWeekSpecials}
+                rollingStartDate={rollingStartDate} rollingLetterCount={rollingLetterCount}
+                saveRollingConfig={saveRollingConfig}
+                todayOverride={todayOverride} saveTodayOverride={saveTodayOverride}
                 students={students} addStudent={addStudent}
                 deleteStudent={deleteStudent} updateStudent={updateStudent}
                 theme={theme} setTheme={setTheme}

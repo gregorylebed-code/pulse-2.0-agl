@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Note, Student, CalendarEvent, Report, DeliveredLesson } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
+import { SpecialsMode } from '../utils/rotationHelpers';
 
 interface Task {
   id: string;
@@ -68,6 +69,11 @@ interface ClassroomDataState {
   profile: Profile;
   rotationMapping: Record<string, string>;
   specialsNames: Record<string, string>;
+  specialsMode: SpecialsMode;
+  dayOfWeekSpecials: Record<string, string>;
+  rollingStartDate: string;
+  rollingLetterCount: number;
+  todayOverride: { date: string; letter: string } | null;
   abbreviations: Abbreviation[];
   stats: Stats;
   lessonHistory: DeliveredLesson[];
@@ -90,6 +96,10 @@ interface ClassroomDataActions {
   saveProfile: (profile: Profile) => Promise<void>;
   saveRotationMapping: (mapping: Record<string, string>) => Promise<void>;
   saveSpecialsNames: (names: Record<string, string>) => Promise<void>;
+  saveSpecialsMode: (mode: SpecialsMode) => Promise<void>;
+  saveDayOfWeekSpecials: (specials: Record<string, string>) => Promise<void>;
+  saveRollingConfig: (startDate: string, letterCount: number) => Promise<void>;
+  saveTodayOverride: (override: { date: string; letter: string } | null) => Promise<void>;
   saveAbbreviations: (abbreviations: Abbreviation[]) => Promise<void>;
   updateIndicators: (indicators: Indicator[]) => Promise<void>;
   updateCommTypes: (commTypes: Indicator[]) => Promise<void>;
@@ -112,6 +122,11 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     profile: DEFAULT_PROFILE,
     rotationMapping: {},
     specialsNames: DEFAULT_SPECIALS,
+    specialsMode: 'letter-day',
+    dayOfWeekSpecials: { '1': 'Art', '2': 'PE', '3': 'Music', '4': 'Library', '5': 'STEM' },
+    rollingStartDate: '',
+    rollingLetterCount: 5,
+    todayOverride: null,
     abbreviations: [],
     stats: { notes_created: 0, reports_generated: 0 },
     lessonHistory: [],
@@ -167,6 +182,11 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       const abbreviations: Abbreviation[] = settingsMap['abbreviations'] ?? [];
       const stats: Stats = settingsMap['stats'] ?? { notes_created: 0, reports_generated: 0 };
       const lessonHistory: DeliveredLesson[] = settingsMap['lesson_history'] ?? [];
+      const specialsMode: SpecialsMode = settingsMap['specials_mode'] ?? 'letter-day';
+      const dayOfWeekSpecials = settingsMap['day_of_week_specials'] ?? { '1': 'Art', '2': 'PE', '3': 'Music', '4': 'Library', '5': 'STEM' };
+      const rollingStartDate: string = settingsMap['rolling_start_date'] ?? '';
+      const rollingLetterCount: number = settingsMap['rolling_letter_count'] ?? 5;
+      const todayOverride = settingsMap['today_override'] ?? null;
 
       // Map student IDs to names for note display
       const studentMap = new Map((studentsData || []).map((s: any) => [s.id, s.name]));
@@ -206,6 +226,11 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         profile,
         rotationMapping,
         specialsNames,
+        specialsMode,
+        dayOfWeekSpecials,
+        rollingStartDate,
+        rollingLetterCount,
+        todayOverride,
         abbreviations,
         stats,
         lessonHistory,
@@ -479,6 +504,60 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, [userId]);
 
+  const saveSpecialsMode = useCallback(async (mode: SpecialsMode) => {
+    try {
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'specials_mode', value: mode },
+        { onConflict: 'user_id,key' }
+      );
+      setState(prev => ({ ...prev, specialsMode: mode }));
+    } catch (error) {
+      console.error('Error saving specials mode:', error);
+    }
+  }, [userId]);
+
+  const saveDayOfWeekSpecials = useCallback(async (specials: Record<string, string>) => {
+    try {
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'day_of_week_specials', value: specials },
+        { onConflict: 'user_id,key' }
+      );
+      setState(prev => ({ ...prev, dayOfWeekSpecials: specials }));
+    } catch (error) {
+      console.error('Error saving day-of-week specials:', error);
+    }
+  }, [userId]);
+
+  const saveRollingConfig = useCallback(async (startDate: string, letterCount: number) => {
+    try {
+      await Promise.all([
+        supabase.from('settings').upsert(
+          { user_id: userId, key: 'rolling_start_date', value: startDate },
+          { onConflict: 'user_id,key' }
+        ),
+        supabase.from('settings').upsert(
+          { user_id: userId, key: 'rolling_letter_count', value: letterCount },
+          { onConflict: 'user_id,key' }
+        ),
+      ]);
+      setState(prev => ({ ...prev, rollingStartDate: startDate, rollingLetterCount: letterCount }));
+    } catch (error) {
+      console.error('Error saving rolling config:', error);
+    }
+  }, [userId]);
+
+  const saveTodayOverride = useCallback(async (override: { date: string; letter: string } | null) => {
+    try {
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'today_override', value: override },
+        { onConflict: 'user_id,key' }
+      );
+      setState(prev => ({ ...prev, todayOverride: override }));
+    } catch (error) {
+      console.error('Error saving today override:', error);
+    }
+  }, [userId]);
+
   const saveAbbreviations = useCallback(async (abbreviations: Abbreviation[]) => {
     try {
       await supabase.from('settings').upsert(
@@ -583,6 +662,10 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     saveProfile,
     saveRotationMapping,
     saveSpecialsNames,
+    saveSpecialsMode,
+    saveDayOfWeekSpecials,
+    saveRollingConfig,
+    saveTodayOverride,
     saveAbbreviations,
     updateIndicators,
     updateCommTypes,

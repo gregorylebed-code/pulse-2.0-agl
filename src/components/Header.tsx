@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, Activity } from 'lucide-react';
+import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, Activity, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import ClassroomPulseLogo from './ClassroomPulseLogo';
-import { getForecast } from '../utils/rotationHelpers';
+import { getForecast, SpecialsConfig } from '../utils/rotationHelpers';
 
 interface Task { id: string; text: string; completed: boolean; color?: string; }
 
@@ -17,8 +17,8 @@ interface HeaderProps {
   todayRotation: { letter: string; special: string } | null;
   showRotationForecast: boolean;
   setShowRotationForecast: (v: boolean) => void;
-  rotationMapping: Record<string, string>;
-  specialsNames: Record<string, string>;
+  specialsConfig: SpecialsConfig;
+  onSetTodayOverride: (letter: string | null) => void;
   tasks: Task[];
   setShowTasks: (v: boolean) => void;
 }
@@ -41,12 +41,16 @@ export default function Header({
   todayRotation,
   showRotationForecast,
   setShowRotationForecast,
-  rotationMapping,
-  specialsNames,
+  specialsConfig,
+  onSetTodayOverride,
   tasks,
   setShowTasks,
 }: HeaderProps) {
-  const forecast = getForecast(rotationMapping, specialsNames);
+  const forecast = getForecast(specialsConfig);
+  const [showOverridePicker, setShowOverridePicker] = useState(false);
+  const letters = Array.from({ length: specialsConfig.rollingLetterCount || 5 }, (_, i) => String.fromCharCode(65 + i));
+  const canOverride = specialsConfig.mode === 'letter-day' || specialsConfig.mode === 'rolling';
+  const hasOverride = !!specialsConfig.todayOverride;
   const pendingTasks = tasks.filter(t => !t.completed).length;
 
   return (
@@ -110,7 +114,13 @@ export default function Header({
               <div className="text-left">
                 <p className="text-[11px] font-bold text-slate-400 leading-none">Rotation</p>
                 <p className="text-xs font-bold text-sage-dark">
-                  {todayRotation ? `Day ${todayRotation.letter}: ${todayRotation.special}` : 'No School'}
+                  {specialsConfig.mode === 'off'
+                    ? 'Off'
+                    : todayRotation
+                    ? specialsConfig.mode === 'day-of-week'
+                      ? `${todayRotation.letter}: ${todayRotation.special}`
+                      : `Day ${todayRotation.letter}: ${todayRotation.special}`
+                    : 'No School'}
                 </p>
               </div>
               <ChevronDown className={cn('w-3.5 h-3.5 text-slate-300 transition-transform', showRotationForecast && 'rotate-180')} />
@@ -150,12 +160,63 @@ export default function Header({
                           </div>
                         </div>
                       ))}
-                      {forecast.length === 0 && (
+                      {forecast.length === 0 && specialsConfig.mode !== 'off' && (
                         <div className="text-center py-4 text-[10px] font-medium text-slate-400 italic">
-                          No rotation data found. Scan your calendar in Settings.
+                          {specialsConfig.mode === 'letter-day'
+                            ? 'No rotation data found. Scan your calendar in Settings.'
+                            : specialsConfig.mode === 'rolling'
+                            ? 'Set a start date in Settings → Rotation & Specials.'
+                            : 'Configure specials in Settings → Rotation & Specials.'}
+                        </div>
+                      )}
+                      {specialsConfig.mode === 'off' && (
+                        <div className="text-center py-4 text-[10px] font-medium text-slate-400 italic">
+                          Rotation is turned off. Enable it in Settings.
                         </div>
                       )}
                     </div>
+
+                    {/* Today override — only for letter-day and rolling modes */}
+                    {canOverride && (
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-bold text-slate-400">Override Today</span>
+                          {hasOverride && (
+                            <button
+                              onClick={() => { onSetTodayOverride(null); setShowOverridePicker(false); }}
+                              className="flex items-center gap-1 text-[9px] font-bold text-terracotta hover:underline"
+                            >
+                              <RotateCcw className="w-2.5 h-2.5" /> Clear
+                            </button>
+                          )}
+                        </div>
+                        {hasOverride ? (
+                          <p className="text-[10px] text-sage font-bold">
+                            Today set to Day {specialsConfig.todayOverride!.letter} ({specialsConfig.specialsNames[specialsConfig.todayOverride!.letter] || 'No Special'})
+                          </p>
+                        ) : showOverridePicker ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {letters.map(l => (
+                              <button
+                                key={l}
+                                onClick={() => { onSetTodayOverride(l); setShowOverridePicker(false); }}
+                                className="w-8 h-8 bg-sage/10 text-sage rounded-lg text-[10px] font-black hover:bg-sage/20 transition-colors"
+                              >
+                                {l}
+                              </button>
+                            ))}
+                            <button onClick={() => setShowOverridePicker(false)} className="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg text-[10px] font-black hover:bg-slate-200 transition-colors">✕</button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setShowOverridePicker(true)}
+                            className="text-[10px] font-bold text-slate-400 hover:text-sage transition-colors"
+                          >
+                            + Set today's day letter
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 </>
               )}

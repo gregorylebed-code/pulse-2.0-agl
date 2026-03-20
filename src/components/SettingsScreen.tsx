@@ -15,6 +15,7 @@ import { Abbreviation } from '../utils/expandAbbreviations';
 import {
   performSmartScan, extractRotationMapping, suggestAbbreviations
 } from '../lib/gemini';
+import { SpecialsMode } from '../utils/rotationHelpers';
 import { migrateFromLocalStorage } from '../utils/migrateFromLocalStorage';
 import { supabase } from '../lib/supabase';
 import ImportScreen from './ImportScreen';
@@ -113,6 +114,15 @@ interface SettingsScreenProps {
   setRotationMapping: (val: Record<string, string>) => void;
   specialsNames: Record<string, string>;
   setSpecialsNames: (val: Record<string, string>) => void;
+  specialsMode: SpecialsMode;
+  setSpecialsMode: (val: SpecialsMode) => Promise<void>;
+  dayOfWeekSpecials: Record<string, string>;
+  setDayOfWeekSpecials: (val: Record<string, string>) => Promise<void>;
+  rollingStartDate: string;
+  rollingLetterCount: number;
+  saveRollingConfig: (startDate: string, letterCount: number) => Promise<void>;
+  todayOverride: { date: string; letter: string } | null;
+  saveTodayOverride: (override: { date: string; letter: string } | null) => Promise<void>;
   students: Student[];
   addStudent: (student: Omit<Student, 'id'>) => Promise<Student | null>;
   deleteStudent: (id: string) => Promise<void>;
@@ -156,6 +166,15 @@ export default function SettingsScreen({
   setRotationMapping,
   specialsNames,
   setSpecialsNames,
+  specialsMode,
+  setSpecialsMode,
+  dayOfWeekSpecials,
+  setDayOfWeekSpecials,
+  rollingStartDate,
+  rollingLetterCount,
+  saveRollingConfig,
+  todayOverride,
+  saveTodayOverride,
   students,
   addStudent,
   deleteStudent,
@@ -1639,23 +1658,117 @@ export default function SettingsScreen({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Rotation & Specials</h3>
-                  <p className="text-[11px] font-bold text-slate-400">Configure your daily rotation</p>
+                  <p className="text-[11px] font-bold text-slate-400">Choose how your school tracks specials</p>
                 </div>
               </div>
 
-              <div className="space-y-6 pt-4">
-                <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-4">
-                  <h4 className="text-[11px] font-bold text-slate-400">Specials Mapping</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {['A', 'B', 'C', 'D', 'E'].map(letter => (
-                      <div key={letter} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                        <div className="w-8 h-8 bg-sage/10 text-sage rounded-lg flex items-center justify-center font-bold text-xs">
-                          {letter}
+              {/* Mode selector */}
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { id: 'off', label: 'Off', desc: 'Hide rotation' },
+                  { id: 'letter-day', label: 'Letter Day', desc: 'A/B/C… from calendar' },
+                  { id: 'day-of-week', label: 'Day of Week', desc: 'Mon=Art, Tue=PE…' },
+                  { id: 'rolling', label: 'Rolling Days', desc: 'Cycles A→B→C→…' },
+                ] as { id: SpecialsMode; label: string; desc: string }[]).map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setSpecialsMode(m.id)}
+                    className={cn(
+                      'p-4 rounded-2xl border-2 text-left transition-all',
+                      specialsMode === m.id
+                        ? 'border-sage bg-sage/5'
+                        : 'border-slate-100 bg-slate-50 hover:border-slate-200'
+                    )}
+                  >
+                    <p className={cn('text-xs font-bold', specialsMode === m.id ? 'text-sage-dark' : 'text-slate-700')}>{m.label}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{m.desc}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Off mode */}
+              {specialsMode === 'off' && (
+                <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 text-center">
+                  <p className="text-sm text-slate-400 font-medium">Rotation is disabled. The badge in the header will be hidden.</p>
+                </div>
+              )}
+
+              {/* Letter Day mode */}
+              {specialsMode === 'letter-day' && (
+                <div className="space-y-4">
+                  <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-4">
+                    <h4 className="text-[11px] font-bold text-slate-400">Specials by Letter</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {['A', 'B', 'C', 'D', 'E'].map(letter => (
+                        <div key={letter} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                          <div className="w-8 h-8 bg-sage/10 text-sage rounded-lg flex items-center justify-center font-bold text-xs">{letter}</div>
+                          <input
+                            type="text"
+                            value={specialsNames[letter] || ''}
+                            onChange={(e) => handleUpdateSpecial(letter, e.target.value)}
+                            placeholder="e.g. Art"
+                            className="flex-1 text-sm font-medium focus:outline-none bg-transparent"
+                          />
                         </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-sage/5 rounded-[24px] p-6 border border-dashed border-sage/20 space-y-4 text-center">
+                    <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm mx-auto border border-sage/10">
+                      <Sparkles className="w-5 h-5 text-sage" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">AI Rotation Scan</h4>
+                      <p className="text-xs text-slate-500 mt-1">Upload your school calendar to map dates to letter days automatically.</p>
+                    </div>
+                    <div className="relative inline-block">
+                      <input
+                        type="file"
+                        id="rotation-upload"
+                        className="hidden"
+                        accept="image/*,application/pdf"
+                        onChange={(e) => { const file = e.target.files?.[0]; if (file) handleScanRotation(file); }}
+                        disabled={isScanningRotation}
+                      />
+                      <label
+                        htmlFor="rotation-upload"
+                        className={cn(
+                          "flex items-center gap-2 px-6 py-3 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 cursor-pointer",
+                          isScanningRotation && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        {isScanningRotation ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning...</> : <><Upload className="w-4 h-4" /> Scan Calendar</>}
+                      </label>
+                    </div>
+                    {Object.keys(rotationMapping).length > 0 && (
+                      <p className="text-[11px] font-bold text-sage flex items-center justify-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {Object.keys(rotationMapping).length} date mappings active
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Day of Week mode */}
+              {specialsMode === 'day-of-week' && (
+                <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-4">
+                  <h4 className="text-[11px] font-bold text-slate-400">Assign a Special to Each Day</h4>
+                  <div className="space-y-3">
+                    {[
+                      { key: '1', label: 'Monday' },
+                      { key: '2', label: 'Tuesday' },
+                      { key: '3', label: 'Wednesday' },
+                      { key: '4', label: 'Thursday' },
+                      { key: '5', label: 'Friday' },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                        <div className="w-20 text-xs font-bold text-slate-500 shrink-0">{label}</div>
                         <input
                           type="text"
-                          value={specialsNames[letter] || ''}
-                          onChange={(e) => handleUpdateSpecial(letter, e.target.value)}
+                          value={dayOfWeekSpecials[key] || ''}
+                          onChange={(e) => setDayOfWeekSpecials({ ...dayOfWeekSpecials, [key]: e.target.value })}
                           placeholder="e.g. Art"
                           className="flex-1 text-sm font-medium focus:outline-none bg-transparent"
                         />
@@ -1663,59 +1776,64 @@ export default function SettingsScreen({
                     ))}
                   </div>
                 </div>
+              )}
 
-                <div className="bg-sage/5 rounded-[24px] p-8 border border-dashed border-sage/20 space-y-4 text-center">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm mx-auto border border-sage/10">
-                    <Sparkles className="w-6 h-6 text-sage" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">AI Rotation Scan</h4>
-                    <p className="text-xs text-slate-500 mt-1">Upload your calendar to map dates to letter days for the whole year.</p>
-                  </div>
-
-                  <div className="relative inline-block">
-                    <input
-                      type="file"
-                      id="rotation-upload"
-                      className="hidden"
-                      accept="image/*,application/pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleScanRotation(file);
-                      }}
-                      disabled={isScanningRotation}
-                    />
-                    <label
-                      htmlFor="rotation-upload"
-                      className={cn(
-                        "flex items-center gap-2 px-6 py-3 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 cursor-pointer",
-                        isScanningRotation && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      {isScanningRotation ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Scanning...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" />
-                          Scan Calendar
-                        </>
-                      )}
-                    </label>
-                  </div>
-
-                  {Object.keys(rotationMapping).length > 0 && (
-                    <div className="pt-2">
-                      <p className="text-[11px] font-bold text-sage flex items-center justify-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {Object.keys(rotationMapping).length} mappings active
-                      </p>
+              {/* Rolling School Days mode */}
+              {specialsMode === 'rolling' && (
+                <div className="space-y-4">
+                  <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-4">
+                    <h4 className="text-[11px] font-bold text-slate-400">Rolling Cycle Setup</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Start Date (Day A)</label>
+                        <input
+                          type="date"
+                          value={rollingStartDate}
+                          onChange={(e) => saveRollingConfig(e.target.value, rollingLetterCount)}
+                          className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-sage w-full"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-1.5">Pick the first day of your school year, or any day you know was Day A.</p>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Number of Days in Cycle</label>
+                        <div className="flex gap-2 flex-wrap">
+                          {[4, 5, 6, 7, 8].map(n => (
+                            <button
+                              key={n}
+                              onClick={() => saveRollingConfig(rollingStartDate, n)}
+                              className={cn(
+                                'px-4 py-2 rounded-xl text-xs font-bold transition-all',
+                                rollingLetterCount === n ? 'bg-sage text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-sage/40'
+                              )}
+                            >
+                              {n} days ({Array.from({ length: n }, (_, i) => String.fromCharCode(65 + i)).join('-')})
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-3">
+                    <h4 className="text-[11px] font-bold text-slate-400">Specials by Letter</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Array.from({ length: rollingLetterCount }, (_, i) => String.fromCharCode(65 + i)).map(letter => (
+                        <div key={letter} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                          <div className="w-8 h-8 bg-sage/10 text-sage rounded-lg flex items-center justify-center font-bold text-xs">{letter}</div>
+                          <input
+                            type="text"
+                            value={specialsNames[letter] || ''}
+                            onChange={(e) => handleUpdateSpecial(letter, e.target.value)}
+                            placeholder="e.g. Art"
+                            className="flex-1 text-sm font-medium focus:outline-none bg-transparent"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400">Snow day? Use the "Override Today" option in the header to correct the cycle for the day.</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </motion.div>
         )}
