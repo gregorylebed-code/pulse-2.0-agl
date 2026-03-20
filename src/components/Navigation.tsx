@@ -23,13 +23,13 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
           />
         )}
         {React.cloneElement(icon as React.ReactElement, {
-          className: cn('w-6 h-6 relative z-10 transition-colors duration-200', active ? 'text-sage' : 'text-slate-400 dark:text-slate-500'),
+          className: cn('w-6 h-6 relative z-10 transition-colors duration-200', active ? 'text-sage' : 'text-slate-400'),
           strokeWidth: active ? 2.5 : 1.8,
         })}
       </div>
       <span className={cn(
         'text-[10px] font-bold tracking-wide transition-colors duration-200',
-        active ? 'text-sage' : 'text-slate-400 dark:text-slate-500'
+        active ? 'text-sage' : 'text-slate-400'
       )}>
         {label}
       </span>
@@ -39,7 +39,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
 
 export default function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-t border-slate-100 dark:border-slate-800 flex items-center justify-around px-4 pb-safe z-50 no-print" style={{ height: '68px' }}>
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex items-center justify-around px-4 z-50 no-print" style={{ height: '68px' }}>
       <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Pulse" />
       <NavButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users />} label="Students" />
       <NavButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings />} label="Settings" />

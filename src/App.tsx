@@ -87,13 +87,18 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   useEffect(() => {
     history.pushState(null, '');
     const handlePopState = () => {
+      // Update refs synchronously so rapid back presses don't race against React re-renders
       if (selectedStudentIdRef.current) {
+        selectedStudentIdRef.current = null;
         setSelectedStudentId(null);
       } else if (pulseViewRef.current === 'summary') {
+        pulseViewRef.current = 'log';
         setPulseView('log');
       } else if (activeTabRef.current === 'settings' && settingsViewRef.current !== 'main') {
+        settingsViewRef.current = 'main';
         setSettingsView('main');
       } else if (activeTabRef.current !== 'pulse') {
+        activeTabRef.current = 'pulse';
         setActiveTab('pulse');
       } else {
         return; // already at home — let Android close the app
