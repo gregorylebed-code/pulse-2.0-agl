@@ -13,16 +13,36 @@ async function logTokenUsage(callType: string, usage: { prompt_tokens: number; c
   }).then(); // fire-and-forget
 }
 
+async function callCerebras(messages: any[], isJson: boolean, callType: string): Promise<string> {
+  const response = await fetch('/api/cerebras', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b',
+      messages,
+      response_format: isJson ? { type: 'json_object' } : undefined
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Cerebras API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (data.usage) logTokenUsage(callType + '_cerebras', data.usage);
+  return data.choices[0].message.content as string;
+}
+
 async function callGroq(prompt: string, isJson: boolean, imageData?: { data: string; mimeType: string }, callType = 'unknown'): Promise<string> {
+  const isVision = Boolean(imageData?.mimeType.startsWith('image/'));
   let messages: any[];
 
-  if (imageData && imageData.mimeType.startsWith('image/')) {
-    // Vision request — use llama vision model
-    const base64 = imageData.data.includes(',') ? imageData.data.split(',')[1] : imageData.data;
+  if (isVision) {
+    const base64 = imageData!.data.includes(',') ? imageData!.data.split(',')[1] : imageData!.data;
     messages = [{
       role: 'user',
       content: [
-        { type: 'image_url', image_url: { url: `data:${imageData.mimeType};base64,${base64}` } },
+        { type: 'image_url', image_url: { url: `data:${imageData!.mimeType};base64,${base64}` } },
         { type: 'text', text: prompt }
       ]
     }];
@@ -30,7 +50,7 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
     messages = [{ role: 'user', content: prompt }];
   }
 
-  const model = imageData?.mimeType.startsWith('image/') ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile';
+  const model = isVision ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile';
 
   // All AI calls go through our server-side proxy — key never touches the browser
   const response = await fetch('/api/groq', {
@@ -42,6 +62,12 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
       response_format: isJson ? { type: 'json_object' } : undefined
     })
   });
+
+  // Fall back to Cerebras on rate limit or server error (vision not supported on Cerebras)
+  if (!response.ok && !isVision && (response.status === 429 || response.status >= 500)) {
+    console.warn(`Groq ${response.status} — falling back to Cerebras`);
+    return callCerebras(messages, isJson, callType);
+  }
 
   if (!response.ok) {
     throw new Error(`Groq API error: ${response.status}`);
