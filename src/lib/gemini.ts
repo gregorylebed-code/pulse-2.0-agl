@@ -50,7 +50,7 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
     messages = [{ role: 'user', content: prompt }];
   }
 
-  const model = isVision ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile';
+  const model = isVision ? 'llama-3.2-90b-vision-preview' : 'FORCE_CEREBRAS_TEST';
 
   // All AI calls go through our server-side proxy — key never touches the browser
   const response = await fetch('/api/groq', {
