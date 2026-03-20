@@ -1,9 +1,22 @@
 import { Note, SELTopic, SELLesson } from "../types";
+import { supabase } from "./supabase";
 
 // @ts-ignore
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
 
-async function callGroq(prompt: string, isJson: boolean, imageData?: { data: string; mimeType: string }): Promise<string> {
+async function logTokenUsage(callType: string, usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  supabase.from('token_usage').insert({
+    user_id: user.id,
+    call_type: callType,
+    prompt_tokens: usage.prompt_tokens,
+    completion_tokens: usage.completion_tokens,
+    total_tokens: usage.total_tokens,
+  }).then(); // fire-and-forget
+}
+
+async function callGroq(prompt: string, isJson: boolean, imageData?: { data: string; mimeType: string }, callType = 'unknown'): Promise<string> {
   if (!GROQ_API_KEY) {
     console.error('Missing VITE_GROQ_API_KEY in environment');
     throw new Error("Missing GROQ API key");
@@ -45,6 +58,7 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
   }
 
   const data = await response.json();
+  if (data.usage) logTokenUsage(callType, data.usage);
   return data.choices[0].message.content as string;
 }
 
@@ -63,7 +77,7 @@ export async function extractRotationMapping(fileData: string, mimeType: string)
             IMPORTANT: Map EVERY date found. If a month is missing or cutoff, do your best with what is visible.`;
 
   const imageData = mimeType.startsWith('image/') ? { data: fileData, mimeType } : undefined;
-  const text = await callGroq(prompt, true, imageData);
+  const text = await callGroq(prompt, true, imageData, 'extract_rotation_mapping');
 
   try {
     let cleanText = text || '{}';
@@ -98,7 +112,7 @@ export async function performSmartScan(fileData: string, mimeType: string) {
             Return a JSON array of objects EXCLUSIVELY: [{ "date": "YYYY-MM-DD", "type": "Holiday" | "Early Dismissal" | "Conference" | "Other", "title": "Name of event paired with the date" }]. Do NOT wrap the array in an object like { "events": [...] }.`;
 
   const imageData = mimeType.startsWith('image/') ? { data: fileData, mimeType } : undefined;
-  const text = await callGroq(prompt, true, imageData);
+  const text = await callGroq(prompt, true, imageData, 'smart_scan');
 
   try {
     let cleanText = text || '[]';
@@ -162,7 +176,7 @@ Return a JSON object:
 - tags: array of strings (use exact tag names from the available list, or [] if none fit)
 - sentiment: "Positive", "Neutral", or "Negative"`;
 
-  const responseText = await callGroq(prompt, true);
+  const responseText = await callGroq(prompt, true, undefined, 'categorize_note');
 
   try {
     const parsed = JSON.parse(responseText || '{"tags":[],"sentiment":"Neutral"}');
@@ -229,7 +243,7 @@ Return ONLY valid JSON — no markdown, no extra commentary:
 Notes:
 ${notesText}`;
 
-  const raw = await callGroq(prompt, true);
+  const raw = await callGroq(prompt, true, undefined, 'summarize_notes');
   return parseReportJson(raw);
 }
 
@@ -250,7 +264,7 @@ Please rewrite the report based on these instructions while maintaining the Glow
 Return ONLY valid JSON — no markdown, no extra commentary:
 {"opening":"...","glow":"...","grow":"...","goal":"...","closing":"..."}`;
 
-  const raw = await callGroq(prompt, true);
+  const raw = await callGroq(prompt, true, undefined, 'refine_report');
   return parseReportJson(raw);
 }
 
@@ -267,7 +281,7 @@ export async function magicImport(rosterText: string) {
 
       Example: { "students": [{ "name": "Jane Doe", "parent_guardian_names": ["John Doe"], "parent_emails": [], "parent_phones": [], "class_name": "AM" }] }`;
 
-  const responseText = await callGroq(prompt, true);
+  const responseText = await callGroq(prompt, true, undefined, 'magic_import');
 
   try {
     const parsed = JSON.parse(responseText || '{}');
@@ -286,7 +300,7 @@ export async function draftParentSquareMessage(content: string, studentName: str
       Observation: ${content}
 
       The tone should be collaborative and focus on student growth.`;
-  return await callGroq(prompt, false);
+  return await callGroq(prompt, false, undefined, 'draft_parentsquare');
 }
 
 export async function parseVoiceLog(transcript: string, students: string[], indicators: string[]) {
@@ -302,7 +316,7 @@ export async function parseVoiceLog(transcript: string, students: string[], indi
 
       Return as JSON object with fields: student_name, content, tags.`;
 
-  const responseText = await callGroq(prompt, true);
+  const responseText = await callGroq(prompt, true, undefined, 'parse_voice_log');
 
   try {
     return JSON.parse(responseText || 'null');
@@ -325,7 +339,7 @@ Return a JSON object with an "abbreviations" array of up to 8 suggestions, each 
 Only suggest abbreviations that appear at least twice OR are very common classroom abbreviations. Do not suggest single letters.
 Example: { "abbreviations": [{ "abbreviation": "ss", "expansion": "Social Studies" }] }`;
 
-  const responseText = await callGroq(prompt, true);
+  const responseText = await callGroq(prompt, true, undefined, 'suggest_abbreviations');
 
   try {
     const parsed = JSON.parse(responseText || '{}');
@@ -349,12 +363,12 @@ ${notesText}
 
 Write a concise, clear summary (3-6 sentences) of what was observed across this class during this period. Group themes — highlight what went well, any patterns of concern, and any standout moments. Use plain language, no jargon. Do not address parents — this is for the teacher's own record.`;
 
-  const responseText = await callGroq(prompt, false);
+  const responseText = await callGroq(prompt, false, undefined, 'summarize_class_period');
   return responseText.trim();
 }
 
 export async function queryStudentInsights(prompt: string): Promise<string> {
-  const result = await callGroq(prompt, false);
+  const result = await callGroq(prompt, false, undefined, 'query_student_insights');
   return (result || '').trim();
 }
 
@@ -382,7 +396,7 @@ RULES:
 Return JSON:
 {"topics":[{"title":"Short lesson title (6 words max)","theme":"One SEL theme word (Empathy, Conflict, Focus, Belonging, Respect, Kindness, etc.)","rationale":"One sentence explaining why this fits the observations"}]}`;
 
-  const raw = await callGroq(prompt, true);
+  const raw = await callGroq(prompt, true, undefined, 'suggest_sel_topics');
   try {
     const parsed = JSON.parse(raw);
     const topics = Array.isArray(parsed.topics) ? parsed.topics : Array.isArray(parsed) ? parsed : [];
@@ -408,7 +422,7 @@ STRICT REQUIREMENTS:
 Return JSON:
 {"materials":["item1","item2"],"opener":"Detailed 3-minute warm-up or discussion starter","activity":"Step-by-step 10-minute main activity","exitTicket":"2-minute reflection or exit ticket description"}`;
 
-  const raw = await callGroq(prompt, true);
+  const raw = await callGroq(prompt, true, undefined, 'generate_sel_lesson');
   try {
     const parsed = JSON.parse(raw);
     const { materials, opener, activity, exitTicket } = parsed;
