@@ -20,14 +20,20 @@ interface Indicator {
   icon?: any;
 }
 
-interface Profile {
+export interface Profile {
   userName: string;
   schoolName: string;
+  teacherTitle: 'Mr.' | 'Mrs.' | 'Ms.' | 'Miss' | 'Dr.';
+  teacherFirstName: string;
+  teacherLastName: string;
 }
 
 const DEFAULT_PROFILE: Profile = {
   userName: 'Teacher',
   schoolName: 'Classroom Pulse Elementary',
+  teacherTitle: 'Mr.',
+  teacherFirstName: '',
+  teacherLastName: '',
 };
 
 const DEFAULT_COMM_TYPES: Indicator[] = [

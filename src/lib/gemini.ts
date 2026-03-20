@@ -406,6 +406,30 @@ Return JSON:
   }
 }
 
+export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string): Promise<string> {
+  const notesText = notes.map(n => n.content).join('\n- ');
+  const signOff = teacherLastName.trim()
+    ? `${teacherTitle} ${teacherLastName}`
+    : 'Your Child\'s Teacher';
+
+  const prompt = `You are a teacher writing a short, direct parent note about what happened today with a student.
+
+Today's observations:
+- ${notesText}
+
+RULES:
+- Write 1–3 sentences starting with "Dear Family,"
+- State only the facts from the observations — no Glow/Grow/Goal, no goals, no framework
+- Be warm but direct
+- If the overall tone of the observations is POSITIVE: end with exactly this line on a new line: "I am very proud and thought you would be too! — ${signOff}"
+- If the overall tone is NEGATIVE or CONCERNING: end with exactly this line on a new line: "I am disappointed in what happened today, but I thought you should know. — ${signOff}"
+- If the tone is MIXED: use your judgment on which sign-off fits better
+- Do NOT include any labels like "Positive:" or "Note:" — just output the message directly
+- Do NOT add any extra commentary, headers, or explanation`;
+
+  return await callGroq(prompt, false, undefined, 'quick_parent_note');
+}
+
 export async function generateSELLesson(topic: SELTopic): Promise<SELLesson | null> {
   const prompt = `Generate a 15-minute SEL micro-lesson for an elementary/middle school classroom.
 

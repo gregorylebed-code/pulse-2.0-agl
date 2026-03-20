@@ -60,6 +60,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   const userName = profile.userName;
   const schoolName = profile.schoolName;
+  const teacherTitle = profile.teacherTitle ?? 'Mr.';
+  const teacherFirstName = profile.teacherFirstName ?? '';
+  const teacherLastName = profile.teacherLastName ?? '';
 
   useEffect(() => {
     migrateLocalDataToUser(userId).then(() => refreshData());
@@ -207,6 +210,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 deleteReport={deleteReport} abbreviations={abbreviations}
                 selectedStudentId={selectedStudentId}
                 setSelectedStudentId={setSelectedStudentId}
+                teacherTitle={teacherTitle}
+                teacherLastName={teacherLastName}
               />
             </motion.div>
           )}
@@ -221,6 +226,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 setUserName={(name: string) => saveProfile({ ...profile, userName: name })}
                 schoolName={schoolName}
                 setSchoolName={(name: string) => saveProfile({ ...profile, schoolName: name })}
+                teacherTitle={teacherTitle}
+                setTeacherTitle={(val: string) => saveProfile({ ...profile, teacherTitle: val as any })}
+                teacherFirstName={teacherFirstName}
+                setTeacherFirstName={(val: string) => saveProfile({ ...profile, teacherFirstName: val })}
+                teacherLastName={teacherLastName}
+                setTeacherLastName={(val: string) => saveProfile({ ...profile, teacherLastName: val })}
                 calendarEvents={calendarEvents} setCalendarEvents={updateCalendarEvents}
                 rotationMapping={rotationMapping} setRotationMapping={saveRotationMapping}
                 specialsNames={specialsNames} setSpecialsNames={saveSpecialsNames}

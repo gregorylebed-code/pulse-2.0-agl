@@ -29,6 +29,8 @@ interface StudentsScreenProps {
   abbreviations: Abbreviation[];
   selectedStudentId: string | null;
   setSelectedStudentId: (id: string | null) => void;
+  teacherTitle: string;
+  teacherLastName: string;
 }
 
 export default function StudentsScreen({
@@ -50,6 +52,8 @@ export default function StudentsScreen({
   abbreviations,
   selectedStudentId,
   setSelectedStudentId,
+  teacherTitle,
+  teacherLastName,
 }: StudentsScreenProps) {
   const [filter, setFilter] = useState<string>('All');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
@@ -191,6 +195,8 @@ export default function StudentsScreen({
         deleteNote={deleteNote}
         deleteReport={deleteReport}
         abbreviations={abbreviations}
+        teacherTitle={teacherTitle}
+        teacherLastName={teacherLastName}
       />
     );
   }

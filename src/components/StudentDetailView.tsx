@@ -12,7 +12,7 @@ import { jsPDF } from 'jspdf';
 import { Note, Student, Report, CalendarEvent } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
-import { categorizeNote, refineReport, parseVoiceLog, ReportData } from '../lib/gemini';
+import { categorizeNote, refineReport, parseVoiceLog, quickParentNote, ReportData } from '../lib/gemini';
 import { cn } from '../utils/cn';
 
 
@@ -61,6 +61,8 @@ interface StudentDetailViewProps {
   deleteNote: (id: string) => Promise<void>;
   deleteReport: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
+  teacherTitle: string;
+  teacherLastName: string;
 }
 
 export default function StudentDetailView({
@@ -80,6 +82,8 @@ export default function StudentDetailView({
   deleteNote,
   deleteReport,
   abbreviations,
+  teacherTitle,
+  teacherLastName,
 }: StudentDetailViewProps) {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, []);
 
@@ -115,7 +119,10 @@ export default function StudentDetailView({
 
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
   const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]);
-  const [activeSection, setActiveSection] = useState<'timeline' | 'ai-report' | 'history'>('timeline');
+  const [activeSection, setActiveSection] = useState<'timeline' | 'ai-report' | 'history' | 'quick-note'>('timeline');
+  const [quickNote, setQuickNote] = useState<string | null>(null);
+  const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
+  const quickNoteRef = useRef<HTMLDivElement>(null);
   const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingDeleteNoteIds, setPendingDeleteNoteIds] = useState<Set<string>>(new Set());
@@ -310,7 +317,7 @@ export default function StudentDetailView({
       entries.forEach(entry => {
         if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
           maxRatio = entry.intersectionRatio;
-          visibleSection = entry.target.id as 'timeline' | 'ai-report' | 'history';
+          visibleSection = entry.target.id as 'timeline' | 'ai-report' | 'history' | 'quick-note';
         }
       });
 
@@ -328,15 +335,17 @@ export default function StudentDetailView({
     if (timelineRef.current) observer.observe(timelineRef.current);
     if (aiReportRef.current) observer.observe(aiReportRef.current);
     if (historyRef.current) observer.observe(historyRef.current);
+    if (quickNoteRef.current) observer.observe(quickNoteRef.current);
 
     return () => observer.disconnect();
   }, [activeSection]);
 
-  const scrollToSection = (sectionId: 'timeline' | 'ai-report' | 'history') => {
+  const scrollToSection = (sectionId: 'timeline' | 'ai-report' | 'history' | 'quick-note') => {
     const refs = {
       'timeline': timelineRef,
       'ai-report': aiReportRef,
-      'history': historyRef
+      'history': historyRef,
+      'quick-note': quickNoteRef,
     };
     const targetRef = refs[sectionId];
     if (targetRef?.current) {
@@ -550,6 +559,29 @@ export default function StudentDetailView({
     if (!currentReport) return;
     navigator.clipboard.writeText(reportToText(currentReport));
     alert('Report copied for ParentSquare!');
+  };
+
+  const handleGenerateQuickNote = async () => {
+    const today = new Date();
+    const todayNotes = notes.filter(n => {
+      const d = new Date(n.created_at);
+      return d.getFullYear() === today.getFullYear() &&
+             d.getMonth() === today.getMonth() &&
+             d.getDate() === today.getDate();
+    });
+    if (todayNotes.length === 0) {
+      toast.error('No notes from today to base this on.');
+      return;
+    }
+    setIsGeneratingQuickNote(true);
+    try {
+      const result = await quickParentNote(todayNotes, teacherTitle, teacherLastName);
+      setQuickNote(result.trim());
+    } catch {
+      toast.error('Failed to generate quick note.');
+    } finally {
+      setIsGeneratingQuickNote(false);
+    }
   };
 
   const handleRefine = async () => {
@@ -778,6 +810,15 @@ export default function StudentDetailView({
           )}
         >
           History
+        </button>
+        <button
+          onClick={() => scrollToSection('quick-note')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-sm font-black transition-all",
+            activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "text-slate-500 hover:bg-white/60"
+          )}
+        >
+          Quick Note
         </button>
       </div>
 
@@ -1370,6 +1411,69 @@ export default function StudentDetailView({
                 })
               )}
             </div>
+          </div>
+
+          {/* Quick Note to Parent */}
+          <div id="quick-note" ref={quickNoteRef} className="space-y-4 pt-6 mt-6 border-t border-slate-100 scroll-mt-header">
+            <div>
+              <h3 className="text-sm font-bold text-terracotta flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" /> Quick Note to Parent
+              </h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                Based on today's observations only
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGenerateQuickNote}
+              disabled={isGeneratingQuickNote}
+              className="w-full py-5 bg-terracotta text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-terracotta/20 flex items-center justify-center gap-3 disabled:opacity-50"
+            >
+              {isGeneratingQuickNote
+                ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing note...</>
+                : <><MessageSquare className="w-4 h-4" /> Generate Quick Note</>
+              }
+            </button>
+
+            <AnimatePresence>
+              {quickNote && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-terracotta">Today's Note</span>
+                    <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
+                  </div>
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(quickNote); toast.success('Copied!'); }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Copy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => triggerEmail(quickNote, `Note about ${student.name}`)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
+                    >
+                      <Mail className="w-3.5 h-3.5" /> Email Parent
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> Text
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

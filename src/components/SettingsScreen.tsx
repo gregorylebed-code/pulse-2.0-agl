@@ -101,6 +101,12 @@ interface SettingsScreenProps {
   setUserName: (val: string) => void;
   schoolName: string;
   setSchoolName: (val: string) => void;
+  teacherTitle: string;
+  setTeacherTitle: (val: string) => void;
+  teacherFirstName: string;
+  setTeacherFirstName: (val: string) => void;
+  teacherLastName: string;
+  setTeacherLastName: (val: string) => void;
   calendarEvents: CalendarEvent[];
   setCalendarEvents: (val: CalendarEvent[]) => void;
   rotationMapping: Record<string, string>;
@@ -138,6 +144,12 @@ export default function SettingsScreen({
   setUserName,
   schoolName,
   setSchoolName,
+  teacherTitle,
+  setTeacherTitle,
+  teacherFirstName,
+  setTeacherFirstName,
+  teacherLastName,
+  setTeacherLastName,
   calendarEvents,
   setCalendarEvents,
   rotationMapping,
@@ -399,6 +411,9 @@ export default function SettingsScreen({
   const handleSaveProfile = () => {
     setUserName(userName);
     setSchoolName(schoolName);
+    setTeacherTitle(teacherTitle);
+    setTeacherFirstName(teacherFirstName);
+    setTeacherLastName(teacherLastName);
     toast.success('Profile updated successfully');
   };
 
@@ -1068,7 +1083,49 @@ export default function SettingsScreen({
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Title</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {(['Mr.', 'Mrs.', 'Ms.', 'Miss', 'Dr.'] as const).map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTeacherTitle(t)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all",
+                          teacherTitle === t
+                            ? "bg-sage/15 border-sage text-sage-dark shadow-sm"
+                            : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                        )}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">First Name</label>
+                    <input
+                      type="text"
+                      value={teacherFirstName}
+                      onChange={(e) => setTeacherFirstName(e.target.value)}
+                      placeholder="e.g. John"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Last Name</label>
+                    <input
+                      type="text"
+                      value={teacherLastName}
+                      onChange={(e) => setTeacherLastName(e.target.value)}
+                      placeholder="e.g. Smith"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Display Name (used in app header)</label>
                   <input
                     type="text"
                     value={userName}
@@ -1085,6 +1142,11 @@ export default function SettingsScreen({
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all"
                   />
                 </div>
+                {(teacherTitle || teacherLastName) && (
+                  <p className="text-[10px] text-slate-400 ml-1">
+                    Quick notes will be signed: <span className="font-bold text-slate-600">{teacherTitle} {teacherLastName || '___'}</span>
+                  </p>
+                )}
                 <button
                   onClick={handleSaveProfile}
                   className="w-full py-4 bg-sage text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-sage-dark transition-all shadow-lg shadow-sage/20"
