@@ -48,6 +48,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   }, [theme]);
 
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'settings'>('pulse');
+  const [classSummaries, setClassSummaries] = useState<Record<string, string>>({});
   const [pulseView, setPulseView] = useState<'log' | 'summary'>('log');
   const [settingsView, setSettingsView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
   const [showTasks, setShowTasks] = useState(false);
@@ -69,8 +70,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       setIsUsingBackup(true);
       setTimeout(() => setIsUsingBackup(false), 8000);
     };
-    window.addEventListener('gemini-fallback-triggered', handleFallback);
-    return () => window.removeEventListener('gemini-fallback-triggered', handleFallback);
+    window.addEventListener('ai-fallback-triggered', handleFallback);
+    return () => window.removeEventListener('ai-fallback-triggered', handleFallback);
   }, []);
 
   // Keep refs so the popstate handler never has stale closure values
@@ -190,7 +191,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   abbreviations={abbreviations}
                 />
               ) : (
-                <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} />
+                <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} summaries={classSummaries} setSummaries={setClassSummaries} />
               )}
             </motion.div>
           )}
@@ -228,6 +229,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 theme={theme} setTheme={setTheme}
                 abbreviations={abbreviations} saveAbbreviations={saveAbbreviations}
                 notes={notes}
+                reportsCount={reports.length}
                 stats={stats}
                 userId={userId}
                 userEmail={userEmail}
@@ -277,7 +279,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-800 text-white rounded-full text-[10px] font-bold shadow-lg flex items-center gap-2 z-50 pointer-events-none"
         >
           <Sparkles className="w-3 h-3 text-sage" />
-          Gemini limit reached. Using Llama backup.
+          Groq limit reached. Using Cerebras backup.
         </motion.div>
       )}
     </div>

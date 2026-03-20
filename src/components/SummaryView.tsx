@@ -33,12 +33,13 @@ interface Props {
   classes: string[];
   lessonHistory: DeliveredLesson[];
   saveLessonHistory: (history: DeliveredLesson[]) => Promise<void>;
+  summaries: Record<string, string>;
+  setSummaries: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
-export default function SummaryView({ notes, students, classes, lessonHistory, saveLessonHistory }: Props) {
+export default function SummaryView({ notes, students, classes, lessonHistory, saveLessonHistory, summaries, setSummaries }: Props) {
   const [period, setPeriod] = useState<Period>('week');
   const [viewMode, setViewMode] = useState<ViewMode>('notes');
-  const [summaries, setSummaries] = useState<Record<string, string>>({});
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 

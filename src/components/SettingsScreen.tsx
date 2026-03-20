@@ -116,6 +116,7 @@ interface SettingsScreenProps {
   abbreviations: Abbreviation[];
   saveAbbreviations: (val: Abbreviation[]) => Promise<void>;
   notes: Note[];
+  reportsCount: number;
   stats: { notes_created: number; reports_generated: number };
   userId: string;
   userEmail: string;
@@ -152,6 +153,7 @@ export default function SettingsScreen({
   abbreviations,
   saveAbbreviations,
   notes,
+  reportsCount,
   stats,
   userId,
   userEmail,
@@ -615,8 +617,8 @@ export default function SettingsScreen({
             </div>
 
             <StatsCard
-              notesCreated={stats.notes_created}
-              reportsGenerated={stats.reports_generated}
+              notesCreated={notes.length}
+              reportsGenerated={reportsCount}
             />
 
             <a
