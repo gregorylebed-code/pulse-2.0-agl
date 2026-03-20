@@ -63,8 +63,8 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
     })
   });
 
-  // Fall back to Cerebras on rate limit or server error (vision not supported on Cerebras)
-  if (!response.ok && !isVision && (response.status === 429 || response.status >= 500)) {
+  // Fall back to Cerebras on any Groq failure (vision not supported on Cerebras)
+  if (!response.ok && !isVision) {
     console.warn(`Groq ${response.status} — falling back to Cerebras`);
     return callCerebras(messages, isJson, callType);
   }
