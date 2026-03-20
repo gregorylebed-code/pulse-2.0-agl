@@ -94,8 +94,9 @@ export default function StudentDetailView({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdatingContact, setIsUpdatingContact] = useState(false);
   const [currentReport, setCurrentReport] = useState<ReportData | null>(null);
+  const teacherSignOff = teacherLastName.trim() ? `\n— ${teacherTitle} ${teacherLastName}` : '';
   const reportToText = (report: ReportData): string =>
-    [report.opening, '\nGlow:\n' + report.glow, '\nGrow:\n' + report.grow, '\nGoal:\n' + report.goal, '\n' + report.closing].join('\n');
+    [report.opening, '\nGlow:\n' + report.glow, '\nGrow:\n' + report.grow, '\nGoal:\n' + report.goal, '\n' + report.closing + teacherSignOff].join('\n');
   const [refineInstructions, setRefineInstructions] = useState('');
   const [isRefining, setIsRefining] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
