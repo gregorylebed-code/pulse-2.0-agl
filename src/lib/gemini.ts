@@ -1,9 +1,6 @@
 import { Note, SELTopic, SELLesson } from "../types";
 import { supabase } from "./supabase";
 
-// @ts-ignore
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string;
-
 async function logTokenUsage(callType: string, usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
@@ -17,11 +14,6 @@ async function logTokenUsage(callType: string, usage: { prompt_tokens: number; c
 }
 
 async function callGroq(prompt: string, isJson: boolean, imageData?: { data: string; mimeType: string }, callType = 'unknown'): Promise<string> {
-  if (!GROQ_API_KEY) {
-    console.error('Missing VITE_GROQ_API_KEY in environment');
-    throw new Error("Missing GROQ API key");
-  }
-
   let messages: any[];
 
   if (imageData && imageData.mimeType.startsWith('image/')) {
@@ -40,12 +32,10 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
 
   const model = imageData?.mimeType.startsWith('image/') ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile';
 
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  // All AI calls go through our server-side proxy — key never touches the browser
+  const response = await fetch('/api/groq', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model,
       messages,
