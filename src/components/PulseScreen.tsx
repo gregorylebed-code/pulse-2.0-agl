@@ -374,9 +374,11 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
   // After 4 PM the school day is done — skip today's events and show the next upcoming one
   const eventCutoff = now.getHours() >= 16 ? tomorrowStart : todayStart;
+  // Parse "YYYY-MM-DD" as local midnight (not UTC) to avoid timezone off-by-one
+  const parseLocalDate = (d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); };
   const nextEvent = calendarEvents
-    ?.filter(e => new Date(e.date) >= eventCutoff)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+    ?.filter(e => parseLocalDate(e.date) >= eventCutoff)
+    .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())[0];
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
