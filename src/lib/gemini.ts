@@ -18,7 +18,7 @@ async function callCerebras(messages: any[], isJson: boolean, callType: string):
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b',
+      model: 'llama3.1-70b',
       messages,
       response_format: isJson ? { type: 'json_object' } : undefined
     })
