@@ -119,6 +119,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   const todayRotation = getRotationForDate(new Date(), rotationMapping, specialsNames);
 
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeTab, settingsView]);
+
   return (
     <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20 overflow-x-hidden">
       <Header
@@ -137,7 +143,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         setShowTasks={setShowTasks}
       />
 
-      <main className="flex-1 px-6 pb-24 overflow-y-auto">
+      <main ref={mainRef} className="flex-1 px-6 pb-24 overflow-y-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'pulse' && (
             <motion.div key="pulse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
