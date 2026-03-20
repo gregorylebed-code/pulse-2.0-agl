@@ -369,8 +369,13 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     }
   };
 
+  const now = new Date();
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  // After 4 PM the school day is done — skip today's events and show the next upcoming one
+  const eventCutoff = now.getHours() >= 16 ? tomorrowStart : todayStart;
   const nextEvent = calendarEvents
-    ?.filter(e => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0)))
+    ?.filter(e => new Date(e.date) >= eventCutoff)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
   return (

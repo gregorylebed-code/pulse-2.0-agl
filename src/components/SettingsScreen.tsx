@@ -86,6 +86,8 @@ function SettingsItem({ icon, label, onClick }: { icon: React.ReactNode, label: 
   );
 }
 
+type SettingsView = 'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations';
+
 interface SettingsScreenProps {
   indicators: any[];
   setIndicators: (val: any[]) => void;
@@ -118,6 +120,8 @@ interface SettingsScreenProps {
   userId: string;
   userEmail: string;
   onSignOut: () => Promise<any>;
+  view: SettingsView;
+  setView: (v: SettingsView) => void;
 }
 
 export default function SettingsScreen({
@@ -152,8 +156,9 @@ export default function SettingsScreen({
   userId,
   userEmail,
   onSignOut,
+  view,
+  setView,
 }: SettingsScreenProps) {
-  const [view, setView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
   // Abbreviations state
@@ -592,7 +597,6 @@ export default function SettingsScreen({
               <div className="space-y-1">
                 <SettingsItem icon={<User />} label="Profile Settings" onClick={() => setView('profile')} />
                 <SettingsItem icon={<MessageCircle />} label="Notifications" onClick={() => setView('notifications')} />
-                <SettingsItem icon={<Shield />} label="Privacy & Security" onClick={() => setView('privacy')} />
                 <SettingsItem icon={<Sparkles />} label="Classroom Indicators" onClick={() => setView('indicators')} />
               </div>
             </div>
@@ -616,7 +620,7 @@ export default function SettingsScreen({
             />
 
             <a
-              href="https://buymeacoffee.com/YOUR_USERNAME"
+              href="https://buymeacoffee.com/gregorylebh"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 flex items-start gap-4 p-6 bg-white rounded-[32px] card-shadow border border-slate-100 hover:border-amber-200 hover:shadow-amber-100/50 transition-all group no-print"
@@ -635,46 +639,63 @@ export default function SettingsScreen({
               </div>
             </a>
 
-            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6 mt-6">
-              <h3 className="text-[13px] font-black text-terracotta ml-1">Danger Zone</h3>
-
-              <button
-                onClick={async () => {
-                  if (window.confirm('Are you sure you want to clear ALL notes for EVERY student? This cannot be undone.')) {
-                    await supabase.from('notes').delete().not('id', 'is', null);
-                    toast.success('All class notes cleared.');
-                    onNoteAdded();
-                  }
-                }}
-                className="w-full py-2 bg-terracotta/10 border-2 border-terracotta/20 text-terracotta rounded-full font-black text-sm hover:bg-terracotta hover:text-white transition-all shadow-sm flex items-center justify-center gap-3"
-              >
-                <Trash2 className="w-4 h-4" /> Class Reset
-              </button>
-
-              <button
-                onClick={async () => {
-                  if (window.confirm('⚠️ This will erase ALL your student data, notes, and settings. Are you sure?')) {
-                    await Promise.all([
-                      supabase.from('notes').delete().not('id', 'is', null),
-                      supabase.from('students').delete().not('id', 'is', null),
-                      supabase.from('indicators').delete().not('id', 'is', null),
-                      supabase.from('comm_types').delete().not('id', 'is', null),
-                      supabase.from('classes').delete().not('id', 'is', null),
-                      supabase.from('calendar_events').delete().not('id', 'is', null),
-                      supabase.from('reports').delete().not('id', 'is', null),
-                      supabase.from('settings').delete().not('key', 'is', null),
-                    ]);
-                    localStorage.clear();
-                    window.location.reload();
-                  }
-                }}
-                className="w-full py-2 bg-white border-2 border-terracotta/20 text-terracotta rounded-full font-black text-sm hover:bg-terracotta hover:text-white transition-all shadow-sm flex items-center justify-center gap-3"
-              >
-                <Trash2 className="w-4 h-4" /> Complete Factory Wipe
-              </button>
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-2 mt-6">
+              <SettingsItem icon={<Shield />} label="Privacy & Security" onClick={() => setView('privacy')} />
             </div>
 
-            <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-4 pb-4">Classroom Pulse v2.0.0</p>
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4 mt-6">
+              <h3 className="text-[13px] font-black text-terracotta ml-1">Danger Zone</h3>
+              <p className="text-[11px] text-slate-400 ml-1">These actions are permanent and cannot be undone.</p>
+
+              <div className="flex flex-col items-start gap-3 pt-2">
+                <button
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to clear ALL notes for EVERY student? This cannot be undone.')) {
+                      await supabase.from('notes').delete().not('id', 'is', null);
+                      toast.success('All class notes cleared.');
+                      onNoteAdded();
+                    }
+                  }}
+                  className="flex items-center gap-2 text-[11px] font-bold text-terracotta/70 hover:text-terracotta transition-colors px-3 py-1.5 rounded-xl hover:bg-terracotta/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Class Reset
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (window.confirm('⚠️ This will erase ALL your student data, notes, and settings. Are you sure?')) {
+                      await Promise.all([
+                        supabase.from('notes').delete().not('id', 'is', null),
+                        supabase.from('students').delete().not('id', 'is', null),
+                        supabase.from('indicators').delete().not('id', 'is', null),
+                        supabase.from('comm_types').delete().not('id', 'is', null),
+                        supabase.from('classes').delete().not('id', 'is', null),
+                        supabase.from('calendar_events').delete().not('id', 'is', null),
+                        supabase.from('reports').delete().not('id', 'is', null),
+                        supabase.from('settings').delete().not('key', 'is', null),
+                      ]);
+                      localStorage.clear();
+                      window.location.reload();
+                    }
+                  }}
+                  className="flex items-center gap-2 text-[11px] font-bold text-terracotta/70 hover:text-terracotta transition-colors px-3 py-1.5 rounded-xl hover:bg-terracotta/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Complete Factory Wipe
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 mt-4 pb-4">
+              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Classroom Pulse v2.0.0</p>
+              <a
+                href="https://classroom-pulse-landing.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-bold text-sage/60 hover:text-sage transition-colors"
+              >
+                What can Pulse do? →
+              </a>
+            </div>
           </motion.div>
         )}
 

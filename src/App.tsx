@@ -49,6 +49,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'settings'>('pulse');
   const [pulseView, setPulseView] = useState<'log' | 'summary'>('log');
+  const [settingsView, setSettingsView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
   const [showTasks, setShowTasks] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [tempName, setTempName] = useState('');
@@ -76,9 +77,11 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const activeTabRef = useRef(activeTab);
   const pulseViewRef = useRef(pulseView);
   const selectedStudentIdRef = useRef(selectedStudentId);
+  const settingsViewRef = useRef(settingsView);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
   useEffect(() => { pulseViewRef.current = pulseView; }, [pulseView]);
   useEffect(() => { selectedStudentIdRef.current = selectedStudentId; }, [selectedStudentId]);
+  useEffect(() => { settingsViewRef.current = settingsView; }, [settingsView]);
 
   // Android back button — navigate one level deeper → shallower instead of closing the app
   useEffect(() => {
@@ -88,6 +91,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         setSelectedStudentId(null);
       } else if (pulseViewRef.current === 'summary') {
         setPulseView('log');
+      } else if (activeTabRef.current === 'settings' && settingsViewRef.current !== 'main') {
+        setSettingsView('main');
       } else if (activeTabRef.current !== 'pulse') {
         setActiveTab('pulse');
       } else {
@@ -216,11 +221,29 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 userId={userId}
                 userEmail={userEmail}
                 onSignOut={signOut as () => Promise<any>}
+                view={settingsView}
+                setView={setSettingsView}
               />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* Floating task button — fixed above nav bar */}
+      <button
+        onClick={() => setShowTasks(true)}
+        className="fixed bottom-24 right-4 w-12 h-12 bg-white text-slate-400 rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center hover:text-sage transition-all z-40 no-print"
+        title="Daily Tasks"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        </svg>
+        {tasks.filter(t => !t.completed).length > 0 && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-terracotta text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+            {tasks.filter(t => !t.completed).length}
+          </span>
+        )}
+      </button>
 
       <TaskDrawer
         showTasks={showTasks} setShowTasks={setShowTasks}
