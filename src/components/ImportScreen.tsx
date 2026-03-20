@@ -140,7 +140,6 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
         await updateStudent(existing.id, {
           parent_emails: updatedEmails,
           parent_phones: updatedPhones,
-          class_id: defaultClassPeriod,
           class_period: defaultClassPeriod,
         });
         updatedCount++;
@@ -150,14 +149,11 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
       for (const s of newStudents) {
         await addStudent({
           name: extractString(s.name),
-          class_id: defaultClassPeriod,
           class_period: defaultClassPeriod,
           parent_guardian_names: Array.isArray(s.parent_guardian_names) ? s.parent_guardian_names.map(extractString) : [],
           parent_emails: Array.isArray(s.parent_emails) ? s.parent_emails : [],
           parent_phones: Array.isArray(s.parent_phones) ? s.parent_phones : [],
-          user_id: userId,
-          created_at: new Date().toISOString(),
-        } as Omit<Student, 'id'>);
+        } as Omit<Student, 'id' | 'created_at' | 'user_id'>);
         addedCount++;
       }
 
