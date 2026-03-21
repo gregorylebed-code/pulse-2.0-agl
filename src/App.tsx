@@ -65,6 +65,14 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [isUsingBackup, setIsUsingBackup] = useState(false);
   const [showRotationForecast, setShowRotationForecast] = useState(false);
+  const [welcomeHidden, setWelcomeHidden] = useState(false);
+
+  // Re-show welcome when user navigates back to the pulse tab
+  useEffect(() => {
+    if (!onboardingComplete && activeTab === 'pulse') {
+      setWelcomeHidden(false);
+    }
+  }, [activeTab, onboardingComplete]);
 
   const userName = profile.userName;
   const schoolName = profile.schoolName;
@@ -355,12 +363,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       }} />
 
       <WelcomeModal
-        show={!onboardingComplete && !loading && students.length === 0 && notes.length === 0}
+        show={!onboardingComplete && !welcomeHidden && !loading && students.length === 0 && notes.length === 0}
         teacherName={teacherFirstName || userName}
-        onGoToProfile={() => { setActiveTab('settings'); setSettingsView('profile'); }}
-        onGoToRoster={() => { setActiveTab('settings'); setSettingsView('roster'); }}
-        onGoToPulse={() => setActiveTab('pulse')}
-        onGoToCalendar={() => { setActiveTab('settings'); setSettingsView('calendar'); }}
+        onGoToProfile={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('profile'); }}
+        onGoToRoster={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('roster'); }}
+        onGoToPulse={() => { setWelcomeHidden(true); setActiveTab('pulse'); }}
+        onGoToCalendar={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('calendar'); }}
         onDismiss={markOnboardingComplete}
       />
 

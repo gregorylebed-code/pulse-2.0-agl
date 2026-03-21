@@ -97,10 +97,7 @@ export default function WelcomeModal({
                 <button
                   key={step.title}
                   type="button"
-                  onClick={() => {
-                    handlers[step.action]();
-                    onDismiss();
-                  }}
+                  onClick={() => handlers[step.action]()}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group"
                 >
                   <div className={`w-10 h-10 rounded-xl border flex items-center justify-center flex-shrink-0 ${step.color}`}>
