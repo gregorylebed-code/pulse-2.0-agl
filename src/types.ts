@@ -74,6 +74,21 @@ export interface CalendarEvent {
   created_at: string;
 }
 
+export type GoalCategory = 'academic' | 'social-emotional' | 'executive-functioning' | 'other';
+export type GoalStatus = 0 | 1 | 2 | 3;
+
+export interface StudentGoal {
+  id: string;
+  student_id: string;
+  user_id: string;
+  category: GoalCategory;
+  goal_text: string;
+  status: GoalStatus;
+  teacher_note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SELTopic {
   title: string;
   theme: string;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { Note, Student, Report, CalendarEvent } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes, ReportData } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
@@ -14,6 +14,7 @@ interface StudentsScreenProps {
   students: Student[];
   notes: Note[];
   reports: Report[];
+  goals: StudentGoal[];
   indicators: any[];
   commTypes: any[];
   calendarEvents: CalendarEvent[];
@@ -26,6 +27,9 @@ interface StudentsScreenProps {
   updateStudent: (id: string, updates: any) => Promise<void>;
   addReport: (r: Omit<Report, 'id' | 'created_at' | 'user_id'>) => Promise<Report | null>;
   deleteReport: (id: string) => Promise<void>;
+  addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
+  updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
   selectedStudentId: string | null;
   setSelectedStudentId: (id: string | null) => void;
@@ -37,6 +41,7 @@ export default function StudentsScreen({
   students,
   notes,
   reports,
+  goals,
   indicators,
   commTypes,
   calendarEvents,
@@ -49,6 +54,9 @@ export default function StudentsScreen({
   updateStudent,
   addReport,
   deleteReport,
+  addGoal,
+  updateGoal,
+  deleteGoal,
   abbreviations,
   selectedStudentId,
   setSelectedStudentId,
@@ -67,6 +75,7 @@ export default function StudentsScreen({
   const selectedStudent = students.find(s => s.id === selectedStudentId);
   const studentNotes = notes.filter(n => n.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const studentReports = reports.filter(r => r.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const studentGoals = goals.filter(g => g.student_id === selectedStudent?.id);
 
 
   const reportToText = (report: ReportData): string =>
@@ -183,6 +192,7 @@ export default function StudentsScreen({
         students={students}
         notes={studentNotes}
         reports={studentReports}
+        goals={studentGoals}
         indicators={indicators}
         commTypes={commTypes}
         calendarEvents={calendarEvents}
@@ -194,6 +204,9 @@ export default function StudentsScreen({
         updateStudent={updateStudent}
         deleteNote={deleteNote}
         deleteReport={deleteReport}
+        addGoal={addGoal}
+        updateGoal={updateGoal}
+        deleteGoal={deleteGoal}
         abbreviations={abbreviations}
         teacherTitle={teacherTitle}
         teacherLastName={teacherLastName}

@@ -1,4 +1,4 @@
-import { Note, SELTopic, SELLesson } from "../types";
+import { Note, SELTopic, SELLesson, GoalCategory } from "../types";
 import { supabase } from "./supabase";
 
 async function logTokenUsage(callType: string, usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) {
@@ -417,6 +417,47 @@ RULES:
 - Do NOT add any extra commentary, headers, or explanation`;
 
   return await callGroq(prompt, false, undefined, 'quick_parent_note');
+}
+
+export async function suggestGoals(studentName: string, notes: Note[]): Promise<Array<{ category: GoalCategory; goal_text: string }>> {
+  if (notes.length === 0) return [];
+
+  const noteSummary = notes
+    .slice(0, 20)
+    .map(n => `- ${n.content}`)
+    .join('\n');
+
+  const prompt = `You are helping a 3rd grade teacher set SMART goals for a student named ${studentName}.
+
+Here are the teacher's recent observation notes about this student:
+${noteSummary}
+
+Based on these notes, suggest exactly 3 goals for this student. Each goal should:
+- Start with "I can..." (student-facing language)
+- Be specific and achievable within 2–4 weeks
+- Be appropriate for a 3rd grader
+- Avoid "failure" language — keep it positive and growth-focused
+
+Use these categories:
+- "academic": reading, math, writing, or subject-specific skills
+- "social-emotional": self-regulation, peer interactions, emotional awareness
+- "executive-functioning": organization, transitions, task completion, focus
+- "other": personal interest or a goal that doesn't fit above
+
+Return JSON only:
+{"goals":[{"category":"academic","goal_text":"I can..."},{"category":"social-emotional","goal_text":"I can..."},{"category":"executive-functioning","goal_text":"I can..."}]}`;
+
+  const raw = await callGroq(prompt, true, undefined, 'suggest_goals');
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.goals)) return [];
+    return parsed.goals.filter((g: any) =>
+      g.category && g.goal_text &&
+      ['academic', 'social-emotional', 'executive-functioning', 'other'].includes(g.category)
+    );
+  } catch {
+    return [];
+  }
 }
 
 export async function generateSELLesson(topic: SELTopic): Promise<SELLesson | null> {

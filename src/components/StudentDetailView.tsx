@@ -5,14 +5,15 @@ import {
   ChevronLeft, Edit2, Send, Mic, Image as ImageIcon, Loader2,
   Trash2, Copy, Mail, MessageSquare, CheckCircle2, Archive,
   X, Sparkles, ClipboardList, FileText, Download,
-  Smile, Meh, Frown, Users, Phone, Tag, ChevronDown, Settings2
+  Smile, Meh, Frown, Users, Phone, Tag, ChevronDown, Settings2,
+  Target, Plus, Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
-import { Note, Student, Report, CalendarEvent } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
-import { categorizeNote, refineReport, parseVoiceLog, quickParentNote, ReportData } from '../lib/gemini';
+import { categorizeNote, refineReport, parseVoiceLog, quickParentNote, suggestGoals, ReportData } from '../lib/gemini';
 import { cn } from '../utils/cn';
 
 
@@ -44,11 +45,26 @@ const getIconForName = (name: string, type: string): React.ReactNode => {
   }
 };
 
+const GOAL_STAGES: { label: string; emoji: string; color: string }[] = [
+  { label: 'Planted',   emoji: '🌱', color: 'text-slate-500'   },
+  { label: 'Sprouting', emoji: '🌿', color: 'text-teal-600'    },
+  { label: 'Growing',   emoji: '🌻', color: 'text-amber-500'   },
+  { label: 'Bloomed',   emoji: '💐', color: 'text-violet-600'  },
+];
+
+const GOAL_CATEGORY_LABELS: Record<GoalCategory, string> = {
+  'academic': 'Academic',
+  'social-emotional': 'Social-Emotional',
+  'executive-functioning': 'Executive Functioning',
+  'other': 'Other',
+};
+
 interface StudentDetailViewProps {
   student: Student;
   students: Student[];
   notes: Note[];
   reports: Report[];
+  goals: StudentGoal[];
   indicators: any[];
   commTypes: any[];
   calendarEvents: CalendarEvent[];
@@ -60,6 +76,9 @@ interface StudentDetailViewProps {
   updateStudent: (id: string, updates: any) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   deleteReport: (id: string) => Promise<void>;
+  addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
+  updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
   teacherTitle: string;
   teacherLastName: string;
@@ -70,6 +89,7 @@ export default function StudentDetailView({
   students,
   notes,
   reports,
+  goals,
   indicators,
   commTypes,
   calendarEvents,
@@ -81,6 +101,9 @@ export default function StudentDetailView({
   updateStudent,
   deleteNote,
   deleteReport,
+  addGoal,
+  updateGoal,
+  deleteGoal,
   abbreviations,
   teacherTitle,
   teacherLastName,
@@ -120,10 +143,17 @@ export default function StudentDetailView({
 
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
   const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]);
-  const [activeSection, setActiveSection] = useState<'timeline' | 'ai-report' | 'history' | 'quick-note'>('timeline');
+  const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note'>('timeline');
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
   const quickNoteRef = useRef<HTMLDivElement>(null);
+  const goalsRef = useRef<HTMLDivElement>(null);
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [newGoalText, setNewGoalText] = useState('');
+  const [newGoalCategory, setNewGoalCategory] = useState<GoalCategory>('academic');
+  const [isSavingGoal, setIsSavingGoal] = useState(false);
+  const [isSuggestingGoals, setIsSuggestingGoals] = useState(false);
+  const [goalSuggestions, setGoalSuggestions] = useState<Array<{ category: GoalCategory; goal_text: string }>>([]);
   const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingDeleteNoteIds, setPendingDeleteNoteIds] = useState<Set<string>>(new Set());
@@ -318,7 +348,7 @@ export default function StudentDetailView({
       entries.forEach(entry => {
         if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
           maxRatio = entry.intersectionRatio;
-          visibleSection = entry.target.id as 'timeline' | 'ai-report' | 'history' | 'quick-note';
+          visibleSection = entry.target.id as 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note';
         }
       });
 
@@ -334,6 +364,7 @@ export default function StudentDetailView({
     });
 
     if (timelineRef.current) observer.observe(timelineRef.current);
+    if (goalsRef.current) observer.observe(goalsRef.current);
     if (aiReportRef.current) observer.observe(aiReportRef.current);
     if (historyRef.current) observer.observe(historyRef.current);
     if (quickNoteRef.current) observer.observe(quickNoteRef.current);
@@ -341,9 +372,10 @@ export default function StudentDetailView({
     return () => observer.disconnect();
   }, [activeSection]);
 
-  const scrollToSection = (sectionId: 'timeline' | 'ai-report' | 'history' | 'quick-note') => {
+  const scrollToSection = (sectionId: 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note') => {
     const refs = {
       'timeline': timelineRef,
+      'goals': goalsRef,
       'ai-report': aiReportRef,
       'history': historyRef,
       'quick-note': quickNoteRef,
@@ -784,20 +816,29 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex items-center justify-between gap-2 no-print">
+      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex items-center justify-between gap-1 no-print">
         <button
           onClick={() => scrollToSection('timeline')}
           className={cn(
-            "flex-1 py-2.5 rounded-xl text-sm font-black transition-all",
+            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
             activeSection === 'timeline' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
           )}
         >
           Timeline
         </button>
         <button
+          onClick={() => scrollToSection('goals')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
+            activeSection === 'goals' ? "bg-violet-500 text-white shadow-md shadow-violet-500/20" : "text-slate-500 hover:bg-white/60"
+          )}
+        >
+          Goals
+        </button>
+        <button
           onClick={() => scrollToSection('ai-report')}
           className={cn(
-            "flex-1 py-2.5 rounded-xl text-sm font-black transition-all",
+            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
             activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
           )}
         >
@@ -806,7 +847,7 @@ export default function StudentDetailView({
         <button
           onClick={() => scrollToSection('history')}
           className={cn(
-            "flex-1 py-2.5 rounded-xl text-sm font-black transition-all",
+            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
             activeSection === 'history' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
           )}
         >
@@ -815,11 +856,11 @@ export default function StudentDetailView({
         <button
           onClick={() => scrollToSection('quick-note')}
           className={cn(
-            "flex-1 py-2.5 rounded-xl text-sm font-black transition-all",
+            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
             activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "text-slate-500 hover:bg-white/60"
           )}
         >
-          Quick Note
+          Note
         </button>
       </div>
 
@@ -1095,6 +1136,258 @@ export default function StudentDetailView({
             </div>
           )}
         </div>
+      </div>
+
+      <div className="pt-6 border-t border-slate-100" />
+
+      {/* ─── Goals ─────────────────────────────────────────────── */}
+      <div id="goals" ref={goalsRef} className="space-y-4 scroll-mt-header">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-violet-600 flex items-center gap-2">
+              <Target className="w-4 h-4" /> Student Goals
+            </h3>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+              {goals.length} active goal{goals.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {goals.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const doc = new jsPDF();
+                  const margin = 20;
+                  const pageWidth = doc.internal.pageSize.getWidth();
+                  const contentWidth = pageWidth - margin * 2;
+                  let y = margin;
+
+                  doc.setFont('helvetica', 'bold');
+                  doc.setFontSize(16);
+                  doc.setTextColor(109, 76, 170);
+                  doc.text(`${student.name} — Goal Card`, margin, y);
+                  y += 10;
+
+                  doc.setFont('helvetica', 'normal');
+                  doc.setFontSize(9);
+                  doc.setTextColor(150, 150, 150);
+                  doc.text(`Printed ${new Date().toLocaleDateString()}`, margin, y);
+                  y += 12;
+
+                  goals.forEach((goal, i) => {
+                    const stage = GOAL_STAGES[goal.status];
+                    if (y > 250) { doc.addPage(); y = margin; }
+
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`${GOAL_CATEGORY_LABELS[goal.category].toUpperCase()} · ${stage.label.toUpperCase()}`, margin, y);
+                    y += 6;
+
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(11);
+                    doc.setTextColor(30, 30, 30);
+                    const lines = doc.splitTextToSize(goal.goal_text, contentWidth - 10);
+                    doc.text(lines, margin + 4, y);
+                    y += lines.length * 6 + 4;
+
+                    // Progress boxes
+                    const boxSize = 7;
+                    const boxGap = 3;
+                    const stages = ['Planted', 'Sprouting', 'Growing', 'Bloomed'];
+                    stages.forEach((s, si) => {
+                      const bx = margin + 4 + si * (boxSize + boxGap);
+                      if (si <= goal.status) {
+                        doc.setFillColor(109, 76, 170);
+                        doc.roundedRect(bx, y, boxSize, boxSize, 1, 1, 'F');
+                        doc.setTextColor(255, 255, 255);
+                      } else {
+                        doc.setDrawColor(200, 200, 200);
+                        doc.roundedRect(bx, y, boxSize, boxSize, 1, 1, 'S');
+                        doc.setTextColor(180, 180, 180);
+                      }
+                      doc.setFontSize(5);
+                      doc.text(s[0], bx + 2.5, y + 5);
+                    });
+                    y += boxSize + 10;
+
+                    if (i < goals.length - 1) {
+                      doc.setDrawColor(230, 230, 230);
+                      doc.line(margin, y - 4, pageWidth - margin, y - 4);
+                    }
+                  });
+
+                  doc.save(`${student.name.replace(/\s+/g, '_')}_Goals.pdf`);
+                }}
+                className="p-2 rounded-xl text-violet-500 hover:bg-violet-50 transition-colors"
+                title="Print Goal Card"
+              >
+                <Printer className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => { setShowGoalForm(f => !f); setGoalSuggestions([]); setNewGoalText(''); }}
+              className="p-2 rounded-xl text-violet-500 hover:bg-violet-50 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Existing goals */}
+        {goals.length === 0 && !showGoalForm && (
+          <p className="text-xs text-slate-400 text-center py-6">No goals yet — tap + to add one or let AI suggest some.</p>
+        )}
+
+        <div className="space-y-3">
+          {goals.map(goal => {
+            const stage = GOAL_STAGES[goal.status];
+            return (
+              <div key={goal.id} className="bg-white rounded-2xl p-4 border border-violet-100 shadow-sm space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400">
+                      {GOAL_CATEGORY_LABELS[goal.category]}
+                    </span>
+                    <p className="text-sm font-medium text-slate-700 mt-0.5 leading-snug">{goal.goal_text}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteGoal(goal.id)}
+                    className="p-1 text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {/* Status tap-to-advance */}
+                <button
+                  type="button"
+                  onClick={() => updateGoal(goal.id, { status: ((goal.status + 1) % 4) as GoalStatus })}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                    goal.status === 0 && "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                    goal.status === 1 && "bg-teal-50 text-teal-600 hover:bg-teal-100",
+                    goal.status === 2 && "bg-amber-50 text-amber-600 hover:bg-amber-100",
+                    goal.status === 3 && "bg-violet-50 text-violet-600 hover:bg-violet-100",
+                  )}
+                >
+                  <span>{stage.emoji}</span>
+                  <span>{stage.label}</span>
+                  <span className="text-[10px] opacity-50">tap to advance</span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Add / Suggest form */}
+        <AnimatePresence>
+          {showGoalForm && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="bg-violet-50 rounded-2xl p-4 border border-violet-100 space-y-3"
+            >
+              {/* AI suggest button */}
+              <button
+                type="button"
+                disabled={isSuggestingGoals}
+                onClick={async () => {
+                  setIsSuggestingGoals(true);
+                  setGoalSuggestions([]);
+                  try {
+                    const suggestions = await suggestGoals(student.name, notes);
+                    setGoalSuggestions(suggestions);
+                  } catch {
+                    toast.error('Could not generate suggestions');
+                  } finally {
+                    setIsSuggestingGoals(false);
+                  }
+                }}
+                className="w-full py-3 bg-violet-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50"
+              >
+                {isSuggestingGoals ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {isSuggestingGoals ? 'Thinking…' : 'Suggest from Notes'}
+              </button>
+
+              {/* AI suggestions */}
+              {goalSuggestions.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400">Tap a suggestion to add it</p>
+                  {goalSuggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      disabled={isSavingGoal}
+                      onClick={async () => {
+                        setIsSavingGoal(true);
+                        await addGoal({ student_id: student.id, category: s.category, goal_text: s.goal_text, status: 0 });
+                        setGoalSuggestions(prev => prev.filter((_, idx) => idx !== i));
+                        setIsSavingGoal(false);
+                        toast.success('Goal added');
+                      }}
+                      className="w-full text-left p-3 bg-white rounded-xl border border-violet-100 hover:border-violet-300 transition-all"
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400 block">
+                        {GOAL_CATEGORY_LABELS[s.category]}
+                      </span>
+                      <span className="text-sm text-slate-700 font-medium">{s.goal_text}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Manual entry */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400">Or write your own</p>
+                <select
+                  value={newGoalCategory}
+                  onChange={e => setNewGoalCategory(e.target.value as GoalCategory)}
+                  className="w-full px-3 py-2 bg-white border border-violet-100 rounded-xl text-xs font-medium focus:outline-none focus:border-violet-400"
+                >
+                  {(Object.keys(GOAL_CATEGORY_LABELS) as GoalCategory[]).map(k => (
+                    <option key={k} value={k}>{GOAL_CATEGORY_LABELS[k]}</option>
+                  ))}
+                </select>
+                <textarea
+                  value={newGoalText}
+                  onChange={e => setNewGoalText(e.target.value)}
+                  placeholder="I can…"
+                  rows={2}
+                  className="w-full px-3 py-2 bg-white border border-violet-100 rounded-xl text-sm font-medium resize-none focus:outline-none focus:border-violet-400 placeholder:text-slate-300"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={!newGoalText.trim() || isSavingGoal}
+                    onClick={async () => {
+                      if (!newGoalText.trim()) return;
+                      setIsSavingGoal(true);
+                      await addGoal({ student_id: student.id, category: newGoalCategory, goal_text: newGoalText.trim(), status: 0 });
+                      setNewGoalText('');
+                      setIsSavingGoal(false);
+                      setShowGoalForm(false);
+                      toast.success('Goal added');
+                    }}
+                    className="flex-1 py-2.5 bg-violet-500 text-white rounded-xl font-bold text-sm hover:brightness-110 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {isSavingGoal ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    Save Goal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowGoalForm(false); setGoalSuggestions([]); setNewGoalText(''); }}
+                    className="px-4 py-2.5 bg-white text-slate-400 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all border border-slate-100"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="pt-6 border-t border-slate-100" />

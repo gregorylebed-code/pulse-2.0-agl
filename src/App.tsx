@@ -34,6 +34,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     addStudent, updateStudent, deleteStudent,
     addTask, updateTask, deleteTask,
     addReport, deleteReport,
+    goals, addGoal, updateGoal, deleteGoal,
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
     saveSpecialsMode, saveDayOfWeekSpecials, saveRollingConfig, saveTodayOverride,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
@@ -221,12 +222,15 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
             <motion.div key="students" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <StudentsScreen
                 students={students} notes={notes} reports={reports}
+                goals={goals}
                 indicators={indicators} commTypes={commTypes}
                 calendarEvents={calendarEvents} classes={classes}
                 onUpdate={refreshData} deleteStudent={deleteStudent}
                 deleteNote={deleteNote} addNote={addNote} updateNote={updateNote}
                 updateStudent={updateStudent} addReport={addReport}
-                deleteReport={deleteReport} abbreviations={abbreviations}
+                deleteReport={deleteReport}
+                addGoal={addGoal} updateGoal={updateGoal} deleteGoal={deleteGoal}
+                abbreviations={abbreviations}
                 selectedStudentId={selectedStudentId}
                 setSelectedStudentId={setSelectedStudentId}
                 teacherTitle={teacherTitle}

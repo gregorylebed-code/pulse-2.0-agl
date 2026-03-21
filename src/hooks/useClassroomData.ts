@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Note, Student, CalendarEvent, Report, DeliveredLesson } from '../types';
+import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { SpecialsMode } from '../utils/rotationHelpers';
 
@@ -60,6 +60,7 @@ interface Stats {
 interface ClassroomDataState {
   notes: Note[];
   students: Student[];
+  goals: StudentGoal[];
   indicators: Indicator[];
   commTypes: Indicator[];
   classes: string[];
@@ -83,6 +84,9 @@ interface ClassroomDataState {
 
 interface ClassroomDataActions {
   addNote: (note: Omit<Note, 'id' | 'created_at' | 'user_id'>) => Promise<Note | null>;
+  addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
+  updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   addStudent: (student: Omit<Student, 'id' | 'created_at' | 'user_id'>) => Promise<Student | null>;
@@ -113,6 +117,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
   const [state, setState] = useState<ClassroomDataState>({
     notes: [],
     students: [],
+    goals: [],
     indicators: [],
     commTypes: [],
     classes: ['AM', 'PM'],
@@ -150,6 +155,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         { data: calendarData, error: calendarError },
         { data: reportsData },
         { data: settingsData },
+        { data: goalsData },
       ] = await Promise.all([
         supabase.from('notes').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('students').select('*').eq('user_id', userId),
@@ -160,6 +166,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         supabase.from('calendar_events').select('*').eq('user_id', userId),
         supabase.from('reports').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('settings').select('*').eq('user_id', userId),
+        supabase.from('student_goals').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       ]);
 
       if (notesError) throw new Error(`Notes: ${notesError.message}`);
@@ -212,6 +219,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         ...prev,
         notes: notesWithNames as Note[],
         students: studentsWithCamel as Student[],
+        goals: (goalsData || []) as StudentGoal[],
         // Use DB indicators directly; fall back to previous state if DB is empty
         indicators: (indicatorsData && indicatorsData.length > 0)
           ? (indicatorsData as Indicator[])
@@ -646,6 +654,51 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     await loadAllData();
   }, [loadAllData]);
 
+  // ─── Goals ──────────────────────────────────────────────────────────────────
+
+  const addGoal = useCallback(async (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('student_goals')
+        .insert([{ ...goal, user_id: userId, created_at: now, updated_at: now }])
+        .select()
+        .single();
+      if (error) throw error;
+      setState(prev => ({ ...prev, goals: [...prev.goals, data as StudentGoal] }));
+      return data as StudentGoal;
+    } catch (error) {
+      console.error('Error adding goal:', error);
+      return null;
+    }
+  }, [userId]);
+
+  const updateGoal = useCallback(async (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => {
+    try {
+      const { error } = await supabase
+        .from('student_goals')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      setState(prev => ({
+        ...prev,
+        goals: prev.goals.map(g => g.id === id ? { ...g, ...updates } : g),
+      }));
+    } catch (error) {
+      console.error('Error updating goal:', error);
+    }
+  }, []);
+
+  const deleteGoal = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase.from('student_goals').delete().eq('id', id);
+      if (error) throw error;
+      setState(prev => ({ ...prev, goals: prev.goals.filter(g => g.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+    }
+  }, []);
+
   return {
     ...state,
     addNote,
@@ -673,5 +726,8 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     updateCalendarEvents,
     saveLessonHistory,
     refreshData,
+    addGoal,
+    updateGoal,
+    deleteGoal,
   };
 }
