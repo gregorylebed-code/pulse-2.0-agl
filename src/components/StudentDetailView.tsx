@@ -490,6 +490,10 @@ export default function StudentDetailView({
   const [parentPhone, setParentPhone] = useState(() => extractContact(student.parent_phones?.[0]));
   const [birthMonth, setBirthMonth] = useState<string>(student.birth_month?.toString() || '');
   const [birthDay, setBirthDay] = useState<string>(student.birth_day?.toString() || '');
+  useEffect(() => {
+    setBirthMonth(student.birth_month?.toString() || '');
+    setBirthDay(student.birth_day?.toString() || '');
+  }, [student.birth_month, student.birth_day]);
 
   const handleSaveContact = async () => {
     setIsUpdatingContact(true);

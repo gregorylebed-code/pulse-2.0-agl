@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Sparkles, CheckCircle2, ArrowRight, Mail, Phone } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, ArrowRight, Mail, Phone, Cake, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { magicImport } from '../lib/gemini';
+import { magicImport, parseBirthdays } from '../lib/gemini';
 import { Student } from '../types';
 
 interface ImportScreenProps {
@@ -22,6 +22,53 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
   const [step, setStep] = useState<'input' | 'preview' | 'success'>('input');
   const [importSummary, setImportSummary] = useState<{ updated: number, added: number } | null>(null);
   const [defaultClassPeriod, setDefaultClassPeriod] = useState(classes[0] || 'Class 1');
+  const [activeTab, setActiveTab] = useState<'roster' | 'birthdays'>('roster');
+
+  // Birthday import state
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const [birthdayText, setBirthdayText] = useState('');
+  const [birthdayParsing, setBirthdayParsing] = useState(false);
+  const [birthdayPreview, setBirthdayPreview] = useState<Array<{ studentName: string; birthMonth: number; birthDay: number; matchedId: string | null; manualId?: string }> | null>(null);
+  const [birthdaySaving, setBirthdaySaving] = useState(false);
+
+  const handleParseBirthdays = async () => {
+    if (!birthdayText.trim()) return;
+    setBirthdayParsing(true);
+    try {
+      const results = await parseBirthdays(birthdayText, students.map(s => s.name));
+      const withMatch = results.map(r => {
+        const aiMatch = r.matchedName ? students.find(s => s.name.toLowerCase() === r.matchedName!.toLowerCase()) : null;
+        const localMatch = !aiMatch ? students.find(s =>
+          s.name.toLowerCase().includes(r.studentName.toLowerCase()) ||
+          r.studentName.toLowerCase().includes(s.name.toLowerCase())
+        ) : null;
+        return { studentName: r.studentName, birthMonth: r.birthMonth, birthDay: r.birthDay, matchedId: (aiMatch ?? localMatch)?.id ?? null };
+      });
+      setBirthdayPreview(withMatch);
+    } catch {
+      toast.error('Failed to parse birthdays');
+    } finally {
+      setBirthdayParsing(false);
+    }
+  };
+
+  const handleSaveBirthdays = async () => {
+    if (!birthdayPreview) return;
+    setBirthdaySaving(true);
+    const matched = birthdayPreview.filter(b => b.manualId || b.matchedId);
+    try {
+      for (const b of matched) {
+        await updateStudent((b.manualId || b.matchedId)!, { birth_month: b.birthMonth, birth_day: b.birthDay });
+      }
+      toast.success(`Saved ${matched.length} birthday${matched.length !== 1 ? 's' : ''}!`);
+      setBirthdayText('');
+      setBirthdayPreview(null);
+    } catch {
+      toast.error('Failed to save birthdays');
+    } finally {
+      setBirthdaySaving(false);
+    }
+  };
 
   // Simple fallback: reads one student name per line, extracts email/phone if present.
   // Works with lists like: "John Smith" or "Maria G - maria@email.com - 555-1234"
@@ -170,7 +217,96 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-      <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6">
+      {/* Tab switcher */}
+      <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-slate-100">
+        <button
+          onClick={() => setActiveTab('roster')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'roster' ? 'bg-sage text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          <Users className="w-3.5 h-3.5" /> Roster
+        </button>
+        <button
+          onClick={() => setActiveTab('birthdays')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'birthdays' ? 'bg-pink-400 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          <Cake className="w-3.5 h-3.5" /> Birthdays
+        </button>
+      </div>
+
+      {/* Birthday import tab */}
+      {activeTab === 'birthdays' && (
+        <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Import Birthdays</h2>
+            <p className="text-xs text-slate-500 mt-1">Paste any list of names and birthdays — AI will figure it out.</p>
+          </div>
+          {!birthdayPreview ? (
+            <>
+              <textarea
+                value={birthdayText}
+                onChange={e => setBirthdayText(e.target.value)}
+                placeholder={"Sarah Johnson - March 14\nMike Chen 5/22\nEmma Davis, born April 3rd..."}
+                rows={8}
+                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium focus:outline-none focus:border-pink-200 resize-none"
+              />
+              <button
+                onClick={handleParseBirthdays}
+                disabled={!birthdayText.trim() || birthdayParsing}
+                className="w-full py-4 bg-pink-400 text-white rounded-[24px] font-bold text-sm hover:bg-pink-500 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {birthdayParsing ? <><Loader2 className="w-4 h-4 animate-spin" /> Parsing...</> : <><Sparkles className="w-4 h-4" /> Parse with AI</>}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {birthdayPreview.map((b, i) => {
+                  const resolved = b.manualId || b.matchedId;
+                  const resolvedName = resolved ? students.find(s => s.id === resolved)?.name : null;
+                  return (
+                    <div key={i} className={`px-3 py-2 rounded-xl text-xs font-medium ${resolved ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className={resolved ? 'text-slate-700' : 'text-amber-600'}>{b.studentName}</span>
+                        <span className="text-slate-500 ml-2">{MONTH_NAMES[b.birthMonth - 1]} {b.birthDay}</span>
+                      </div>
+                      {!b.matchedId && (
+                        <select
+                          value={b.manualId || ''}
+                          onChange={e => setBirthdayPreview(prev => prev!.map((x, j) => j === i ? { ...x, manualId: e.target.value || undefined } : x))}
+                          className="mt-1.5 w-full px-2 py-1 bg-white border border-amber-200 rounded-lg text-[11px] font-medium focus:outline-none focus:border-pink-300"
+                        >
+                          <option value="">— pick student —</option>
+                          {students.sort((a, b) => a.name.localeCompare(b.name)).map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      )}
+                      {b.matchedId && resolvedName && resolvedName !== b.studentName && (
+                        <p className="text-[10px] text-green-500 mt-0.5">→ {resolvedName}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-slate-400">{birthdayPreview.filter(b => b.manualId || b.matchedId).length} of {birthdayPreview.length} ready to save.</p>
+              <div className="flex gap-2">
+                <button onClick={() => setBirthdayPreview(null)} className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-full font-bold text-sm hover:bg-slate-50 transition-colors">
+                  Back
+                </button>
+                <button
+                  onClick={handleSaveBirthdays}
+                  disabled={birthdaySaving || birthdayPreview.filter(b => b.manualId || b.matchedId).length === 0}
+                  className="flex-1 py-3 bg-pink-400 text-white rounded-full font-bold text-sm hover:bg-pink-500 transition-colors disabled:opacity-40"
+                >
+                  {birthdaySaving ? 'Saving...' : 'Save Birthdays'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'roster' && <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6">
         {step === 'input' && (
           <>
             <div>
@@ -304,7 +440,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
             </button>
           </div>
         )}
-      </div>
+      </div>}
     </motion.div>
   );
 }

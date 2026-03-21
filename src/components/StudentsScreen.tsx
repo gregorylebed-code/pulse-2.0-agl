@@ -74,7 +74,7 @@ export default function StudentsScreen({
   const [isBirthdayModalOpen, setIsBirthdayModalOpen] = useState(false);
   const [birthdayText, setBirthdayText] = useState('');
   const [birthdayParsing, setBirthdayParsing] = useState(false);
-  const [birthdayPreview, setBirthdayPreview] = useState<Array<{ studentName: string; birthMonth: number; birthDay: number; matchedId: string | null }> | null>(null);
+  const [birthdayPreview, setBirthdayPreview] = useState<Array<{ studentName: string; birthMonth: number; birthDay: number; matchedId: string | null; manualId?: string }> | null>(null);
   const [birthdaySaving, setBirthdaySaving] = useState(false);
 
   const selectedStudent = students.find(s => s.id === selectedStudentId);
@@ -225,13 +225,20 @@ export default function StudentsScreen({
     if (!birthdayText.trim()) return;
     setBirthdayParsing(true);
     try {
-      const results = await parseBirthdays(birthdayText);
+      const results = await parseBirthdays(birthdayText, students.map(s => s.name));
       const withMatch = results.map(r => {
-        const match = students.find(s =>
-          s.name.toLowerCase().includes(r.studentName.toLowerCase()) ||
-          r.studentName.toLowerCase().includes(s.name.toLowerCase())
-        );
-        return { ...r, matchedId: match?.id ?? null };
+        // First try AI's suggested matchedName
+        const aiMatch = r.matchedName
+          ? students.find(s => s.name.toLowerCase() === r.matchedName!.toLowerCase())
+          : null;
+        // Fallback to local string match
+        const localMatch = !aiMatch
+          ? students.find(s =>
+              s.name.toLowerCase().includes(r.studentName.toLowerCase()) ||
+              r.studentName.toLowerCase().includes(s.name.toLowerCase())
+            )
+          : null;
+        return { studentName: r.studentName, birthMonth: r.birthMonth, birthDay: r.birthDay, matchedId: (aiMatch ?? localMatch)?.id ?? null };
       });
       setBirthdayPreview(withMatch);
     } catch {
@@ -244,10 +251,10 @@ export default function StudentsScreen({
   const handleSaveBirthdays = async () => {
     if (!birthdayPreview) return;
     setBirthdaySaving(true);
-    const matched = birthdayPreview.filter(b => b.matchedId);
+    const matched = birthdayPreview.filter(b => b.manualId || b.matchedId);
     try {
       for (const b of matched) {
-        await updateStudent(b.matchedId!, { birth_month: b.birthMonth, birth_day: b.birthDay });
+        await updateStudent((b.manualId || b.matchedId)!, { birth_month: b.birthMonth, birth_day: b.birthDay });
       }
       toast.success(`Saved ${matched.length} birthday${matched.length !== 1 ? 's' : ''}!`);
       setIsBirthdayModalOpen(false);
@@ -472,22 +479,42 @@ export default function StudentsScreen({
               ) : (
                 <>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {birthdayPreview.map((b, i) => (
-                      <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium ${b.matchedId ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
-                        <span className={b.matchedId ? 'text-slate-700' : 'text-amber-600'}>{b.studentName}</span>
-                        <span className="text-slate-500">{MONTH_NAMES[b.birthMonth - 1]} {b.birthDay}</span>
-                        {!b.matchedId && <span className="text-[10px] text-amber-500 font-bold">No match</span>}
-                      </div>
-                    ))}
+                    {birthdayPreview.map((b, i) => {
+                      const resolved = b.manualId || b.matchedId;
+                      const resolvedName = resolved ? students.find(s => s.id === resolved)?.name : null;
+                      return (
+                        <div key={i} className={`px-3 py-2 rounded-xl text-xs font-medium ${resolved ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
+                          <div className="flex items-center justify-between">
+                            <span className={resolved ? 'text-slate-700' : 'text-amber-600'}>{b.studentName}</span>
+                            <span className="text-slate-500 ml-2">{MONTH_NAMES[b.birthMonth - 1]} {b.birthDay}</span>
+                          </div>
+                          {!b.matchedId && (
+                            <select
+                              value={b.manualId || ''}
+                              onChange={e => setBirthdayPreview(prev => prev!.map((x, j) => j === i ? { ...x, manualId: e.target.value || undefined } : x))}
+                              className="mt-1.5 w-full px-2 py-1 bg-white border border-amber-200 rounded-lg text-[11px] font-medium focus:outline-none focus:border-pink-300"
+                            >
+                              <option value="">— pick student —</option>
+                              {students.sort((a, b) => a.name.localeCompare(b.name)).map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                            </select>
+                          )}
+                          {b.matchedId && resolvedName && resolvedName !== b.studentName && (
+                            <p className="text-[10px] text-green-500 mt-0.5">→ {resolvedName}</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <p className="text-[11px] text-slate-400">{birthdayPreview.filter(b => b.matchedId).length} of {birthdayPreview.length} matched to students.</p>
+                  <p className="text-[11px] text-slate-400">{birthdayPreview.filter(b => b.manualId || b.matchedId).length} of {birthdayPreview.length} ready to save.</p>
                   <div className="flex gap-2">
                     <button onClick={() => setBirthdayPreview(null)} className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-full font-bold text-sm hover:bg-slate-50 transition-colors">
                       Back
                     </button>
                     <button
                       onClick={handleSaveBirthdays}
-                      disabled={birthdaySaving || birthdayPreview.filter(b => b.matchedId).length === 0}
+                      disabled={birthdaySaving || birthdayPreview.filter(b => b.manualId || b.matchedId).length === 0}
                       className="flex-1 py-3 bg-pink-400 text-white rounded-full font-bold text-sm hover:bg-pink-500 transition-colors disabled:opacity-40"
                     >
                       {birthdaySaving ? 'Saving...' : 'Save Birthdays'}

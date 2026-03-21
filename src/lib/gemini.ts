@@ -487,18 +487,24 @@ Return JSON:
   }
 }
 
-export async function parseBirthdays(text: string): Promise<Array<{ studentName: string; birthMonth: number; birthDay: number }>> {
-  const prompt = `Parse this list of student birthdays. The text may be messy — names and dates in any format.
+export async function parseBirthdays(text: string, studentNames: string[] = []): Promise<Array<{ studentName: string; matchedName: string | null; birthMonth: number; birthDay: number }>> {
+  const rosterSection = studentNames.length > 0
+    ? `\nStudent roster — try to match each name to one of these (handle nicknames, first names only, last initials, etc.):\n${studentNames.join('\n')}`
+    : '';
+
+  const prompt = `Parse this list of student birthdays. The text may be messy — names and dates in any format.${rosterSection}
 
 "${text}"
 
 Return a JSON object with a "birthdays" array. Each entry must have:
-- studentName: string (properly formatted full name)
+- studentName: string (the name as written in the input)
+- matchedName: string or null (the best matching full name from the roster above, or null if no confident match)
 - birthMonth: integer 1–12
 - birthDay: integer 1–31
 
-Only include entries where you are confident about both the name and the date.
-Example: {"birthdays":[{"studentName":"Sarah Johnson","birthMonth":3,"birthDay":14}]}`;
+Use fuzzy matching: "Mike" → "Michael Chen", "Sam J." → "Samantha Johnson", "Emma" → "Emma Davis".
+Only include entries where you are confident about the date.
+Example: {"birthdays":[{"studentName":"Mike","matchedName":"Michael Chen","birthMonth":3,"birthDay":14}]}`;
 
   const raw = await callGroq(prompt, true, undefined, 'parse_birthdays');
   try {
