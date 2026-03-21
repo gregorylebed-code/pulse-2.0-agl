@@ -14,6 +14,7 @@ import Header from './components/Header';
 import Navigation from './components/Navigation';
 import { cn } from './utils/cn';
 import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
+import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notifications';
 
 import { Sparkles, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,6 +40,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     saveSpecialsMode, saveDayOfWeekSpecials, saveRollingConfig, saveTodayOverride,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
     updateCalendarEvents, refreshData, stats, lessonHistory, saveLessonHistory,
+    notificationPrefs, saveNotificationPrefs,
   } = useClassroomData(userId);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
@@ -87,6 +89,34 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   useEffect(() => {
     migrateLocalDataToUser(userId).then(() => refreshData());
   }, [userId]);
+
+  // Register service worker for notification support
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }, []);
+
+  // Schedule notifications whenever prefs, notes, or calendar events change
+  useEffect(() => {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+    const cleanups: (() => void)[] = [];
+
+    if (notificationPrefs.dailyReminderEnabled) {
+      const today = new Date().toISOString().split('T')[0];
+      const hasNotesToday = notes.some(n => n.created_at.startsWith(today));
+      cleanups.push(scheduleDailyReminder(notificationPrefs.dailyReminderTime, hasNotesToday));
+    }
+
+    if (notificationPrefs.calendarEventReminderEnabled) {
+      const today = new Date().toISOString().split('T')[0];
+      const todayEvents = calendarEvents.filter(e => e.date === today);
+      cleanups.push(scheduleCalendarReminder(todayEvents));
+    }
+
+    return () => cleanups.forEach(fn => fn());
+  }, [notificationPrefs, notes, calendarEvents]);
 
   useEffect(() => {
     const handleFallback = () => {
@@ -275,6 +305,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 onSignOut={signOut as () => Promise<any>}
                 view={settingsView}
                 setView={setSettingsView}
+                notificationPrefs={notificationPrefs}
+                saveNotificationPrefs={saveNotificationPrefs}
               />
             </motion.div>
           )}

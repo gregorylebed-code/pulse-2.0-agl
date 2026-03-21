@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { SpecialsMode } from '../utils/rotationHelpers';
+import { NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '../utils/notifications';
 
 interface Task {
   id: string;
@@ -78,6 +79,7 @@ interface ClassroomDataState {
   abbreviations: Abbreviation[];
   stats: Stats;
   lessonHistory: DeliveredLesson[];
+  notificationPrefs: NotificationPrefs;
   loading: boolean;
   error: string | null;
 }
@@ -110,6 +112,7 @@ interface ClassroomDataActions {
   updateClasses: (classes: string[]) => Promise<void>;
   updateCalendarEvents: (events: CalendarEvent[]) => Promise<void>;
   saveLessonHistory: (history: DeliveredLesson[]) => Promise<void>;
+  saveNotificationPrefs: (prefs: NotificationPrefs) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -135,6 +138,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     abbreviations: [],
     stats: { notes_created: 0, reports_generated: 0 },
     lessonHistory: [],
+    notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
     loading: true,
     error: null,
   });
@@ -189,6 +193,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       const abbreviations: Abbreviation[] = settingsMap['abbreviations'] ?? [];
       const stats: Stats = settingsMap['stats'] ?? { notes_created: 0, reports_generated: 0 };
       const lessonHistory: DeliveredLesson[] = settingsMap['lesson_history'] ?? [];
+      const notificationPrefs: NotificationPrefs = settingsMap['notification_prefs'] ?? DEFAULT_NOTIFICATION_PREFS;
       const specialsMode: SpecialsMode = settingsMap['specials_mode'] ?? 'letter-day';
       const dayOfWeekSpecials = settingsMap['day_of_week_specials'] ?? { '1': 'Art', '2': 'PE', '3': 'Music', '4': 'Library', '5': 'STEM' };
       const rollingStartDate: string = settingsMap['rolling_start_date'] ?? '';
@@ -242,6 +247,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         abbreviations,
         stats,
         lessonHistory,
+        notificationPrefs,
         loading: false,
       }));
 
@@ -590,6 +596,18 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, [userId]);
 
+  const saveNotificationPrefs = useCallback(async (prefs: NotificationPrefs) => {
+    try {
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'notification_prefs', value: prefs },
+        { onConflict: 'user_id,key' }
+      );
+      setState(prev => ({ ...prev, notificationPrefs: prefs }));
+    } catch (error) {
+      console.error('Error saving notification prefs:', error);
+    }
+  }, [userId]);
+
   // ─── Bulk Updates (delete-all + re-insert) ──────────────────────────────────
 
   const updateIndicators = useCallback(async (newIndicators: Indicator[]) => {
@@ -725,6 +743,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     updateClasses,
     updateCalendarEvents,
     saveLessonHistory,
+    saveNotificationPrefs,
     refreshData,
     addGoal,
     updateGoal,

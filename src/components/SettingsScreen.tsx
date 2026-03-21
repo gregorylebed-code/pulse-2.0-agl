@@ -17,6 +17,7 @@ import {
 } from '../lib/gemini';
 import { SpecialsMode } from '../utils/rotationHelpers';
 import { migrateFromLocalStorage } from '../utils/migrateFromLocalStorage';
+import { requestNotificationPermission, notificationsSupported } from '../utils/notifications';
 import { supabase } from '../lib/supabase';
 import ImportScreen from './ImportScreen';
 import StatsCard from './StatsCard';
@@ -139,6 +140,8 @@ interface SettingsScreenProps {
   onSignOut: () => Promise<any>;
   view: SettingsView;
   setView: (v: SettingsView) => void;
+  notificationPrefs: import('../utils/notifications').NotificationPrefs;
+  saveNotificationPrefs: (prefs: import('../utils/notifications').NotificationPrefs) => Promise<void>;
 }
 
 export default function SettingsScreen({
@@ -191,6 +194,8 @@ export default function SettingsScreen({
   onSignOut,
   view,
   setView,
+  notificationPrefs,
+  saveNotificationPrefs,
 }: SettingsScreenProps) {
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
@@ -321,8 +326,7 @@ export default function SettingsScreen({
   // Quick Grader state
   const [totalQuestions, setTotalQuestions] = useState<number | ''>('');
 
-  // Notifications state
-  const [appAlerts, setAppAlerts] = useState(true);
+  // Notifications — managed via notificationPrefs prop (stored in Supabase)
 
   // Roster Management state
   const [rosterStudents, setRosterStudents] = useState<Student[]>([]);
@@ -1215,24 +1219,99 @@ export default function SettingsScreen({
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
               <h3 className="text-[11px] font-bold text-slate-400 ml-1">Notifications</h3>
 
-              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">App Alerts</h4>
-                  <p className="text-[10px] text-slate-400 font-medium">Receive push notifications for student updates</p>
-                </div>
-                <button
-                  onClick={() => setAppAlerts(!appAlerts)}
-                  className={cn(
-                    "w-12 h-6 rounded-full transition-all relative",
-                    appAlerts ? "bg-sage" : "bg-slate-300"
+              {!notificationsSupported() && (
+                <p className="text-xs text-slate-400 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                  Notifications are not supported in this browser. Try opening the app in Chrome or Safari and adding it to your home screen.
+                </p>
+              )}
+
+              {notificationsSupported() && (
+                <div className="space-y-4">
+                  {/* Daily Reminder */}
+                  <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-sm">Daily Logging Reminder</h4>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                          Reminds you to log notes — skips if you already have
+                        </p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const next = !notificationPrefs.dailyReminderEnabled;
+                          if (next) {
+                            const granted = await requestNotificationPermission();
+                            if (!granted) {
+                              toast.error('Please enable notifications in your browser or device settings first.');
+                              return;
+                            }
+                          }
+                          await saveNotificationPrefs({ ...notificationPrefs, dailyReminderEnabled: next });
+                        }}
+                        className={cn(
+                          "w-12 h-6 rounded-full transition-all relative flex-shrink-0",
+                          notificationPrefs.dailyReminderEnabled ? "bg-sage" : "bg-slate-300"
+                        )}
+                      >
+                        <motion.div
+                          animate={{ x: notificationPrefs.dailyReminderEnabled ? 24 : 4 }}
+                          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                        />
+                      </button>
+                    </div>
+
+                    {notificationPrefs.dailyReminderEnabled && (
+                      <div className="flex items-center gap-3">
+                        <label className="text-xs font-bold text-slate-500">Remind me at</label>
+                        <input
+                          type="time"
+                          value={notificationPrefs.dailyReminderTime}
+                          onChange={e => saveNotificationPrefs({ ...notificationPrefs, dailyReminderTime: e.target.value })}
+                          className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-sage"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Calendar Event Reminder */}
+                  <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">School Event Reminder</h4>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        Morning alert on days with events from your calendar
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const next = !notificationPrefs.calendarEventReminderEnabled;
+                        if (next) {
+                          const granted = await requestNotificationPermission();
+                          if (!granted) {
+                            toast.error('Please enable notifications in your browser or device settings first.');
+                            return;
+                          }
+                        }
+                        await saveNotificationPrefs({ ...notificationPrefs, calendarEventReminderEnabled: next });
+                      }}
+                      className={cn(
+                        "w-12 h-6 rounded-full transition-all relative flex-shrink-0",
+                        notificationPrefs.calendarEventReminderEnabled ? "bg-sage" : "bg-slate-300"
+                      )}
+                    >
+                      <motion.div
+                        animate={{ x: notificationPrefs.calendarEventReminderEnabled ? 24 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                      />
+                    </button>
+                  </div>
+
+                  {(notificationPrefs.dailyReminderEnabled || notificationPrefs.calendarEventReminderEnabled) && (
+                    <p className="text-[10px] text-slate-400 font-medium px-1">
+                      Notifications fire when the app is open or running in the background. For the most reliable delivery, add Classroom Pulse to your home screen.
+                    </p>
                   )}
-                >
-                  <motion.div
-                    animate={{ x: appAlerts ? 24 : 4 }}
-                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                  />
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
