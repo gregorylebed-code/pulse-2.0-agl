@@ -36,6 +36,8 @@ export interface Student {
   parent_emails?: ContactEntry[];
   parent_phones?: ContactEntry[];
   archivedSummaries?: { id: string; content: string; date: string }[];
+  birth_month?: number | null;
+  birth_day?: number | null;
 }
 
 export interface Note {

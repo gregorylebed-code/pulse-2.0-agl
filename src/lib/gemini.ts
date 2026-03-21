@@ -486,3 +486,30 @@ Return JSON:
     return null;
   }
 }
+
+export async function parseBirthdays(text: string): Promise<Array<{ studentName: string; birthMonth: number; birthDay: number }>> {
+  const prompt = `Parse this list of student birthdays. The text may be messy — names and dates in any format.
+
+"${text}"
+
+Return a JSON object with a "birthdays" array. Each entry must have:
+- studentName: string (properly formatted full name)
+- birthMonth: integer 1–12
+- birthDay: integer 1–31
+
+Only include entries where you are confident about both the name and the date.
+Example: {"birthdays":[{"studentName":"Sarah Johnson","birthMonth":3,"birthDay":14}]}`;
+
+  const raw = await callGroq(prompt, true, undefined, 'parse_birthdays');
+  try {
+    const parsed = JSON.parse(raw || '{}');
+    const arr = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.birthdays) ? parsed.birthdays : []);
+    return arr.filter((b: any) =>
+      typeof b.studentName === 'string' &&
+      Number.isInteger(b.birthMonth) && b.birthMonth >= 1 && b.birthMonth <= 12 &&
+      Number.isInteger(b.birthDay) && b.birthDay >= 1 && b.birthDay <= 31
+    );
+  } catch {
+    return [];
+  }
+}

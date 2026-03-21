@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent, StudentGoal } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
-import { summarizeNotes, ReportData } from '../lib/gemini';
+import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
 import StudentDetailView from './StudentDetailView';
 import { cn } from '../utils/cn';
@@ -71,6 +71,11 @@ export default function StudentsScreen({
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isBirthdayModalOpen, setIsBirthdayModalOpen] = useState(false);
+  const [birthdayText, setBirthdayText] = useState('');
+  const [birthdayParsing, setBirthdayParsing] = useState(false);
+  const [birthdayPreview, setBirthdayPreview] = useState<Array<{ studentName: string; birthMonth: number; birthDay: number; matchedId: string | null }> | null>(null);
+  const [birthdaySaving, setBirthdaySaving] = useState(false);
 
   const selectedStudent = students.find(s => s.id === selectedStudentId);
   const studentNotes = notes.filter(n => n.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -214,6 +219,47 @@ export default function StudentsScreen({
     );
   }
 
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const handleParseBirthdays = async () => {
+    if (!birthdayText.trim()) return;
+    setBirthdayParsing(true);
+    try {
+      const results = await parseBirthdays(birthdayText);
+      const withMatch = results.map(r => {
+        const match = students.find(s =>
+          s.name.toLowerCase().includes(r.studentName.toLowerCase()) ||
+          r.studentName.toLowerCase().includes(s.name.toLowerCase())
+        );
+        return { ...r, matchedId: match?.id ?? null };
+      });
+      setBirthdayPreview(withMatch);
+    } catch {
+      toast.error('Failed to parse birthdays');
+    } finally {
+      setBirthdayParsing(false);
+    }
+  };
+
+  const handleSaveBirthdays = async () => {
+    if (!birthdayPreview) return;
+    setBirthdaySaving(true);
+    const matched = birthdayPreview.filter(b => b.matchedId);
+    try {
+      for (const b of matched) {
+        await updateStudent(b.matchedId!, { birth_month: b.birthMonth, birth_day: b.birthDay });
+      }
+      toast.success(`Saved ${matched.length} birthday${matched.length !== 1 ? 's' : ''}!`);
+      setIsBirthdayModalOpen(false);
+      setBirthdayText('');
+      setBirthdayPreview(null);
+    } catch {
+      toast.error('Failed to save birthdays');
+    } finally {
+      setBirthdaySaving(false);
+    }
+  };
+
   const filteredStudents = students.filter(s => {
     const section = s.class_period || s.class_id;
     const matchesFilter = filter === 'All' || section === filter;
@@ -234,8 +280,15 @@ export default function StudentsScreen({
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
       <div className="flex items-center justify-between px-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <h2 className="text-[11px] font-bold text-slate-400">Your Roster</h2>
+          <button
+            onClick={() => setIsBirthdayModalOpen(true)}
+            className="p-1.5 bg-pink-50 text-pink-400 rounded-lg hover:bg-pink-100 hover:text-pink-500 transition-colors"
+            title="Import Birthdays"
+          >
+            <Cake className="w-4 h-4" />
+          </button>
           <button
             onClick={() => setIsCleanupModalOpen(true)}
             className="p-1.5 bg-red-50 text-red-400 rounded-lg hover:bg-red-100 hover:text-red-500 transition-colors"
@@ -377,6 +430,75 @@ export default function StudentsScreen({
           </div>
         )}
       </div>
+
+      {/* Birthday Import Modal */}
+      <AnimatePresence>
+        {isBirthdayModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end justify-center p-4 pb-8"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[32px] p-6 w-full max-w-md shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Cake className="w-5 h-5 text-pink-400" />
+                  <h3 className="text-base font-black text-slate-900">Import Birthdays</h3>
+                </div>
+                <button onClick={() => { setIsBirthdayModalOpen(false); setBirthdayText(''); setBirthdayPreview(null); }} className="p-1.5 text-slate-400 hover:text-slate-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-400 font-medium">Paste any list of names and birthdays — AI will figure it out.</p>
+              {!birthdayPreview ? (
+                <>
+                  <textarea
+                    value={birthdayText}
+                    onChange={(e) => setBirthdayText(e.target.value)}
+                    placeholder={"Sarah Johnson - March 14\nMike Chen 5/22\nEmma Davis, born April 3rd..."}
+                    rows={6}
+                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium focus:outline-none focus:border-pink-200 resize-none"
+                  />
+                  <button
+                    onClick={handleParseBirthdays}
+                    disabled={!birthdayText.trim() || birthdayParsing}
+                    className="w-full py-3 bg-pink-400 text-white rounded-full font-bold text-sm hover:bg-pink-500 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {birthdayParsing ? <><Loader2 className="w-4 h-4 animate-spin" /> Parsing...</> : <><Sparkles className="w-4 h-4" /> Parse with AI</>}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {birthdayPreview.map((b, i) => (
+                      <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium ${b.matchedId ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
+                        <span className={b.matchedId ? 'text-slate-700' : 'text-amber-600'}>{b.studentName}</span>
+                        <span className="text-slate-500">{MONTH_NAMES[b.birthMonth - 1]} {b.birthDay}</span>
+                        {!b.matchedId && <span className="text-[10px] text-amber-500 font-bold">No match</span>}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-slate-400">{birthdayPreview.filter(b => b.matchedId).length} of {birthdayPreview.length} matched to students.</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setBirthdayPreview(null)} className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-full font-bold text-sm hover:bg-slate-50 transition-colors">
+                      Back
+                    </button>
+                    <button
+                      onClick={handleSaveBirthdays}
+                      disabled={birthdaySaving || birthdayPreview.filter(b => b.matchedId).length === 0}
+                      className="flex-1 py-3 bg-pink-400 text-white rounded-full font-bold text-sm hover:bg-pink-500 transition-colors disabled:opacity-40"
+                    >
+                      {birthdaySaving ? 'Saving...' : 'Save Birthdays'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isCleanupModalOpen && (

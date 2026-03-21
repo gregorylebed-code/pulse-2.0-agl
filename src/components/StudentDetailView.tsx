@@ -6,7 +6,7 @@ import {
   Trash2, Copy, Mail, MessageSquare, CheckCircle2, Archive,
   X, Sparkles, ClipboardList, FileText, Download,
   Smile, Meh, Frown, Users, Phone, Tag, ChevronDown, Settings2,
-  Target, Plus, Printer
+  Target, Plus, Printer, Cake
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
@@ -488,14 +488,20 @@ export default function StudentDetailView({
   };
   const [parentEmail, setParentEmail] = useState(() => extractContact(student.parent_emails?.[0]));
   const [parentPhone, setParentPhone] = useState(() => extractContact(student.parent_phones?.[0]));
+  const [birthMonth, setBirthMonth] = useState<string>(student.birth_month?.toString() || '');
+  const [birthDay, setBirthDay] = useState<string>(student.birth_day?.toString() || '');
 
   const handleSaveContact = async () => {
     setIsUpdatingContact(true);
     try {
+      const bm = parseInt(birthMonth);
+      const bd = parseInt(birthDay);
       await updateStudent(student.id, {
         parent_guardian_names: [parentName],
         parent_emails: parentEmail ? [parentEmail] : [],
-        parent_phones: parentPhone ? [parentPhone] : []
+        parent_phones: parentPhone ? [parentPhone] : [],
+        birth_month: !isNaN(bm) && bm >= 1 && bm <= 12 ? bm : null,
+        birth_day: !isNaN(bd) && bd >= 1 && bd <= 31 ? bd : null,
       });
       toast.success('Contact info updated!');
       onNoteUpdate();
@@ -813,6 +819,30 @@ export default function StudentDetailView({
             data-lpignore="true"
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
           />
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <Cake className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
+          <span className="text-[11px] text-slate-400 font-medium w-16">Birthday</span>
+          <select
+            value={birthMonth}
+            onChange={(e) => setBirthMonth(e.target.value)}
+            className="px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          >
+            <option value="">Month</option>
+            {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+              <option key={i} value={i + 1}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={birthDay}
+            onChange={(e) => setBirthDay(e.target.value)}
+            className="px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          >
+            <option value="">Day</option>
+            {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
         </div>
       </div>
 

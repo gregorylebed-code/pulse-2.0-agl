@@ -5,7 +5,7 @@ import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations'
 import imageCompression from 'browser-image-compression';
 import {
   Mic, Image as ImageIcon, Send, Trash2, Edit2, Copy,
-  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Tag, ChevronDown
+  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Tag, ChevronDown, Cake
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -380,6 +380,14 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     ?.filter(e => parseLocalDate(e.date) >= eventCutoff)
     .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())[0];
 
+  const todayMonth = now.getMonth() + 1;
+  const todayDay = now.getDate();
+  const tomorrowMonth = (tomorrowStart.getMonth() + 1);
+  const tomorrowDay = tomorrowStart.getDate();
+  const birthdayStudentsToday = students.filter(s => s.birth_month === todayMonth && s.birth_day === todayDay);
+  const birthdayStudentsTomorrow = students.filter(s => s.birth_month === tomorrowMonth && s.birth_day === tomorrowDay);
+  const upcomingBirthdays = [...birthdayStudentsToday.map(s => ({ student: s, when: 'today' as const })), ...birthdayStudentsTomorrow.map(s => ({ student: s, when: 'tomorrow' as const }))];
+
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
       <AnimatePresence>
@@ -411,6 +419,32 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   <Eye className="w-3.5 h-3.5" />
                 </button>
               )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {upcomingBirthdays.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-pink-50 border border-pink-100 px-6 py-3 rounded-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Cake className="w-4 h-4 text-pink-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[11px] font-bold text-pink-300">Upcoming Birthdays</span>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                  {upcomingBirthdays.map(({ student, when }) => (
+                    <p key={student.id} className="text-xs font-bold text-slate-700">
+                      {student.name} <span className="text-pink-400 font-medium">({when})</span>
+                    </p>
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
