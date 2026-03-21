@@ -15,6 +15,7 @@ import Navigation from './components/Navigation';
 import { cn } from './utils/cn';
 import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
 import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notifications';
+import WelcomeModal from './components/WelcomeModal';
 
 import { Sparkles, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,6 +42,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
     updateCalendarEvents, refreshData, stats, lessonHistory, saveLessonHistory,
     notificationPrefs, saveNotificationPrefs,
+    onboardingComplete, markOnboardingComplete,
+    loading,
   } = useClassroomData(userId);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
@@ -350,6 +353,16 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           setActiveTab(tab);
         }
       }} />
+
+      <WelcomeModal
+        show={!onboardingComplete && !loading && students.length === 0 && notes.length === 0}
+        teacherName={teacherFirstName || userName}
+        onGoToProfile={() => { setActiveTab('settings'); setSettingsView('profile'); }}
+        onGoToRoster={() => { setActiveTab('settings'); setSettingsView('roster'); }}
+        onGoToPulse={() => setActiveTab('pulse')}
+        onGoToCalendar={() => { setActiveTab('settings'); setSettingsView('calendar'); }}
+        onDismiss={markOnboardingComplete}
+      />
 
       {isUsingBackup && (
         <motion.div

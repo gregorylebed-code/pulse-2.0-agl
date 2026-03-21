@@ -80,6 +80,7 @@ interface ClassroomDataState {
   stats: Stats;
   lessonHistory: DeliveredLesson[];
   notificationPrefs: NotificationPrefs;
+  onboardingComplete: boolean;
   loading: boolean;
   error: string | null;
 }
@@ -113,6 +114,7 @@ interface ClassroomDataActions {
   updateCalendarEvents: (events: CalendarEvent[]) => Promise<void>;
   saveLessonHistory: (history: DeliveredLesson[]) => Promise<void>;
   saveNotificationPrefs: (prefs: NotificationPrefs) => Promise<void>;
+  markOnboardingComplete: () => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -139,6 +141,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     stats: { notes_created: 0, reports_generated: 0 },
     lessonHistory: [],
     notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
+    onboardingComplete: false,
     loading: true,
     error: null,
   });
@@ -194,6 +197,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       const stats: Stats = settingsMap['stats'] ?? { notes_created: 0, reports_generated: 0 };
       const lessonHistory: DeliveredLesson[] = settingsMap['lesson_history'] ?? [];
       const notificationPrefs: NotificationPrefs = settingsMap['notification_prefs'] ?? DEFAULT_NOTIFICATION_PREFS;
+      const onboardingComplete: boolean = settingsMap['onboarding_complete'] ?? false;
       const specialsMode: SpecialsMode = settingsMap['specials_mode'] ?? 'letter-day';
       const dayOfWeekSpecials = settingsMap['day_of_week_specials'] ?? { '1': 'Art', '2': 'PE', '3': 'Music', '4': 'Library', '5': 'STEM' };
       const rollingStartDate: string = settingsMap['rolling_start_date'] ?? '';
@@ -248,6 +252,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         stats,
         lessonHistory,
         notificationPrefs,
+        onboardingComplete,
         loading: false,
       }));
 
@@ -596,6 +601,18 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, [userId]);
 
+  const markOnboardingComplete = useCallback(async () => {
+    try {
+      await supabase.from('settings').upsert(
+        { user_id: userId, key: 'onboarding_complete', value: true },
+        { onConflict: 'user_id,key' }
+      );
+      setState(prev => ({ ...prev, onboardingComplete: true }));
+    } catch (error) {
+      console.error('Error saving onboarding state:', error);
+    }
+  }, [userId]);
+
   const saveNotificationPrefs = useCallback(async (prefs: NotificationPrefs) => {
     try {
       await supabase.from('settings').upsert(
@@ -744,6 +761,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     updateCalendarEvents,
     saveLessonHistory,
     saveNotificationPrefs,
+    markOnboardingComplete,
     refreshData,
     addGoal,
     updateGoal,
