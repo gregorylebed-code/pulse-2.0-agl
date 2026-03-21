@@ -341,7 +341,15 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         activeTab === 'students' ? 'Students Screen' : 'Settings'
       } />
 
-      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navigation activeTab={activeTab} setActiveTab={(tab) => {
+        if (tab === activeTab) {
+          // Tapping the current tab resets its sub-view
+          if (tab === 'settings') setSettingsView('main');
+          if (tab === 'students') setSelectedStudentId(null);
+        } else {
+          setActiveTab(tab);
+        }
+      }} />
 
       {isUsingBackup && (
         <motion.div
