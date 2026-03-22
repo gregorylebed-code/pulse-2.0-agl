@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Sparkles, CheckCircle2, ArrowRight, Mail, Phone, Cake, Users } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2, ArrowRight, Mail, Phone, Cake, Users, School } from 'lucide-react';
 import { toast } from 'sonner';
 import { magicImport, parseBirthdays } from '../lib/gemini';
 import { Student } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface ImportScreenProps {
   onImportComplete: () => void;
@@ -22,7 +23,17 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
   const [step, setStep] = useState<'input' | 'preview' | 'success'>('input');
   const [importSummary, setImportSummary] = useState<{ updated: number, added: number } | null>(null);
   const [defaultClassPeriod, setDefaultClassPeriod] = useState(classes[0] || 'Class 1');
-  const [activeTab, setActiveTab] = useState<'roster' | 'birthdays'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'birthdays' | 'google'>('roster');
+
+  // Google Classroom state
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  const [gcCourses, setGcCourses] = useState<any[]>([]);
+  const [gcLoadingCourses, setGcLoadingCourses] = useState(false);
+  const [gcSelectedCourse, setGcSelectedCourse] = useState<any>(null);
+  const [gcStudents, setGcStudents] = useState<{ name: string; email: string }[]>([]);
+  const [gcLoadingStudents, setGcLoadingStudents] = useState(false);
+  const [gcImporting, setGcImporting] = useState(false);
+  const [gcClassPeriod, setGcClassPeriod] = useState(classes[0] || 'Class 1');
 
   // Birthday import state
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -30,6 +41,83 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
   const [birthdayParsing, setBirthdayParsing] = useState(false);
   const [birthdayPreview, setBirthdayPreview] = useState<Array<{ studentName: string; birthMonth: number; birthDay: number; matchedId: string | null; manualId?: string }> | null>(null);
   const [birthdaySaving, setBirthdaySaving] = useState(false);
+
+  // Check Google connection on mount; auto-switch tab if redirected back from Google
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('google') === 'connected') {
+      setActiveTab('google');
+      // Clean up query param without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+      toast.success('Google Classroom connected!');
+    }
+    if (params.get('google') === 'error') {
+      window.history.replaceState({}, '', window.location.pathname);
+      toast.error('Google connection failed. Please try again.');
+    }
+
+    supabase
+      .from('google_tokens')
+      .select('user_id')
+      .eq('user_id', userId)
+      .single()
+      .then(({ data }) => setGoogleConnected(!!data));
+  }, [userId]);
+
+  // Load courses when Google tab is opened and connected
+  useEffect(() => {
+    if (activeTab !== 'google' || !googleConnected) return;
+    setGcLoadingCourses(true);
+    fetch(`/api/google/courses?userId=${userId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setGcCourses(data);
+      })
+      .catch(() => toast.error('Failed to load courses'))
+      .finally(() => setGcLoadingCourses(false));
+  }, [activeTab, googleConnected, userId]);
+
+  const handleSelectCourse = async (course: any) => {
+    setGcSelectedCourse(course);
+    setGcStudents([]);
+    setGcLoadingStudents(true);
+    try {
+      const res = await fetch(`/api/google/students?userId=${userId}&courseId=${course.id}`);
+      const data = await res.json();
+      if (Array.isArray(data)) setGcStudents(data);
+    } catch {
+      toast.error('Failed to load students');
+    } finally {
+      setGcLoadingStudents(false);
+    }
+  };
+
+  const handleGcImport = async () => {
+    if (!gcStudents.length) return;
+    setGcImporting(true);
+    try {
+      let added = 0;
+      for (const s of gcStudents) {
+        if (!s.name) continue;
+        await addStudent({
+          name: s.name,
+          class_period: gcClassPeriod,
+          parent_guardian_names: [],
+          parent_emails: s.email ? [s.email] : [],
+          parent_phones: [],
+        } as Omit<Student, 'id' | 'created_at' | 'user_id'>);
+        added++;
+      }
+      toast.success(`Imported ${added} students from Google Classroom!`);
+      setGcSelectedCourse(null);
+      setGcStudents([]);
+      onImportComplete();
+    } catch {
+      toast.error('Import failed. Please try again.');
+    } finally {
+      setGcImporting(false);
+    }
+  };
 
   const handleParseBirthdays = async () => {
     if (!birthdayText.trim()) return;
@@ -231,6 +319,12 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
         >
           <Cake className="w-3.5 h-3.5" /> Birthdays
         </button>
+        <button
+          onClick={() => setActiveTab('google')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'google' ? 'bg-blue-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          <School className="w-3.5 h-3.5" /> Google
+        </button>
       </div>
 
       {/* Birthday import tab */}
@@ -302,6 +396,133 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                 </button>
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {/* Google Classroom tab */}
+      {activeTab === 'google' && (
+        <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Google Classroom</h2>
+            <p className="text-xs text-slate-500 mt-1">Import your class roster directly from Google Classroom.</p>
+          </div>
+
+          {/* Not yet connected */}
+          {googleConnected === false && (
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-700 font-medium">
+                Connect your Google account to import students from any of your active classes.
+              </div>
+              <button
+                onClick={() => window.location.href = `/api/google/auth?userId=${userId}`}
+                className="w-full py-4 bg-blue-500 text-white rounded-[24px] font-bold text-sm hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <School className="w-4 h-4" /> Connect Google Classroom
+              </button>
+            </div>
+          )}
+
+          {/* Loading connection status */}
+          {googleConnected === null && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
+            </div>
+          )}
+
+          {/* Connected — course picker */}
+          {googleConnected === true && !gcSelectedCourse && (
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Your Active Classes</p>
+              {gcLoadingCourses ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
+                </div>
+              ) : gcCourses.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-6">No active classes found in Google Classroom.</p>
+              ) : (
+                <div className="space-y-2">
+                  {gcCourses.map(course => (
+                    <button
+                      key={course.id}
+                      onClick={() => handleSelectCourse(course)}
+                      className="w-full flex items-center justify-between px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl hover:border-blue-200 hover:bg-blue-50 transition-all group"
+                    >
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-slate-800 group-hover:text-blue-700">{course.name}</p>
+                        {course.section && <p className="text-xs text-slate-400 mt-0.5">{course.section}</p>}
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-400" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setGoogleConnected(false);
+                }}
+                className="text-xs text-slate-400 hover:text-slate-600 underline"
+              >
+                Disconnect Google Classroom
+              </button>
+            </div>
+          )}
+
+          {/* Students preview */}
+          {googleConnected === true && gcSelectedCourse && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-slate-800">{gcSelectedCourse.name}</p>
+                  <p className="text-xs text-slate-400">{gcStudents.length} students</p>
+                </div>
+                <button
+                  onClick={() => { setGcSelectedCourse(null); setGcStudents([]); }}
+                  className="text-xs text-slate-400 hover:text-slate-600 font-bold"
+                >
+                  ← Back
+                </button>
+              </div>
+
+              {gcLoadingStudents ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {gcStudents.map((s, i) => (
+                      <div key={i} className="flex items-center justify-between px-4 py-2.5 bg-slate-50 rounded-xl">
+                        <span className="text-sm font-medium text-slate-700">{s.name}</span>
+                        {s.email && <span className="text-[10px] text-slate-400 ml-2 truncate max-w-[140px]">{s.email}</span>}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Assign to:</label>
+                    <select
+                      value={gcClassPeriod}
+                      onChange={e => setGcClassPeriod(e.target.value)}
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-600 focus:outline-none"
+                    >
+                      {classes.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={handleGcImport}
+                    disabled={gcImporting || gcStudents.length === 0}
+                    className="w-full py-4 bg-blue-500 text-white rounded-[24px] font-bold text-sm hover:bg-blue-600 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {gcImporting
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing...</>
+                      : <><CheckCircle2 className="w-4 h-4" /> Import {gcStudents.length} Students</>
+                    }
+                  </button>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
