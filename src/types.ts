@@ -38,6 +38,7 @@ export interface Student {
   archivedSummaries?: { id: string; content: string; date: string }[];
   birth_month?: number | null;
   birth_day?: number | null;
+  photo_url?: string | null;
 }
 
 export interface Note {

@@ -741,9 +741,13 @@ export default function StudentDetailView({
       </div>
 
       <div className="bg-white p-8 rounded-[40px] card-shadow border border-sage/5 flex items-center gap-6">
-        <div className="w-20 h-20 bg-cream-dark rounded-[28px] flex items-center justify-center text-terracotta font-bold text-3xl shadow-inner">
-          {student.name.split(' ').map(n => n[0]).join('')}
-        </div>
+        {student.photo_url ? (
+          <img src={student.photo_url} alt={student.name} className="w-20 h-20 rounded-[28px] object-cover shadow-inner" />
+        ) : (
+          <div className="w-20 h-20 bg-cream-dark rounded-[28px] flex items-center justify-center text-terracotta font-bold text-3xl shadow-inner">
+            {student.name.split(' ').map(n => n[0]).join('')}
+          </div>
+        )}
         <div className="flex-1">
           {editingStudentName ? (
             <div className="flex items-center gap-2">

@@ -26,10 +26,11 @@ export default async function handler(req: Request): Promise<Response> {
 
   const data = await res.json();
 
-  // Normalize to just what we need: name + email
+  // Normalize to just what we need: name, email, photoUrl
   const students = (data.students ?? []).map((s: any) => ({
     name: s.profile?.name?.fullName ?? '',
     email: s.profile?.emailAddress ?? '',
+    photoUrl: s.profile?.photoUrl ?? null,
   }));
 
   return new Response(JSON.stringify(students), {

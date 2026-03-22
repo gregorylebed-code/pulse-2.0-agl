@@ -30,7 +30,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
   const [gcCourses, setGcCourses] = useState<any[]>([]);
   const [gcLoadingCourses, setGcLoadingCourses] = useState(false);
   const [gcSelectedCourse, setGcSelectedCourse] = useState<any>(null);
-  const [gcStudents, setGcStudents] = useState<{ name: string; email: string }[]>([]);
+  const [gcStudents, setGcStudents] = useState<{ name: string; email: string; photoUrl: string | null }[]>([]);
   const [gcLoadingStudents, setGcLoadingStudents] = useState(false);
   const [gcImporting, setGcImporting] = useState(false);
   const [gcClassPeriod, setGcClassPeriod] = useState(classes[0] || 'Class 1');
@@ -103,18 +103,25 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
     setGcImporting(true);
     try {
       let added = 0;
+      let skipped = 0;
+      const existingNames = students.map(s => s.name.toLowerCase().trim());
       for (const s of gcStudents) {
         if (!s.name) continue;
+        if (existingNames.includes(s.name.toLowerCase().trim())) { skipped++; continue; }
         await addStudent({
           name: s.name,
           class_period: targetClass,
           parent_guardian_names: [],
-          parent_emails: s.email ? [s.email] : [],
+          parent_emails: s.email ? [{ value: s.email, label: 'Email' }] : [],
           parent_phones: [],
+          photo_url: s.photoUrl ?? null,
         } as Omit<Student, 'id' | 'created_at' | 'user_id'>);
         added++;
       }
-      toast.success(`Imported ${added} students from Google Classroom!`);
+      const msg = skipped > 0
+        ? `Added ${added} new students (${skipped} already in roster)`
+        : `Imported ${added} students from Google Classroom!`;
+      toast.success(msg);
       setGcSelectedCourse(null);
       setGcStudents([]);
       onImportComplete();

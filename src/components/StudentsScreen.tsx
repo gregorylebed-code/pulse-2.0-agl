@@ -415,9 +415,13 @@ export default function StudentsScreen({
                   onClick={() => setSelectedStudentId(s.id)}
                   className="bg-white p-2 rounded-2xl card-shadow border border-slate-100 flex flex-col items-center justify-center gap-1.5 group cursor-pointer hover:border-sage/30 hover:-translate-y-0.5 transition-all text-center"
                 >
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-black text-xs border", getAvatarColor(s.name))}>
-                    {s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                  </div>
+                  {s.photo_url ? (
+                    <img src={s.photo_url} alt={s.name} className="w-10 h-10 rounded-full object-cover border border-slate-100" />
+                  ) : (
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-black text-xs border", getAvatarColor(s.name))}>
+                      {s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <h4 className="text-[10px] font-bold text-slate-900 line-clamp-2 leading-tight">{s.name}</h4>
                 </div>
               ))}
