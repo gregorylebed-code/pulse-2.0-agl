@@ -34,6 +34,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
   const [gcLoadingStudents, setGcLoadingStudents] = useState(false);
   const [gcImporting, setGcImporting] = useState(false);
   const [gcClassPeriod, setGcClassPeriod] = useState(classes[0] || 'Class 1');
+  const [gcNewClassName, setGcNewClassName] = useState('');
 
   // Birthday import state
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -94,6 +95,11 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
 
   const handleGcImport = async () => {
     if (!gcStudents.length) return;
+    const targetClass = gcClassPeriod === '__new__' ? gcNewClassName.trim() : gcClassPeriod;
+    if (!targetClass) {
+      toast.error('Please enter a class name.');
+      return;
+    }
     setGcImporting(true);
     try {
       let added = 0;
@@ -101,7 +107,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
         if (!s.name) continue;
         await addStudent({
           name: s.name,
-          class_period: gcClassPeriod,
+          class_period: targetClass,
           parent_guardian_names: [],
           parent_emails: s.email ? [s.email] : [],
           parent_phones: [],
@@ -499,20 +505,33 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Assign to:</label>
-                    <select
-                      value={gcClassPeriod}
-                      onChange={e => setGcClassPeriod(e.target.value)}
-                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-600 focus:outline-none"
-                    >
-                      {classes.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Assign to:</label>
+                      <select
+                        value={gcClassPeriod}
+                        onChange={e => setGcClassPeriod(e.target.value)}
+                        className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-600 focus:outline-none"
+                      >
+                        {classes.map(c => <option key={c} value={c}>{c}</option>)}
+                        <option value="__new__">+ New class...</option>
+                      </select>
+                    </div>
+                    {gcClassPeriod === '__new__' && (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={gcNewClassName}
+                        onChange={e => setGcNewClassName(e.target.value)}
+                        placeholder="Class name (e.g. Period 4)"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-blue-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-400"
+                      />
+                    )}
                   </div>
 
                   <button
                     onClick={handleGcImport}
-                    disabled={gcImporting || gcStudents.length === 0}
+                    disabled={gcImporting || gcStudents.length === 0 || (gcClassPeriod === '__new__' && !gcNewClassName.trim())}
                     className="w-full py-4 bg-blue-500 text-white rounded-[24px] font-bold text-sm hover:bg-blue-600 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {gcImporting
