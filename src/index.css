@@ -3,6 +3,7 @@
 
 @theme {
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Boogaloo", ui-sans-serif, system-ui, sans-serif;
   
   --color-sage: #8A9A5B;
   --color-sage-light: #A7B38D;
@@ -29,6 +30,10 @@
 @layer base {
   body {
     @apply bg-cream text-slate-900;
+  }
+  h1, h2, h3 {
+    font-family: "Boogaloo", ui-sans-serif, system-ui, sans-serif;
+    font-size-adjust: 0.55;
   }
 }
 

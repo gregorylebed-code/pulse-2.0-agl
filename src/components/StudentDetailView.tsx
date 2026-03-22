@@ -764,7 +764,7 @@ export default function StudentDetailView({
             </div>
           ) : (
             <div className="flex items-center gap-2 group">
-              <h2 className="text-2xl font-bold text-sage-dark">{student.name}</h2>
+              <h2 className="text-[26px] font-bold text-sage-dark font-display">{student.name}</h2>
               <button onClick={() => { setStudentNameDraft(student.name); setEditingStudentName(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-300 hover:text-sage" title="Edit name">
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
@@ -903,7 +903,7 @@ export default function StudentDetailView({
       </div>
 
       <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6 no-print">
-        <label htmlFor="quick_note" className="text-[13px] font-black text-slate-400 ml-1">Quick Note</label>
+        <label htmlFor="quick_note" className="text-[15px] font-black text-slate-400 ml-1">Quick Note</label>
         <div className="relative border border-slate-100/50 rounded-[32px] p-1 bg-white shadow-inner">
           <textarea
             id="quick_note"
@@ -1004,7 +1004,7 @@ export default function StudentDetailView({
 
       <div id="timeline" ref={timelineRef} className="space-y-6 pt-4 scroll-mt-header">
         <div className="flex items-center justify-between">
-          <h3 className="text-[13px] font-black text-slate-400 ml-1">Observation Timeline</h3>
+          <h3 className="text-[15px] font-black text-slate-400 ml-1">Observation Timeline</h3>
         </div>
         <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
           {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).map((note) => (

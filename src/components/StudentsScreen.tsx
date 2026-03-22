@@ -418,11 +418,11 @@ export default function StudentsScreen({
                   {s.photo_url ? (
                     <img src={s.photo_url} alt={s.name} className="w-10 h-10 rounded-full object-cover border border-slate-100" />
                   ) : (
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border text-base", getAvatarColor(s.name))} style={{ fontFamily: "'Boogaloo', cursive" }}>
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border text-lg", getAvatarColor(s.name))} style={{ fontFamily: "'Boogaloo', cursive" }}>
                       {s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                     </div>
                   )}
-                  <h4 className="text-[10px] font-bold text-slate-900 line-clamp-2 leading-tight">{s.name}</h4>
+                  <h4 className="text-[12px] font-bold text-slate-900 line-clamp-2 leading-tight font-display h-[30px] flex items-start justify-center">{s.name}</h4>
                 </div>
               ))}
             </div>

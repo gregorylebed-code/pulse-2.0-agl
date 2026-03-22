@@ -46,7 +46,7 @@ export default function StatsCard({ notesCreated, reportsGenerated }: StatsCardP
   return (
     <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-black text-slate-400 ml-1">Your Impact</h3>
+        <h3 className="text-[15px] font-black text-slate-400 ml-1 font-display">Your Impact</h3>
         <span className="text-sm">{getMotivationalMessage(notesCreated)}</span>
       </div>
 
@@ -57,7 +57,7 @@ export default function StatsCard({ notesCreated, reportsGenerated }: StatsCardP
             <BookOpen className="w-4 h-4" />
             <span className="text-[10px] font-black uppercase tracking-widest">Notes</span>
           </div>
-          <p className="text-3xl font-black text-orange-500">{notesCreated}</p>
+          <p className="text-[32px] font-black text-orange-500 font-display">{notesCreated}</p>
           <p className="text-[9px] text-orange-300 font-bold">logged</p>
         </div>
 
@@ -67,7 +67,7 @@ export default function StatsCard({ notesCreated, reportsGenerated }: StatsCardP
             <FileText className="w-4 h-4" />
             <span className="text-[10px] font-black uppercase tracking-widest">Reports</span>
           </div>
-          <p className="text-3xl font-black text-sage-dark">{reportsGenerated}</p>
+          <p className="text-[32px] font-black text-sage-dark font-display">{reportsGenerated}</p>
           <p className="text-[9px] text-sage/60 font-bold">generated</p>
         </div>
 
@@ -77,7 +77,7 @@ export default function StatsCard({ notesCreated, reportsGenerated }: StatsCardP
             <Clock className="w-4 h-4" />
             <span className="text-[10px] font-black uppercase tracking-widest">Saved</span>
           </div>
-          <p className="text-3xl font-black text-blue-500">{hoursSaved}h</p>
+          <p className="text-[32px] font-black text-blue-500 font-display">{hoursSaved}h</p>
           <p className="text-[9px] text-blue-300 font-bold">estimated</p>
         </div>
       </div>

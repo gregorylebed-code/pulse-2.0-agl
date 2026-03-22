@@ -515,7 +515,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
         {noteMode === 'class' ? (
           <div className="space-y-3">
-            <label className="text-[13px] font-black text-slate-400 ml-1">Select Class</label>
+            <label className="text-[15px] font-black text-slate-400 ml-1">Select Class</label>
             <div className="flex gap-2 flex-wrap">
               {classes.map(cls => (
                 <button
@@ -536,7 +536,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         ) : (
           <>
             <div className="space-y-3 relative max-w-2xl">
-              <label className="text-[13px] font-black text-slate-400 ml-1">Select Student</label>
+              <label className="text-[15px] font-black text-slate-400 ml-1">Select Student</label>
               <div className="relative">
                 <input
                   type="text"
@@ -685,7 +685,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
               className="space-y-3 overflow-hidden"
             >
               <div className="space-y-2">
-                <h3 className="text-[13px] font-black text-slate-400 ml-1">Positive Indicators</h3>
+                <h3 className="text-[15px] font-black text-slate-400 ml-1">Positive Indicators</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {indicators.filter(b => b.type === 'positive').map(b => (
                     <button key={b.label} onClick={() => toggleTag(b.label)} className={cn("px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback", selectedTags.includes(b.label) ? "bg-neon-green/10 border-neon-green text-neon-green shadow-md" : "bg-white border-neon-green text-neon-green hover:bg-neon-green/5")}>
@@ -695,7 +695,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-[13px] font-black text-slate-400 ml-1">Neutral Indicators</h3>
+                <h3 className="text-[15px] font-black text-slate-400 ml-1">Neutral Indicators</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {indicators.filter(b => b.type === 'neutral').map(b => (
                     <button key={b.label} onClick={() => toggleTag(b.label)} className={cn("px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback", selectedTags.includes(b.label) ? "bg-neon-yellow/10 border-neon-yellow text-neon-yellow shadow-md" : "bg-white border-neon-yellow text-neon-yellow hover:bg-neon-yellow/5")}>
@@ -705,7 +705,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-[13px] font-black text-slate-400 ml-1">Areas for Growth</h3>
+                <h3 className="text-[15px] font-black text-slate-400 ml-1">Areas for Growth</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {indicators.filter(b => b.type === 'growth').map(b => (
                     <button key={b.label} onClick={() => toggleTag(b.label)} className={cn("px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback", selectedTags.includes(b.label) ? "bg-neon-red/10 border-neon-red text-neon-red shadow-md" : "bg-white border-neon-red text-neon-red hover:bg-neon-red/5")}>
@@ -715,7 +715,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-[13px] font-black text-slate-400 ml-1">Family Communication</h3>
+                <h3 className="text-[15px] font-black text-slate-400 ml-1">Family Communication</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {commTypes.map(b => (
                     <button key={b.label} onClick={() => toggleComm(b.label)} className={cn("px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback", selectedComm.includes(b.label) ? "bg-neon-cyan/10 border-neon-cyan text-neon-cyan shadow-md" : "bg-white border-neon-cyan text-neon-cyan hover:bg-neon-cyan/5")}>
@@ -738,7 +738,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       </div>
 
       <div className="space-y-4 pb-20">
-        <h2 className="text-[13px] font-black text-slate-400 ml-1">Recent Activity</h2>
+        <h2 className="text-[15px] font-black text-slate-400 ml-1">Recent Activity</h2>
         {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
           <div className="text-center py-10 space-y-2 bg-white rounded-[28px] border border-dashed border-slate-200">
             <p className="text-sm font-black text-slate-400">No observations yet.</p>
@@ -764,11 +764,11 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
               <div className="flex items-center justify-between mb-1">
                 {note.class_name ? (
                   <div className="flex items-center gap-2">
-                    <h4 className="font-black text-slate-900 text-base">{note.class_name}</h4>
+                    <h4 className="font-black text-slate-900 text-base font-display">{note.class_name}</h4>
                     <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">Class Note</span>
                   </div>
                 ) : (
-                  <h4 className="font-black text-slate-900 text-base truncate">{note.student_name}</h4>
+                  <h4 className="font-black text-slate-900 text-base truncate font-display">{note.student_name}</h4>
                 )}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-slate-300 tracking-tight">{new Date(note.created_at).toLocaleDateString()}</span>

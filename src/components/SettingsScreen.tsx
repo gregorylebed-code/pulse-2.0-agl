@@ -619,7 +619,7 @@ export default function SettingsScreen({
             className="space-y-8 max-w-3xl mx-auto"
           >
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
-              <h3 className="text-[13px] font-black text-slate-400 uppercase tracking-widest">Account</h3>
+              <h3 className="text-[15px] font-black text-slate-400 uppercase tracking-widest">Account</h3>
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
                 <p className="text-sm font-bold text-slate-700">{userEmail}</p>
@@ -633,7 +633,7 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Account</h3>
+              <h3 className="text-[15px] font-black text-slate-400 ml-1">Account</h3>
               <div className="space-y-1">
                 <SettingsItem icon={<User />} label="Profile Settings" onClick={() => setView('profile')} />
                 <SettingsItem icon={<MessageCircle />} label="Notifications" onClick={() => setView('notifications')} />
@@ -642,7 +642,7 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Teacher Tools</h3>
+              <h3 className="text-[15px] font-black text-slate-400 ml-1">Teacher Tools</h3>
               <div className="space-y-1">
                 <SettingsItem icon={<Users2 />} label="Roster Management" onClick={() => setView('roster')} />
                 <SettingsItem icon={<Folder />} label="Class Management" onClick={() => setView('classes')} />
@@ -684,7 +684,7 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4 mt-6">
-              <h3 className="text-[13px] font-black text-terracotta ml-1">Danger Zone</h3>
+              <h3 className="text-[15px] font-black text-terracotta ml-1">Danger Zone</h3>
               <p className="text-[11px] text-slate-400 ml-1">These actions are permanent and cannot be undone.</p>
 
               <div className="flex flex-col items-start gap-3 pt-2">
@@ -753,7 +753,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Roster Management</h3>
+              <h3 className="text-[15px] font-black text-slate-400 ml-1">Roster Management</h3>
 
               <div className="space-y-4">
                 <div className="flex flex-col gap-2">
@@ -833,7 +833,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Class Management</h3>
+              <h3 className="text-[15px] font-black text-slate-400 ml-1">Class Management</h3>
 
               <div className="space-y-4">
                 <div className="flex gap-2">
@@ -896,7 +896,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Manage Indicators</h3>
+              <h3 className="text-[15px] font-black text-slate-400 ml-1">Manage Indicators</h3>
 
               <div className="space-y-4">
                 <div className="flex gap-2">
