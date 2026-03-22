@@ -1932,55 +1932,6 @@ export default function SettingsScreen({
 
             <ImportScreen onImportComplete={() => { onImportComplete(); setView('main'); }} classes={classes} students={students} addStudent={addStudent} updateStudent={updateStudent} userId={userId} />
 
-            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
-              <div>
-                <h3 className="text-[13px] font-black text-slate-400 ml-1">Migrate to Supabase</h3>
-                <p className="text-xs text-slate-400 mt-2 ml-1 leading-relaxed">
-                  One-time migration. Copies all your students, notes, tasks, and settings from this browser into the cloud database. Your local data stays untouched as a backup.
-                </p>
-              </div>
-
-              {migrationDone && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-sage/10 border border-sage/20 rounded-2xl">
-                  <CheckCircle2 className="w-4 h-4 text-sage flex-shrink-0" />
-                  <span className="text-xs font-bold text-sage">Migration complete! Check Supabase Table Editor to verify your data.</span>
-                </div>
-              )}
-
-              <button
-                disabled={isMigrating || migrationDone}
-                onClick={async () => {
-                  if (!window.confirm('This will copy all your localStorage data into Supabase. Run this once. Continue?')) return;
-                  setIsMigrating(true);
-                  const loadingToast = toast.loading('Migrating your data to Supabase...');
-                  try {
-                    const result = await migrateFromLocalStorage();
-                    toast.dismiss(loadingToast);
-                    if (result.errors.length > 0) {
-                      toast.error(`Migration had ${result.errors.length} error(s). Check console for details.`, { duration: 8000 });
-                    } else {
-                      toast.success(`Migrated: ${result.students} students, ${result.notes} notes, ${result.tasks} tasks.`, { duration: 6000 });
-                      setMigrationDone(true);
-                    }
-                  } catch (err) {
-                    toast.dismiss(loadingToast);
-                    toast.error('Migration failed. Check console for details.');
-                    console.error('Migration error:', err);
-                  } finally {
-                    setIsMigrating(false);
-                  }
-                }}
-                className="w-full py-3 bg-sage text-white rounded-full font-black text-sm hover:bg-sage-dark transition-all shadow-md shadow-sage/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isMigrating ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Migrating...</>
-                ) : migrationDone ? (
-                  <><CheckCircle2 className="w-4 h-4" /> Migration Complete</>
-                ) : (
-                  <><Sparkles className="w-4 h-4" /> Migrate localStorage → Supabase</>
-                )}
-              </button>
-            </div>
           </motion.div>
         )}
         {view === 'abbreviations' && (
