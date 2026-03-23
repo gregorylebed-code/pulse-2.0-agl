@@ -324,27 +324,27 @@ export default function TaskDrawer({
                 )}
               </div>
 
+              <AnimatePresence>
+                {taskUndoToast && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="mt-4 flex items-center justify-between bg-slate-800 text-white px-4 py-3 rounded-2xl"
+                  >
+                    <span className="text-xs font-medium">{taskUndoToast.label}</span>
+                    <button
+                      onClick={() => { taskUndoToast.onUndo(); setTaskUndoToast(null); }}
+                      className="text-teal-400 font-bold text-xs hover:text-teal-300 transition-colors ml-4"
+                    >
+                      Undo
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </motion.div>
           </>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {taskUndoToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full flex items-center gap-4 shadow-xl z-50"
-          >
-            <span className="text-sm font-medium">{taskUndoToast.label}</span>
-            <button
-              onClick={() => { taskUndoToast.onUndo(); setTaskUndoToast(null); }}
-              className="text-teal-400 font-bold text-sm hover:text-teal-300 transition-colors"
-            >
-              Undo
-            </button>
-          </motion.div>
         )}
       </AnimatePresence>
     </>
