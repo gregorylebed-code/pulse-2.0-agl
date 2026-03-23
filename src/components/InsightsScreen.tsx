@@ -72,6 +72,212 @@ function StatTile({ value, label, sub, subColor, icon }: {
   );
 }
 
+// ─── Class Comparison ────────────────────────────────────────────────────────
+
+function ClassComparisonCard({ notes, students, indicatorTypeMap, label }: {
+  notes: Note[];
+  students: Student[];
+  indicatorTypeMap: Record<string, 'positive' | 'neutral' | 'growth'>;
+  label: string;
+}) {
+  const classCounts = useMemo(() => {
+    const studentClassMap: Record<string, string> = {};
+    students.forEach(s => { studentClassMap[s.name] = s.class_period || 'Unassigned'; });
+
+    const classes: Record<string, { positive: number; growth: number; neutral: number }> = {};
+    notes.forEach(n => {
+      const cls = n.class_name || studentClassMap[n.student_name] || 'Unassigned';
+      if (!classes[cls]) classes[cls] = { positive: 0, growth: 0, neutral: 0 };
+      const types = (n.tags || []).map(t => indicatorTypeMap[t] || 'neutral');
+      if (types.includes('growth')) classes[cls].growth++;
+      else if (types.includes('positive')) classes[cls].positive++;
+      else classes[cls].neutral++;
+    });
+
+    return Object.entries(classes)
+      .map(([cls, counts]) => ({ cls, ...counts, total: counts.positive + counts.growth + counts.neutral }))
+      .filter(c => c.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [notes, students, indicatorTypeMap]);
+
+  if (classCounts.length < 2) return null;
+  const maxTotal = classCounts[0]?.total || 1;
+
+  return (
+    <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
+      <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">
+        Class breakdown · {label}
+      </p>
+      <div className="space-y-3">
+        {classCounts.map(({ cls, positive, growth, neutral, total }) => (
+          <div key={cls}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-black text-slate-600">Period {cls}</span>
+              <span className="text-[10px] font-bold text-slate-400">{total} notes</span>
+            </div>
+            <div className="flex h-4 rounded-full overflow-hidden bg-slate-100 gap-px">
+              {positive > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(positive / maxTotal) * 100}%` }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                  className="bg-sage h-full rounded-l-full"
+                  title={`${positive} positive`}
+                />
+              )}
+              {neutral > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(neutral / maxTotal) * 100}%` }}
+                  transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
+                  className="bg-slate-300 h-full"
+                  title={`${neutral} neutral`}
+                />
+              )}
+              {growth > 0 && (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(growth / maxTotal) * 100}%` }}
+                  transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
+                  className="bg-terracotta h-full rounded-r-full"
+                  title={`${growth} growth-area`}
+                />
+              )}
+            </div>
+            <div className="flex gap-3 mt-1">
+              {positive > 0 && <span className="text-[9px] font-bold text-sage">{positive} positive</span>}
+              {neutral > 0 && <span className="text-[9px] font-bold text-slate-400">{neutral} neutral</span>}
+              {growth > 0 && <span className="text-[9px] font-bold text-terracotta">{growth} growth</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-50">
+        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400"><span className="w-2.5 h-2.5 rounded-sm bg-sage inline-block" /> Positive</span>
+        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400"><span className="w-2.5 h-2.5 rounded-sm bg-slate-300 inline-block" /> Neutral</span>
+        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400"><span className="w-2.5 h-2.5 rounded-sm bg-terracotta inline-block" /> Growth area</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Logging Heatmap ─────────────────────────────────────────────────────────
+
+function LoggingHeatmap({ notes }: { notes: Note[] }) {
+  const { weeks, months } = useMemo(() => {
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    // Count notes per calendar day
+    const countByDate: Record<string, number> = {};
+    notes.forEach(n => {
+      const d = new Date(n.created_at);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      countByDate[key] = (countByDate[key] || 0) + 1;
+    });
+
+    // Start 26 weeks ago on a Sunday
+    const start = new Date(startOfToday);
+    start.setDate(start.getDate() - 26 * 7);
+    start.setDate(start.getDate() - start.getDay()); // align to Sunday
+
+    const weeks: { date: Date; count: number; isToday: boolean; isFuture: boolean }[][] = [];
+    const monthLabels: { label: string; col: number }[] = [];
+    const cursor = new Date(start);
+    let lastMonth = -1;
+
+    while (cursor <= startOfToday) {
+      const week: typeof weeks[0] = [];
+      for (let i = 0; i < 7; i++) {
+        const key = `${cursor.getFullYear()}-${cursor.getMonth()}-${cursor.getDate()}`;
+        if (i === 0 && cursor.getMonth() !== lastMonth) {
+          monthLabels.push({
+            label: cursor.toLocaleDateString(undefined, { month: 'short' }),
+            col: weeks.length,
+          });
+          lastMonth = cursor.getMonth();
+        }
+        week.push({
+          date: new Date(cursor),
+          count: countByDate[key] || 0,
+          isToday: cursor.getTime() === startOfToday.getTime(),
+          isFuture: cursor > startOfToday,
+        });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      weeks.push(week);
+    }
+
+    return { weeks, months: monthLabels };
+  }, [notes]);
+
+  const cellColor = (count: number, isFuture: boolean) => {
+    if (isFuture) return 'bg-transparent';
+    if (count === 0) return 'bg-slate-100';
+    if (count <= 2) return 'bg-sage/30';
+    if (count <= 5) return 'bg-sage/60';
+    if (count <= 9) return 'bg-sage';
+    return 'bg-sage-dark';
+  };
+
+  const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  return (
+    <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Logging activity · 6 months</p>
+        <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
+          less
+          {['bg-slate-100', 'bg-sage/30', 'bg-sage/60', 'bg-sage', 'bg-sage-dark'].map(c => (
+            <span key={c} className={cn('w-2.5 h-2.5 rounded-sm inline-block', c)} />
+          ))}
+          more
+        </div>
+      </div>
+
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div style={{ display: 'grid', gridTemplateRows: 'auto repeat(7, 11px)', gridTemplateColumns: `16px repeat(${weeks.length}, 11px)`, gap: '2px', width: 'max-content' }}>
+          {/* Month labels row */}
+          <div /> {/* empty top-left corner */}
+          {weeks.map((_, wi) => {
+            const ml = months.find(m => m.col === wi);
+            return (
+              <div key={wi} style={{ fontSize: 8, color: '#94a3b8', fontWeight: 700, lineHeight: '11px', overflow: 'visible', whiteSpace: 'nowrap' }}>
+                {ml?.label || ''}
+              </div>
+            );
+          })}
+
+          {/* Day rows */}
+          {DAY_LABELS.map((day, di) => (
+            <React.Fragment key={di}>
+              <div style={{ fontSize: 8, color: '#94a3b8', fontWeight: 700, lineHeight: '11px', textAlign: 'right', paddingRight: 3 }}>
+                {di % 2 === 1 ? day : ''}
+              </div>
+              {weeks.map((week, wi) => {
+                const cell = week[di];
+                return (
+                  <div
+                    key={wi}
+                    title={cell ? `${cell.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${cell.count} notes` : ''}
+                    className={cn(
+                      'rounded-sm transition-colors',
+                      cell ? cellColor(cell.count, cell.isFuture) : 'bg-transparent',
+                      cell?.isToday && 'ring-1 ring-terracotta ring-offset-1'
+                    )}
+                  />
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function InsightsScreen({ notes, students, indicators, onStudentClick }: InsightsScreenProps) {
   const [period, setPeriod] = useState<Period>('week');
 
@@ -466,6 +672,12 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
           </span>
         </div>
       </div>
+
+      {/* ── Class Comparison ── */}
+      <ClassComparisonCard notes={filteredNotes} students={students} indicatorTypeMap={indicatorTypeMap} label={bounds.label} />
+
+      {/* ── Logging Heatmap ── */}
+      <LoggingHeatmap notes={notes} />
     </div>
   );
 }

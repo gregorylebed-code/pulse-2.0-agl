@@ -26,6 +26,88 @@ interface PulseScreenProps {
   abbreviations: Abbreviation[];
 }
 
+// ─── Today at a Glance ───────────────────────────────────────────────────────
+
+function TodayAtAGlance({ notes, indicators }: { notes: Note[]; indicators: any[] }) {
+  const indicatorTypeMap = React.useMemo(() => {
+    const map: Record<string, 'positive' | 'neutral' | 'growth'> = {};
+    indicators.forEach((ind: any) => { if (ind.label) map[ind.label] = ind.type; });
+    return map;
+  }, [indicators]);
+
+  const todayStats = React.useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayNotes = notes.filter(n => new Date(n.created_at) >= startOfToday);
+    if (todayNotes.length === 0) return null;
+
+    let positive = 0, growth = 0, neutral = 0;
+    todayNotes.forEach(n => {
+      const types = (n.tags || []).map((t: string) => indicatorTypeMap[t] || 'neutral');
+      if (types.includes('growth')) growth++;
+      else if (types.includes('positive')) positive++;
+      else neutral++;
+    });
+    const students = new Set(todayNotes.map(n => n.student_name).filter(Boolean)).size;
+    return { total: todayNotes.length, positive, neutral, growth, students };
+  }, [notes, indicatorTypeMap]);
+
+  if (!todayStats) return null;
+
+  const { total, positive, neutral, growth, students } = todayStats;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-[24px] border border-slate-100 shadow-sm px-5 py-4"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Today at a glance</p>
+        <div className="flex items-center gap-3 text-[10px] font-bold">
+          <span className="text-slate-400">{total} note{total !== 1 ? 's' : ''}</span>
+          <span className="text-slate-300">·</span>
+          <span className="text-slate-400">{students} student{students !== 1 ? 's' : ''}</span>
+        </div>
+      </div>
+      {/* Segmented bar */}
+      <div className="flex h-5 rounded-full overflow-hidden bg-slate-100 gap-px mb-2">
+        {positive > 0 && (
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${(positive / total) * 100}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="bg-sage h-full"
+          />
+        )}
+        {neutral > 0 && (
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${(neutral / total) * 100}%` }}
+            transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
+            className="bg-slate-300 h-full"
+          />
+        )}
+        {growth > 0 && (
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${(growth / total) * 100}%` }}
+            transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
+            className="bg-terracotta h-full"
+          />
+        )}
+      </div>
+      <div className="flex items-center gap-4">
+        {positive > 0 && <span className="flex items-center gap-1 text-[10px] font-bold text-sage"><span className="w-2 h-2 rounded-full bg-sage inline-block" />{positive} positive</span>}
+        {neutral > 0 && <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block" />{neutral} neutral</span>}
+        {growth > 0 && <span className="flex items-center gap-1 text-[10px] font-bold text-terracotta"><span className="w-2 h-2 rounded-full bg-terracotta inline-block" />{growth} growth area</span>}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations }: PulseScreenProps) {
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [studentInput, setStudentInput] = useState('');
@@ -736,6 +818,8 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Finalize & Save</>}
         </button>
       </div>
+
+      <TodayAtAGlance notes={notes} indicators={indicators} />
 
       <div className="space-y-4 pb-20">
         <h2 className="text-[15px] font-black text-slate-400 ml-1">Recent Activity</h2>

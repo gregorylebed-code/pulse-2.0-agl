@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import imageCompression from 'browser-image-compression';
 import {
@@ -83,6 +83,174 @@ interface StudentDetailViewProps {
   teacherTitle: string;
   teacherLastName: string;
 }
+
+// ─── Student Mini Dashboard ───────────────────────────────────────────────────
+
+function StudentMiniDashboard({ student, notes, indicators }: {
+  student: { id: string; name: string };
+  notes: Note[];
+  indicators: any[];
+}) {
+  const studentNotes = useMemo(() =>
+    notes.filter(n => n.student_name === student.name),
+    [notes, student.name]
+  );
+
+  const indicatorTypeMap = useMemo(() => {
+    const map: Record<string, 'positive' | 'neutral' | 'growth'> = {};
+    indicators.forEach((ind: any) => { if (ind.label) map[ind.label] = ind.type; });
+    return map;
+  }, [indicators]);
+
+  // 8-week buckets
+  const weeklyData = useMemo(() => {
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return Array.from({ length: 8 }, (_, i) => {
+      const weekEnd = new Date(startOfToday);
+      weekEnd.setDate(startOfToday.getDate() - i * 7);
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekEnd.getDate() - 6);
+      const weekNotes = studentNotes.filter(n => {
+        const d = new Date(n.created_at);
+        return d >= weekStart && d <= weekEnd;
+      });
+      const positive = weekNotes.filter(n => (n.tags || []).some(t => indicatorTypeMap[t] === 'positive')).length;
+      const growth = weekNotes.filter(n => (n.tags || []).some(t => indicatorTypeMap[t] === 'growth')).length;
+      return {
+        label: i === 0 ? 'This wk' : `${i}w ago`,
+        total: weekNotes.length,
+        positive,
+        growth,
+        neutral: weekNotes.length - positive - growth,
+      };
+    }).reverse();
+  }, [studentNotes, indicatorTypeMap]);
+
+  const maxWeekly = Math.max(...weeklyData.map(w => w.total), 1);
+
+  // Tag breakdown
+  const tagCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    studentNotes.forEach(n => (n.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  }, [studentNotes]);
+  const maxTag = tagCounts[0]?.[1] || 1;
+
+  // Summary stats
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 86400000);
+  const notesThisWeek = studentNotes.filter(n => new Date(n.created_at) >= weekAgo).length;
+  const positiveCount = studentNotes.filter(n => (n.tags || []).some(t => indicatorTypeMap[t] === 'positive')).length;
+  const positivePct = studentNotes.length > 0 ? Math.round((positiveCount / studentNotes.length) * 100) : 0;
+  const topTag = tagCounts[0]?.[0] ?? '—';
+
+  if (studentNotes.length === 0) {
+    return (
+      <div className="bg-white rounded-[24px] border border-dashed border-slate-200 p-5 text-center">
+        <p className="text-xs font-medium text-slate-400">No observations logged yet for this student.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-[24px] card-shadow border border-slate-100 p-5 space-y-5">
+      <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Student Overview</p>
+
+      {/* Stat pills */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { val: studentNotes.length, label: 'Total notes' },
+          { val: notesThisWeek, label: 'This week' },
+          { val: `${positivePct}%`, label: 'Positive' },
+          { val: topTag.length > 8 ? topTag.slice(0, 7) + '…' : topTag, label: 'Top tag' },
+        ].map(({ val, label }) => (
+          <div key={label} className="bg-slate-50 rounded-2xl p-3 text-center">
+            <div className="text-lg font-black text-slate-800 leading-none">{val}</div>
+            <div className="text-[9px] font-bold text-slate-400 mt-1 leading-tight">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 8-week activity + positive/growth trend */}
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2">8-week activity</p>
+        <div className="flex items-end gap-1.5">
+          {weeklyData.map((week, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full flex flex-col justify-end rounded-t-md overflow-hidden bg-slate-100" style={{ height: 52 }}>
+                {week.total > 0 && (
+                  <div className="w-full flex flex-col justify-end" style={{ height: `${(week.total / maxWeekly) * 100}%` }}>
+                    {week.growth > 0 && (
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${(week.growth / week.total) * 100}%` }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                        className="w-full bg-terracotta/60"
+                      />
+                    )}
+                    {week.neutral > 0 && (
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${(week.neutral / week.total) * 100}%` }}
+                        transition={{ duration: 0.5, delay: 0.05, ease: 'easeOut' }}
+                        className="w-full bg-slate-300"
+                      />
+                    )}
+                    {week.positive > 0 && (
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${(week.positive / week.total) * 100}%` }}
+                        transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
+                        className="w-full bg-sage"
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+              <span className="text-[7px] font-bold text-slate-300 truncate w-full text-center">{week.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 mt-2">
+          <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-sage inline-block" /> Positive</span>
+          <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-slate-300 inline-block" /> Neutral</span>
+          <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-terracotta/60 inline-block" /> Growth area</span>
+        </div>
+      </div>
+
+      {/* Tag breakdown */}
+      {tagCounts.length > 0 && (
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2">Behavior tags</p>
+          <div className="space-y-1.5">
+            {tagCounts.map(([tag, count]) => {
+              const type = indicatorTypeMap[tag] ?? 'neutral';
+              const barColor = type === 'positive' ? 'bg-sage' : type === 'growth' ? 'bg-terracotta' : 'bg-slate-300';
+              const textColor = type === 'positive' ? 'text-sage-dark' : type === 'growth' ? 'text-terracotta' : 'text-slate-500';
+              return (
+                <div key={tag} className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold w-20 flex-shrink-0 truncate ${textColor}`}>{tag}</span>
+                  <div className="flex-1 h-3.5 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(count / maxTag) * 100}%` }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      className={`h-full rounded-full ${barColor}`}
+                    />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-400 w-4 text-right">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function StudentDetailView({
   student,
@@ -777,6 +945,8 @@ export default function StudentDetailView({
           </div>
         </div>
       </div>
+
+      <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
 
       <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100">
         <div className="flex items-center justify-between mb-3">
