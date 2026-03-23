@@ -6,6 +6,7 @@ import AuthScreen from './components/AuthScreen';
 import { migrateLocalDataToUser } from './utils/migrateLocalData';
 import PulseScreen from './components/PulseScreen';
 import SummaryView from './components/SummaryView';
+import InsightsScreen from './components/InsightsScreen';
 import FeedbackModal from './components/FeedbackModal';
 import StudentsScreen from './components/StudentsScreen';
 import TaskDrawer from './components/TaskDrawer';
@@ -55,7 +56,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     localStorage.setItem('cp_theme', theme);
   }, [theme]);
 
-  const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'settings'>('pulse');
+  const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'insights' | 'settings'>('pulse');
   const [classSummaries, setClassSummaries] = useState<Record<string, string>>({});
   const [pulseView, setPulseView] = useState<'log' | 'summary'>('log');
   const [settingsView, setSettingsView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
@@ -276,6 +277,19 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 setSelectedStudentId={setSelectedStudentId}
                 teacherTitle={teacherTitle}
                 teacherLastName={teacherLastName}
+              />
+            </motion.div>
+          )}
+          {activeTab === 'insights' && (
+            <motion.div key="insights" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <InsightsScreen
+                notes={notes}
+                students={students}
+                indicators={indicators}
+                onStudentClick={(studentId) => {
+                  setSelectedStudentId(studentId);
+                  setActiveTab('students');
+                }}
               />
             </motion.div>
           )}
