@@ -884,6 +884,33 @@ export default function StudentDetailView({
     setEditComm(prev => prev.includes(comm) ? prev.filter(c => c !== comm) : [...prev, comm]);
   };
 
+  // Hero stats
+  const heroStats = useMemo(() => {
+    const studentNotes = notes.filter(n => n.student_name === student.name);
+    const indicatorTypeMap: Record<string, string> = {};
+    indicators.forEach((ind: any) => { if (ind.label) indicatorTypeMap[ind.label] = ind.type; });
+    const positiveCount = studentNotes.filter(n => (n.tags || []).some((t: string) => indicatorTypeMap[t] === 'positive')).length;
+    const positivePct = studentNotes.length > 0 ? Math.round((positiveCount / studentNotes.length) * 100) : 0;
+    const lastNote = studentNotes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+    const daysSince = lastNote
+      ? Math.floor((Date.now() - new Date(lastNote.created_at).getTime()) / 86400000)
+      : null;
+    const lastLogged = daysSince === null ? 'Never' : daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince}d ago`;
+    return { total: studentNotes.length, positivePct, lastLogged };
+  }, [notes, student.name, indicators]);
+
+  // Hero gradient by class period (cycles through a palette)
+  const HERO_GRADIENTS = [
+    'from-violet-500 to-indigo-600',
+    'from-rose-500 to-pink-600',
+    'from-amber-400 to-orange-500',
+    'from-emerald-500 to-teal-600',
+    'from-sky-500 to-blue-600',
+    'from-fuchsia-500 to-purple-600',
+  ];
+  const periodNum = parseInt(student.class_period || '0') || 0;
+  const heroGradient = HERO_GRADIENTS[periodNum % HERO_GRADIENTS.length];
+
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 pb-10 relative">
       {/* Print-Only Header */}
@@ -908,40 +935,62 @@ export default function StudentDetailView({
         </button>
       </div>
 
-      <div className="bg-white p-8 rounded-[40px] card-shadow border border-sage/5 flex items-center gap-6">
-        {student.photo_url ? (
-          <img src={student.photo_url} alt={student.name} className="w-20 h-20 rounded-[28px] object-cover shadow-inner" />
-        ) : (
-          <div className="w-20 h-20 bg-cream-dark rounded-[28px] flex items-center justify-center text-terracotta font-bold text-3xl shadow-inner">
-            {student.name.split(' ').map(n => n[0]).join('')}
+      {/* Hero Banner */}
+      <div className={`bg-linear-to-br ${heroGradient} rounded-[36px] shadow-xl overflow-hidden no-print`}>
+        <div className="px-6 pt-6 pb-5">
+          <div className="flex items-center gap-5">
+            {/* Photo */}
+            <div className="relative flex-shrink-0">
+              {student.photo_url ? (
+                <img src={student.photo_url} alt={student.name} className="w-24 h-24 rounded-[24px] object-cover ring-4 ring-white/30 shadow-lg" />
+              ) : (
+                <div className="w-24 h-24 bg-white/20 rounded-[24px] flex items-center justify-center text-white font-black text-4xl font-display shadow-lg ring-4 ring-white/30">
+                  {student.name.split(' ').map((n: string) => n[0]).join('')}
+                </div>
+              )}
+            </div>
+
+            {/* Name + period */}
+            <div className="flex-1 min-w-0">
+              {editingStudentName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={studentNameDraft}
+                    onChange={e => setStudentNameDraft(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSaveStudentName(); if (e.key === 'Escape') setEditingStudentName(false); }}
+                    autoFocus
+                    className="text-xl font-bold text-white bg-white/20 border border-white/40 rounded-xl px-3 py-1 focus:outline-none focus:ring-2 focus:ring-white/40 placeholder-white/50"
+                  />
+                  <button onClick={handleSaveStudentName} className="text-[11px] font-bold text-white/80 hover:text-white">Save</button>
+                  <button onClick={() => setEditingStudentName(false)} className="text-[11px] font-bold text-white/60 hover:text-white/80">Cancel</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <h2 className="text-[28px] font-black text-white font-display leading-tight truncate drop-shadow-sm">{student.name}</h2>
+                  <button onClick={() => { setStudentNameDraft(student.name); setEditingStudentName(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/60 hover:text-white" title="Edit name">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <span className="inline-block mt-1.5 px-3 py-1 bg-white/20 text-white text-[11px] font-bold rounded-full backdrop-blur-sm">
+                Period {student.class_period || '—'}
+              </span>
+            </div>
           </div>
-        )}
-        <div className="flex-1">
-          {editingStudentName ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={studentNameDraft}
-                onChange={e => setStudentNameDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleSaveStudentName(); if (e.key === 'Escape') setEditingStudentName(false); }}
-                autoFocus
-                className="text-xl font-bold text-sage-dark bg-sage/5 border border-sage/30 rounded-xl px-3 py-1 focus:outline-none focus:ring-2 focus:ring-sage/20"
-              />
-              <button onClick={handleSaveStudentName} className="text-[11px] font-bold text-sage hover:text-sage-dark">Save</button>
-              <button onClick={() => setEditingStudentName(false)} className="text-[11px] font-bold text-slate-400 hover:text-slate-600">Cancel</button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 group">
-              <h2 className="text-[26px] font-bold text-sage-dark font-display">{student.name}</h2>
-              <button onClick={() => { setStudentNameDraft(student.name); setEditingStudentName(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-300 hover:text-sage" title="Edit name">
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-          <div className="flex gap-3 mt-1">
-            <span className="px-3 py-1 bg-sage/10 text-sage text-[10px] font-bold rounded-lg">
-              Class Period {student.class_period || 'Unassigned'}
-            </span>
+
+          {/* Inline stats strip */}
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {[
+              { val: heroStats.total, label: 'Total notes' },
+              { val: heroStats.lastLogged, label: 'Last logged' },
+              { val: `${heroStats.positivePct}%`, label: 'Positive' },
+            ].map(({ val, label }) => (
+              <div key={label} className="bg-white/15 backdrop-blur-sm rounded-2xl px-3 py-2.5 text-center">
+                <div className="text-[22px] font-black text-white leading-none">{val}</div>
+                <div className="text-[9px] font-bold text-white/70 mt-0.5 uppercase tracking-wide">{label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

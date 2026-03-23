@@ -767,42 +767,86 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
               className="space-y-3 overflow-hidden"
             >
               <div className="space-y-2">
-                <h3 className="text-[15px] font-black text-slate-400 ml-1">Positive Indicators</h3>
-                <div className="flex flex-wrap gap-1.5">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-500 ml-1 flex items-center gap-1.5"><span>✦</span> Positive</h3>
+                <div className="flex flex-wrap gap-2">
                   {indicators.filter(b => b.type === 'positive').map(b => (
-                    <button key={b.label} onClick={() => toggleTag(b.label)} className={cn("px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback", selectedTags.includes(b.label) ? "bg-neon-green/10 border-neon-green text-neon-green shadow-md" : "bg-white border-neon-green text-neon-green hover:bg-neon-green/5")}>
-                      <span>{b.icon}</span> {b.label}
-                    </button>
+                    <motion.button
+                      key={b.label}
+                      onClick={() => toggleTag(b.label)}
+                      whileTap={{ scale: 0.88 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                      className={cn(
+                        "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                        selectedTags.includes(b.label)
+                          ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200"
+                          : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                      )}
+                    >
+                      <span className="text-base leading-none">{b.icon}</span> {b.label}
+                    </motion.button>
                   ))}
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-[15px] font-black text-slate-400 ml-1">Neutral Indicators</h3>
-                <div className="flex flex-wrap gap-1.5">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-500 ml-1 flex items-center gap-1.5"><span>✦</span> Neutral</h3>
+                <div className="flex flex-wrap gap-2">
                   {indicators.filter(b => b.type === 'neutral').map(b => (
-                    <button key={b.label} onClick={() => toggleTag(b.label)} className={cn("px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback", selectedTags.includes(b.label) ? "bg-neon-yellow/10 border-neon-yellow text-neon-yellow shadow-md" : "bg-white border-neon-yellow text-neon-yellow hover:bg-neon-yellow/5")}>
-                      <span>{b.icon}</span> {b.label}
-                    </button>
+                    <motion.button
+                      key={b.label}
+                      onClick={() => toggleTag(b.label)}
+                      whileTap={{ scale: 0.88 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                      className={cn(
+                        "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                        selectedTags.includes(b.label)
+                          ? "bg-amber-400 border-amber-400 text-white shadow-lg shadow-amber-200"
+                          : "bg-amber-50 border-amber-200 text-amber-700"
+                      )}
+                    >
+                      <span className="text-base leading-none">{b.icon}</span> {b.label}
+                    </motion.button>
                   ))}
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-[15px] font-black text-slate-400 ml-1">Areas for Growth</h3>
-                <div className="flex flex-wrap gap-1.5">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-rose-500 ml-1 flex items-center gap-1.5"><span>✦</span> Growth Areas</h3>
+                <div className="flex flex-wrap gap-2">
                   {indicators.filter(b => b.type === 'growth').map(b => (
-                    <button key={b.label} onClick={() => toggleTag(b.label)} className={cn("px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback", selectedTags.includes(b.label) ? "bg-neon-red/10 border-neon-red text-neon-red shadow-md" : "bg-white border-neon-red text-neon-red hover:bg-neon-red/5")}>
-                      <span>{b.icon}</span> {b.label}
-                    </button>
+                    <motion.button
+                      key={b.label}
+                      onClick={() => toggleTag(b.label)}
+                      whileTap={{ scale: 0.88 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                      className={cn(
+                        "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                        selectedTags.includes(b.label)
+                          ? "bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-200"
+                          : "bg-rose-50 border-rose-200 text-rose-700"
+                      )}
+                    >
+                      <span className="text-base leading-none">{b.icon}</span> {b.label}
+                    </motion.button>
                   ))}
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-[15px] font-black text-slate-400 ml-1">Family Communication</h3>
-                <div className="flex flex-wrap gap-1.5">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-sky-500 ml-1 flex items-center gap-1.5"><span>✦</span> Family Comm</h3>
+                <div className="flex flex-wrap gap-2">
                   {commTypes.map(b => (
-                    <button key={b.label} onClick={() => toggleComm(b.label)} className={cn("px-2 py-0.5 border-2 rounded-full text-xs font-bold flex items-center gap-1 transition-all pop-feedback", selectedComm.includes(b.label) ? "bg-neon-cyan/10 border-neon-cyan text-neon-cyan shadow-md" : "bg-white border-neon-cyan text-neon-cyan hover:bg-neon-cyan/5")}>
-                      <span>{b.icon}</span> {b.label}
-                    </button>
+                    <motion.button
+                      key={b.label}
+                      onClick={() => toggleComm(b.label)}
+                      whileTap={{ scale: 0.88 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                      className={cn(
+                        "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                        selectedComm.includes(b.label)
+                          ? "bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-200"
+                          : "bg-sky-50 border-sky-200 text-sky-700"
+                      )}
+                    >
+                      <span className="text-base leading-none">{b.icon}</span> {b.label}
+                    </motion.button>
                   ))}
                 </div>
               </div>

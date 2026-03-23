@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake } from 'lucide-react';
 import { toast } from 'sonner';
@@ -189,6 +189,52 @@ export default function StudentsScreen({
     }
     return avatarColors[Math.abs(hash) % avatarColors.length];
   };
+
+  // Per-student last-note lookup for status rings
+  const lastNoteByStudent = useMemo(() => {
+    const map: Record<string, Date> = {};
+    notes.forEach(n => {
+      if (!n.student_name) return;
+      const d = new Date(n.created_at);
+      if (!map[n.student_name] || d > map[n.student_name]) map[n.student_name] = d;
+    });
+    return map;
+  }, [notes]);
+
+  const getStudentStatus = (name: string) => {
+    const last = lastNoteByStudent[name];
+    if (!last) return 'never';
+    const days = Math.floor((Date.now() - last.getTime()) / 86400000);
+    if (days === 0) return 'today';
+    if (days <= 4) return 'recent';
+    if (days <= 7) return 'fading';
+    return 'neglected';
+  };
+
+  const statusRing: Record<string, string> = {
+    today:     'ring-2 ring-emerald-400 ring-offset-1',
+    recent:    'ring-2 ring-sage/60 ring-offset-1',
+    fading:    'ring-2 ring-amber-400 ring-offset-1',
+    neglected: 'ring-2 ring-red-400 ring-offset-1',
+    never:     'ring-1 ring-slate-200',
+  };
+
+  const statusDot: Record<string, string> = {
+    today:     'bg-emerald-400',
+    recent:    'bg-sage',
+    fading:    'bg-amber-400',
+    neglected: 'bg-red-400',
+    never:     'bg-slate-300',
+  };
+
+  const CLASS_PALETTE = [
+    { bg: 'bg-violet-50', border: 'border-violet-100', text: 'text-violet-600', badge: 'bg-violet-100 text-violet-600' },
+    { bg: 'bg-sky-50',    border: 'border-sky-100',    text: 'text-sky-600',    badge: 'bg-sky-100 text-sky-600' },
+    { bg: 'bg-emerald-50',border: 'border-emerald-100',text: 'text-emerald-600',badge: 'bg-emerald-100 text-emerald-600' },
+    { bg: 'bg-amber-50',  border: 'border-amber-100',  text: 'text-amber-600',  badge: 'bg-amber-100 text-amber-600' },
+    { bg: 'bg-rose-50',   border: 'border-rose-100',   text: 'text-rose-600',   badge: 'bg-rose-100 text-rose-600' },
+    { bg: 'bg-cyan-50',   border: 'border-cyan-100',   text: 'text-cyan-600',   badge: 'bg-cyan-100 text-cyan-600' },
+  ];
 
   if (selectedStudent) {
     return (
@@ -400,34 +446,71 @@ export default function StudentsScreen({
         </AnimatePresence>
       </div>
 
-      <div className="space-y-10">
-        {sections.map(section => (
-          <div key={section} className="space-y-4">
-            <h3 className="text-[11px] font-black text-slate-400 ml-2 flex items-center gap-3">
-              <span className="w-8 h-[1px] bg-slate-200" />
-              Class Period {section}
-              <span className="flex-1 h-[1px] bg-slate-200" />
-            </h3>
-            <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2">
-              {groupedStudents[section].map(s => (
-                <div
-                  key={s.id}
-                  onClick={() => setSelectedStudentId(s.id)}
-                  className="bg-white p-2 rounded-2xl card-shadow border border-slate-100 flex flex-col items-center justify-center gap-1.5 group cursor-pointer hover:border-sage/30 hover:-translate-y-0.5 transition-all text-center"
-                >
-                  {s.photo_url ? (
-                    <img src={s.photo_url} alt={s.name} className="w-10 h-10 rounded-full object-cover border border-slate-100" />
-                  ) : (
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border text-lg", getAvatarColor(s.name))} style={{ fontFamily: "'Boogaloo', cursive" }}>
-                      {s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  <h4 className="text-[12px] font-bold text-slate-900 line-clamp-2 leading-tight font-display h-[30px] flex items-start justify-center">{s.name}</h4>
+      <div className="space-y-8">
+        {sections.map((section, sIdx) => {
+          const palette = CLASS_PALETTE[sIdx % CLASS_PALETTE.length];
+          const sectionNotes = notes.filter(n => {
+            const st = groupedStudents[section].find(s => s.name === n.student_name);
+            return !!st;
+          });
+          const thisWeekNotes = sectionNotes.filter(n => Date.now() - new Date(n.created_at).getTime() < 7 * 86400000).length;
+          return (
+            <div key={section} className="space-y-3">
+              {/* Colorful section header */}
+              <div className={cn('flex items-center gap-3 px-1 py-2 rounded-2xl border', palette.bg, palette.border)}>
+                <div className={cn('w-7 h-7 rounded-xl flex items-center justify-center font-black text-sm ml-1', palette.badge)}>
+                  {section === 'Unassigned' ? '?' : section[0]}
                 </div>
-              ))}
+                <span className={cn('font-black text-sm flex-1', palette.text)}>
+                  {section === 'Unassigned' ? 'Unassigned' : `Period ${section}`}
+                </span>
+                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg', palette.badge)}>
+                  {groupedStudents[section].length} students
+                </span>
+                {thisWeekNotes > 0 && (
+                  <span className="text-[10px] font-bold text-slate-400 mr-2">
+                    {thisWeekNotes} notes this week
+                  </span>
+                )}
+              </div>
+
+              {/* Student grid */}
+              <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2">
+                {groupedStudents[section].map(s => {
+                  const status = getStudentStatus(s.name);
+                  const noteCount = notes.filter(n => n.student_name === s.name).length;
+                  return (
+                    <motion.div
+                      key={s.id}
+                      onClick={() => setSelectedStudentId(s.id)}
+                      whileTap={{ scale: 0.94 }}
+                      className="bg-white p-2 rounded-2xl card-shadow border border-slate-100 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-sage/30 hover:-translate-y-0.5 transition-all text-center relative"
+                    >
+                      {/* Status dot */}
+                      <span className={cn('absolute top-1.5 right-1.5 w-2 h-2 rounded-full', statusDot[status])} />
+
+                      {/* Photo / avatar with status ring */}
+                      {s.photo_url ? (
+                        <img src={s.photo_url} alt={s.name} className={cn('w-10 h-10 rounded-full object-cover', statusRing[status])} />
+                      ) : (
+                        <div className={cn('w-10 h-10 rounded-full flex items-center justify-center border text-lg', getAvatarColor(s.name), statusRing[status])} style={{ fontFamily: "'Boogaloo', cursive" }}>
+                          {s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+
+                      <h4 className="text-[12px] font-bold text-slate-900 line-clamp-2 leading-tight font-display h-[30px] flex items-start justify-center">{s.name}</h4>
+
+                      {/* Note count */}
+                      {noteCount > 0 && (
+                        <span className="text-[9px] font-bold text-slate-400">{noteCount} note{noteCount !== 1 ? 's' : ''}</span>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {students.length === 0 && (
           <div className="text-center py-20 space-y-3 px-4">
