@@ -345,12 +345,12 @@ export async function summarizeClassPeriod(notes: Note[], className: string): Pr
     .map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name || n.class_name || 'Class'}: ${n.content}`)
     .join('\n');
 
-  const prompt = `You are summarizing observation notes for a class period called "${className}" for a teacher.
+  const prompt = `You are writing a blunt, factual observation summary for a teacher's internal record about class "${className}".
 
 Notes:
 ${notesText}
 
-Write a concise, clear summary (3-6 sentences) of what was observed across this class during this period. Group themes — highlight what went well, any patterns of concern, and any standout moments. Use plain language, no jargon. Do not address parents — this is for the teacher's own record.`;
+Report what was actually observed: behavioral patterns, engagement levels, social dynamics, specific concerns, and anything noteworthy. Be direct — do not soften problems or lead with positives. If something is a concern, name it plainly. If the class was unremarkable, say so. 3-5 sentences max. No jargon. This is for the teacher only.`;
 
   const responseText = await callGroq(prompt, false, undefined, 'summarize_class_period');
   return responseText.trim();

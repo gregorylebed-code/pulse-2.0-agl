@@ -77,8 +77,10 @@ export default function Header({
           ) : (
             <div className="group relative">
               <div className="flex items-center gap-2 pr-8">
-                <h1 className="text-sm font-bold text-sage-dark leading-tight">
+                <h1 className="text-sm font-bold text-sage-dark leading-tight flex items-center gap-1.5">
                   {getGreeting(userName)}
+                  <ClassroomPulseLogo size={14} />
+                  <span className="text-[8px] font-semibold text-slate-300">v2.0</span>
                 </h1>
                 <button
                   onClick={resetUserName}
@@ -89,10 +91,8 @@ export default function Header({
                 </button>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <Sparkles className="w-2.5 h-2.5 text-terracotta" />
-                <p className="text-[9px] font-medium text-slate-400 italic truncate max-w-[180px]">"{quote}"</p>
-                <ClassroomPulseLogo size={14} />
-                <span className="text-[8px] font-semibold text-slate-300">v2.0</span>
+                <Sparkles className="w-2.5 h-2.5 text-terracotta flex-shrink-0" />
+                <p className="text-[9px] font-medium text-slate-400 italic leading-snug">"{quote}"</p>
               </div>
             </div>
           )}
