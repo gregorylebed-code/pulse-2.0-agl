@@ -158,18 +158,23 @@ function StudentMiniDashboard({ student, notes, indicators }: {
       <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Student Overview</p>
 
       {/* Stat pills */}
-      <div className="grid grid-cols-4 gap-2">
-        {[
-          { val: studentNotes.length, label: 'Total notes' },
-          { val: notesThisWeek, label: 'This week' },
-          { val: `${positivePct}%`, label: 'Positive' },
-          { val: topTag.length > 8 ? topTag.slice(0, 7) + '…' : topTag, label: 'Top tag' },
-        ].map(({ val, label }) => (
-          <div key={label} className="bg-slate-50 rounded-2xl p-3 text-center">
-            <div className="text-lg font-black text-slate-800 leading-none">{val}</div>
-            <div className="text-[9px] font-bold text-slate-400 mt-1 leading-tight">{label}</div>
-          </div>
-        ))}
+      <div className="space-y-2">
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { val: studentNotes.length, label: 'Total notes' },
+            { val: notesThisWeek, label: 'This week' },
+            { val: `${positivePct}%`, label: 'Positive' },
+          ].map(({ val, label }) => (
+            <div key={label} className="bg-slate-50 rounded-2xl p-3 text-center">
+              <div className="text-lg font-black text-slate-800 leading-none">{val}</div>
+              <div className="text-[9px] font-bold text-slate-400 mt-1 leading-tight">{label}</div>
+            </div>
+          ))}
+        </div>
+        <div className="bg-slate-50 rounded-2xl px-4 py-2.5 flex items-center justify-between">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Top tag</span>
+          <span className="text-sm font-black text-slate-700 text-right leading-tight">{topTag}</span>
+        </div>
       </div>
 
       {/* 8-week activity + positive/growth trend */}
@@ -967,7 +972,10 @@ export default function StudentDetailView({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
-                  <h2 className="text-[28px] font-black text-white font-display leading-tight truncate drop-shadow-sm">{student.name}</h2>
+                  <h2 className="text-[28px] font-black text-white font-display leading-tight drop-shadow-sm">
+                    {student.name.split(' ')[0]}{' '}
+                    <span className="text-white/80">{student.name.split(' ').slice(1).map((n: string) => n[0]).join('')}.</span>
+                  </h2>
                   <button onClick={() => { setStudentNameDraft(student.name); setEditingStudentName(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/60 hover:text-white" title="Edit name">
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
