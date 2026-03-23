@@ -14,6 +14,7 @@ import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalSt
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
 import { categorizeNote, refineReport, parseVoiceLog, quickParentNote, suggestGoals, ReportData } from '../lib/gemini';
+import { isFullMode } from '../lib/mode';
 import { cn } from '../utils/cn';
 
 
@@ -1091,24 +1092,28 @@ export default function StudentDetailView({
         >
           Timeline
         </button>
-        <button
-          onClick={() => scrollToSection('goals')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-            activeSection === 'goals' ? "bg-violet-500 text-white shadow-md shadow-violet-500/20" : "text-slate-500 hover:bg-white/60"
-          )}
-        >
-          Goals
-        </button>
-        <button
-          onClick={() => scrollToSection('ai-report')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-            activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
-          )}
-        >
-          AI Report
-        </button>
+        {isFullMode && (
+          <button
+            onClick={() => scrollToSection('goals')}
+            className={cn(
+              "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
+              activeSection === 'goals' ? "bg-violet-500 text-white shadow-md shadow-violet-500/20" : "text-slate-500 hover:bg-white/60"
+            )}
+          >
+            Goals
+          </button>
+        )}
+        {isFullMode && (
+          <button
+            onClick={() => scrollToSection('ai-report')}
+            className={cn(
+              "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
+              activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
+            )}
+          >
+            AI Report
+          </button>
+        )}
         <button
           onClick={() => scrollToSection('history')}
           className={cn(
@@ -1406,7 +1411,7 @@ export default function StudentDetailView({
       <div className="pt-6 border-t border-slate-100" />
 
       {/* ─── Goals ─────────────────────────────────────────────── */}
-      <div id="goals" ref={goalsRef} className="space-y-4 scroll-mt-header">
+      <div id="goals" ref={goalsRef} className={cn("space-y-4 scroll-mt-header", !isFullMode && "hidden")}>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-violet-600 flex items-center gap-2">
@@ -1657,7 +1662,7 @@ export default function StudentDetailView({
 
       <div className="pt-6 border-t border-slate-100" />
 
-      <div id="ai-report" ref={aiReportRef} className="space-y-6 pt-4 scroll-mt-header">
+      <div id="ai-report" ref={aiReportRef} className={cn("space-y-6 pt-4 scroll-mt-header", !isFullMode && "hidden")}>
         <div className="bg-cream/30 p-8 rounded-[40px] border border-sage/10 space-y-6">
           <div className="space-y-4">
             {/* Primary action — always visible */}

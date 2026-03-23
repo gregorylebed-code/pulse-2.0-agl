@@ -8,6 +8,7 @@ import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
 import StudentDetailView from './StudentDetailView';
 import { cn } from '../utils/cn';
+import { isFullMode } from '../lib/mode';
 
 
 interface StudentsScreenProps {
@@ -377,7 +378,7 @@ export default function StudentsScreen({
       </div>
 
       {/* AI Ask Box */}
-      <div className="px-2">
+      {isFullMode && <div className="px-2">
         <form onSubmit={handleAskAI} className="relative">
           <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
           <input
@@ -444,7 +445,7 @@ export default function StudentsScreen({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </div>}
 
       <div className="space-y-8">
         {sections.map((section, sIdx) => {

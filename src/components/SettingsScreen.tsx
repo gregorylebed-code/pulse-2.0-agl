@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase';
 import ImportScreen from './ImportScreen';
 import StatsCard from './StatsCard';
 import { cn } from '../utils/cn';
+import { isFullMode } from '../lib/mode';
 
 
 const DEFAULT_BEHAVIOR_BUTTONS = [
@@ -646,13 +647,26 @@ export default function SettingsScreen({
               <div className="space-y-1">
                 <SettingsItem icon={<Users2 />} label="Roster Management" onClick={() => setView('roster')} />
                 <SettingsItem icon={<Folder />} label="Class Management" onClick={() => setView('classes')} />
-                <SettingsItem icon={<TrendingUp />} label="Quick Grade Table" onClick={() => setView('quick-grader')} />
+                {isFullMode && <SettingsItem icon={<TrendingUp />} label="Quick Grade Table" onClick={() => setView('quick-grader')} />}
                 <SettingsItem icon={<Calendar />} label="School Calendar" onClick={() => setView('calendar')} />
                 <SettingsItem icon={<School />} label="Rotation & Specials" onClick={() => setView('rotation')} />
                 <SettingsItem icon={<FileInput />} label="Data Management" onClick={() => setView('data-management')} />
                 <SettingsItem icon={<MessageSquare />} label="Abbreviations" onClick={() => setView('abbreviations')} />
               </div>
             </div>
+
+            {!isFullMode && (
+              <div className="bg-linear-to-br from-violet-50 to-indigo-50 border border-violet-100 rounded-[32px] p-6 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">✨</span>
+                  <p className="text-sm font-black text-violet-700">More tools are on the way</p>
+                </div>
+                <p className="text-[11px] text-violet-500 font-medium leading-relaxed">
+                  As you build your documentation habit, advanced features unlock — including AI-generated reports, student goal tracking, behavior insights, and a full analytics dashboard.
+                </p>
+                <p className="text-[10px] text-violet-400 font-bold uppercase tracking-wide">Keep logging. Great things are coming.</p>
+              </div>
+            )}
 
             <StatsCard
               notesCreated={notes.length}
