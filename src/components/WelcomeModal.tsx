@@ -25,7 +25,7 @@ const steps = [
     icon: <Users className="w-5 h-5" />,
     color: 'bg-blue-50 text-blue-500 border-blue-100',
     title: 'Add your students',
-    desc: 'Import a roster CSV or add students one by one.',
+    desc: 'Paste your whole class list — names, parent info, emails — and AI sorts it all out.',
     action: 'onGoToRoster' as const,
     badge: null,
   },

@@ -417,7 +417,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         show={!onboardingComplete && !welcomeHidden && !loading && students.length === 0 && notes.length === 0}
         teacherName={teacherFirstName || userName}
         onGoToProfile={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('profile'); }}
-        onGoToRoster={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('roster'); }}
+        onGoToRoster={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('data-management'); }}
         onGoToPulse={() => { setWelcomeHidden(true); setActiveTab('pulse'); }}
         onGoToCalendar={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('calendar'); }}
         onDismiss={markOnboardingComplete}
