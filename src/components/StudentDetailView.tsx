@@ -447,7 +447,7 @@ export default function StudentDetailView({
   };
 
   const handleSaveNote = async () => {
-    if (!noteContent.trim() && !image) return;
+    if (!noteContent.trim() && !image && selectedTags.length === 0 && selectedComm.length === 0) return;
     setIsSavingNote(true);
     const expandedContent = expandAbbreviations(noteContent, abbreviations);
     try {
@@ -1303,7 +1303,7 @@ export default function StudentDetailView({
           <button
             type="button"
             onClick={handleSaveNote}
-            disabled={isSavingNote || (!noteContent.trim() && !image)}
+            disabled={isSavingNote || (!noteContent.trim() && !image && selectedTags.length === 0 && selectedComm.length === 0)}
             className="py-1.5 px-8 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-xl hover:brightness-110 transition-all shadow-md shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isSavingNote ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Save Note</>}
