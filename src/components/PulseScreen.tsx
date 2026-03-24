@@ -768,7 +768,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 </AnimatePresence>
               </div>
             );
-          })}
+          }))}
         </div>
 
         {/* ── Optional text note ── */}

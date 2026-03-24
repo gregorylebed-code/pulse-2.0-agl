@@ -1269,7 +1269,7 @@ export default function StudentDetailView({
                 </AnimatePresence>
               </div>
             );
-          })}
+          }))}
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">
