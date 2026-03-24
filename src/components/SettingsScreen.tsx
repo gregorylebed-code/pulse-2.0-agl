@@ -215,6 +215,13 @@ export default function SettingsScreen({
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
 
+  // Local profile state — buffered until "Save Changes" is clicked
+  const [localUserName, setLocalUserName] = useState(userName);
+  const [localSchoolName, setLocalSchoolName] = useState(schoolName);
+  const [localTeacherTitle, setLocalTeacherTitle] = useState(teacherTitle);
+  const [localTeacherFirstName, setLocalTeacherFirstName] = useState(teacherFirstName);
+  const [localTeacherLastName, setLocalTeacherLastName] = useState(teacherLastName);
+
   const handleUpdateSpecial = (letter: string, special: string) => {
     setSpecialsNames({ ...specialsNames, [letter]: special });
   };
@@ -433,11 +440,11 @@ export default function SettingsScreen({
   };
 
   const handleSaveProfile = () => {
-    setUserName(userName);
-    setSchoolName(schoolName);
-    setTeacherTitle(teacherTitle);
-    setTeacherFirstName(teacherFirstName);
-    setTeacherLastName(teacherLastName);
+    setUserName(localUserName);
+    setSchoolName(localSchoolName);
+    setTeacherTitle(localTeacherTitle);
+    setTeacherFirstName(localTeacherFirstName);
+    setTeacherLastName(localTeacherLastName);
     toast.success('Profile updated successfully');
   };
 
@@ -1126,10 +1133,10 @@ export default function SettingsScreen({
                       <button
                         key={t}
                         type="button"
-                        onClick={() => setTeacherTitle(t)}
+                        onClick={() => setLocalTeacherTitle(t)}
                         className={cn(
                           "px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all",
-                          teacherTitle === t
+                          localTeacherTitle === t
                             ? "bg-sage/15 border-sage text-sage-dark shadow-sm"
                             : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
                         )}
@@ -1144,8 +1151,8 @@ export default function SettingsScreen({
                     <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">First Name</label>
                     <input
                       type="text"
-                      value={teacherFirstName}
-                      onChange={(e) => setTeacherFirstName(e.target.value)}
+                      value={localTeacherFirstName}
+                      onChange={(e) => setLocalTeacherFirstName(e.target.value)}
                       placeholder="e.g. John"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all text-sm"
                     />
@@ -1154,8 +1161,8 @@ export default function SettingsScreen({
                     <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Last Name</label>
                     <input
                       type="text"
-                      value={teacherLastName}
-                      onChange={(e) => setTeacherLastName(e.target.value)}
+                      value={localTeacherLastName}
+                      onChange={(e) => setLocalTeacherLastName(e.target.value)}
                       placeholder="e.g. Smith"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all text-sm"
                     />
@@ -1165,8 +1172,8 @@ export default function SettingsScreen({
                   <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Display Name (used in app header)</label>
                   <input
                     type="text"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
+                    value={localUserName}
+                    onChange={(e) => setLocalUserName(e.target.value)}
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all"
                   />
                 </div>
@@ -1174,14 +1181,14 @@ export default function SettingsScreen({
                   <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Name</label>
                   <input
                     type="text"
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
+                    value={localSchoolName}
+                    onChange={(e) => setLocalSchoolName(e.target.value)}
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all"
                   />
                 </div>
-                {(teacherTitle || teacherLastName) && (
+                {(localTeacherTitle || localTeacherLastName) && (
                   <p className="text-[10px] text-slate-400 ml-1">
-                    Quick notes will be signed: <span className="font-bold text-slate-600">{teacherTitle} {teacherLastName || '___'}</span>
+                    Quick notes will be signed: <span className="font-bold text-slate-600">{localTeacherTitle} {localTeacherLastName || '___'}</span>
                   </p>
                 )}
                 <button

@@ -210,8 +210,13 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   }, [activeTab, settingsView]);
 
   const confettiRef = useRef<ConfettiHandle>(null);
-  const prevStatsRef = useRef({ notes_created: 0, reports_generated: 0 });
+  const prevStatsRef = useRef<{ notes_created: number; reports_generated: number } | null>(null);
   useEffect(() => {
+    if (prevStatsRef.current === null) {
+      // First load — seed with current values so we only fire on new increments
+      prevStatsRef.current = { notes_created: stats.notes_created, reports_generated: stats.reports_generated };
+      return;
+    }
     const prev = prevStatsRef.current;
     if (prev.notes_created === 0 && stats.notes_created === 1) {
       confettiRef.current?.fire();
