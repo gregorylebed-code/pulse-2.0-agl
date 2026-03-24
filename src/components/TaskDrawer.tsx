@@ -172,7 +172,7 @@ export default function TaskDrawer({
                   <div className="p-2 bg-sage/10 rounded-xl">
                     <ClipboardList className="w-5 h-5 text-sage" />
                   </div>
-                  <h2 className="text-2xl font-black text-sage-dark" style={{ WebkitTextStroke: '0.6px rgba(0,0,0,0.35)' }}>Daily Tasks</h2>
+                  <h2 className="text-2xl font-black text-sage" style={{ WebkitTextStroke: '0.6px rgba(0,0,0,0.35)' }}>Daily Tasks</h2>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={handleCopyTasks} title="Copy to clipboard" className="p-2 text-slate-400 hover:text-sage rounded-full transition-colors">
