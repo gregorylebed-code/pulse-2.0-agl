@@ -5,7 +5,7 @@ import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations'
 import imageCompression from 'browser-image-compression';
 import {
   Mic, Image as ImageIcon, Send, Trash2, Edit2, Copy,
-  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Tag, ChevronDown, Cake
+  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Cake
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -117,7 +117,6 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedComm, setSelectedComm] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [showTags, setShowTags] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -335,7 +334,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   };
 
   const handleSave = async () => {
-    if (!noteContent.trim() && !image) return;
+    if (!noteContent.trim() && !image && selectedTags.length === 0 && selectedComm.length === 0) return;
 
     // Class note path
     if (noteMode === 'class') {
@@ -684,46 +683,119 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </>
         )}
 
+        {/* ── Indicators — always visible, tag-first ── */}
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-500 ml-1 flex items-center gap-1.5"><span>✦</span> Positive</h3>
+            <div className="flex flex-wrap gap-2">
+              {indicators.filter(b => b.type === 'positive').map(b => (
+                <motion.button
+                  key={b.label}
+                  onClick={() => toggleTag(b.label)}
+                  whileTap={{ scale: 0.88 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                  className={cn(
+                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                    selectedTags.includes(b.label)
+                      ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200"
+                      : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                  )}
+                >
+                  <span className="text-base leading-none">{b.icon}</span> {b.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-500 ml-1 flex items-center gap-1.5"><span>✦</span> Neutral</h3>
+            <div className="flex flex-wrap gap-2">
+              {indicators.filter(b => b.type === 'neutral').map(b => (
+                <motion.button
+                  key={b.label}
+                  onClick={() => toggleTag(b.label)}
+                  whileTap={{ scale: 0.88 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                  className={cn(
+                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                    selectedTags.includes(b.label)
+                      ? "bg-amber-400 border-amber-400 text-white shadow-lg shadow-amber-200"
+                      : "bg-amber-50 border-amber-200 text-amber-700"
+                  )}
+                >
+                  <span className="text-base leading-none">{b.icon}</span> {b.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-black uppercase tracking-widest text-rose-500 ml-1 flex items-center gap-1.5"><span>✦</span> Growth Areas</h3>
+            <div className="flex flex-wrap gap-2">
+              {indicators.filter(b => b.type === 'growth').map(b => (
+                <motion.button
+                  key={b.label}
+                  onClick={() => toggleTag(b.label)}
+                  whileTap={{ scale: 0.88 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                  className={cn(
+                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                    selectedTags.includes(b.label)
+                      ? "bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-200"
+                      : "bg-rose-50 border-rose-200 text-rose-700"
+                  )}
+                >
+                  <span className="text-base leading-none">{b.icon}</span> {b.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-black uppercase tracking-widest text-sky-500 ml-1 flex items-center gap-1.5"><span>✦</span> Family Comm</h3>
+            <div className="flex flex-wrap gap-2">
+              {commTypes.map(b => (
+                <motion.button
+                  key={b.label}
+                  onClick={() => toggleComm(b.label)}
+                  whileTap={{ scale: 0.88 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                  className={cn(
+                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                    selectedComm.includes(b.label)
+                      ? "bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-200"
+                      : "bg-sky-50 border-sky-200 text-sky-700"
+                  )}
+                >
+                  <span className="text-base leading-none">{b.icon}</span> {b.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Optional text note ── */}
         <div className="relative max-w-2xl">
           <textarea
             ref={noteInputRef}
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
             onFocus={() => setTimeout(() => noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-            placeholder={noteMode === 'class' ? "Type or record a note about the class..." : "Type or record a note about the student..."}
-            className="w-full min-h-[100px] p-8 py-5 duration-300 bg-white border border-slate-100 rounded-[32px] focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-base shadow-inner resize-none leading-relaxed font-medium"
+            placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : "Add a note... (optional)"}
+            className="w-full min-h-[80px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
-          <div className="absolute right-4 bottom-4 flex gap-2">
-            <button onClick={() => fileInputRef.current?.click()} className="p-2.5 bg-white text-slate-400 rounded-xl shadow-sm border border-slate-100 hover:text-sage transition-all">
-              <ImageIcon className="w-4 h-4" />
+          <div className="absolute right-3 bottom-3 flex gap-2">
+            <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-white text-slate-400 rounded-xl shadow-sm border border-slate-100 hover:text-sage transition-all">
+              <ImageIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleVoiceLog}
               className={cn(
-                "p-2.5 rounded-xl shadow-sm border border-slate-100 transition-all",
+                "p-2 rounded-xl shadow-sm border border-slate-100 transition-all",
                 isListening ? "bg-terracotta text-white animate-pulse" : "bg-white text-slate-400 hover:text-terracotta"
               )}
             >
-              <Mic className="w-4 h-4" />
+              <Mic className="w-3.5 h-3.5" />
             </button>
             <input type="file" ref={fileInputRef} onChange={handleImageSelect} className="hidden" accept="image/*" />
           </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 max-w-2xl w-full">
-          <button
-            onClick={handleClear}
-            className="flex-1 py-1.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Clear
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim()))}
-            className="flex-[2] py-1.5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-xl hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Save Entry</>}
-          </button>
         </div>
 
         {imagePreview && (
@@ -733,134 +805,21 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </div>
         )}
 
-        {/* Tags toggle */}
-        <div>
+        <div className="flex items-center gap-3 max-w-2xl w-full">
           <button
-            type="button"
-            onClick={() => setShowTags(v => !v)}
-            className="flex items-center gap-2 text-slate-400 hover:text-slate-600 transition-colors text-xs font-black uppercase tracking-widest"
+            onClick={handleClear}
+            className="px-5 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all flex items-center gap-2"
           >
-            <Tag className="w-3.5 h-3.5" />
-            {showTags ? 'Hide tags' : 'Add tags'}
-            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', showTags && 'rotate-180')} />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
-
-          {/* Selected tag chips — always visible when tags are chosen */}
-          {!showTags && (selectedTags.length > 0 || selectedComm.length > 0) && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {selectedTags.map(t => (
-                <span key={t} className="px-2 py-0.5 bg-sage/10 text-sage text-xs font-bold rounded-full">{t}</span>
-              ))}
-              {selectedComm.map(t => (
-                <span key={t} className="px-2 py-0.5 bg-blue-50 text-blue-500 text-xs font-bold rounded-full">{t}</span>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={handleSave}
+            disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim())) || (!noteContent.trim() && !image && selectedTags.length === 0 && selectedComm.length === 0)}
+            className="flex-1 py-3.5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-40"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Save Note</>}
+          </button>
         </div>
-
-        <AnimatePresence>
-          {showTags && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-3 overflow-hidden"
-            >
-              <div className="space-y-2">
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-500 ml-1 flex items-center gap-1.5"><span>✦</span> Positive</h3>
-                <div className="flex flex-wrap gap-2">
-                  {indicators.filter(b => b.type === 'positive').map(b => (
-                    <motion.button
-                      key={b.label}
-                      onClick={() => toggleTag(b.label)}
-                      whileTap={{ scale: 0.88 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                      className={cn(
-                        "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                        selectedTags.includes(b.label)
-                          ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200"
-                          : "bg-emerald-50 border-emerald-200 text-emerald-700"
-                      )}
-                    >
-                      <span className="text-base leading-none">{b.icon}</span> {b.label}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-500 ml-1 flex items-center gap-1.5"><span>✦</span> Neutral</h3>
-                <div className="flex flex-wrap gap-2">
-                  {indicators.filter(b => b.type === 'neutral').map(b => (
-                    <motion.button
-                      key={b.label}
-                      onClick={() => toggleTag(b.label)}
-                      whileTap={{ scale: 0.88 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                      className={cn(
-                        "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                        selectedTags.includes(b.label)
-                          ? "bg-amber-400 border-amber-400 text-white shadow-lg shadow-amber-200"
-                          : "bg-amber-50 border-amber-200 text-amber-700"
-                      )}
-                    >
-                      <span className="text-base leading-none">{b.icon}</span> {b.label}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-rose-500 ml-1 flex items-center gap-1.5"><span>✦</span> Growth Areas</h3>
-                <div className="flex flex-wrap gap-2">
-                  {indicators.filter(b => b.type === 'growth').map(b => (
-                    <motion.button
-                      key={b.label}
-                      onClick={() => toggleTag(b.label)}
-                      whileTap={{ scale: 0.88 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                      className={cn(
-                        "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                        selectedTags.includes(b.label)
-                          ? "bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-200"
-                          : "bg-rose-50 border-rose-200 text-rose-700"
-                      )}
-                    >
-                      <span className="text-base leading-none">{b.icon}</span> {b.label}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-sky-500 ml-1 flex items-center gap-1.5"><span>✦</span> Family Comm</h3>
-                <div className="flex flex-wrap gap-2">
-                  {commTypes.map(b => (
-                    <motion.button
-                      key={b.label}
-                      onClick={() => toggleComm(b.label)}
-                      whileTap={{ scale: 0.88 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                      className={cn(
-                        "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                        selectedComm.includes(b.label)
-                          ? "bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-200"
-                          : "bg-sky-50 border-sky-200 text-sky-700"
-                      )}
-                    >
-                      <span className="text-base leading-none">{b.icon}</span> {b.label}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <button
-          onClick={handleSave}
-          disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim()))}
-          className="w-full py-1.5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-xl tracking-tight hover:brightness-110 transition-all shadow-xl shadow-orange-200 flex items-center justify-center gap-3 disabled:opacity-50"
-        >
-          {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Finalize & Save</>}
-        </button>
       </div>
 
       <TodayAtAGlance notes={notes} indicators={indicators} />
@@ -869,9 +828,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         <h2 className="text-[15px] font-black text-slate-400 ml-1">Recent Activity</h2>
         {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
           <div className="text-center py-10 space-y-2 bg-white rounded-[28px] border border-dashed border-slate-200">
-            <p className="text-sm font-black text-slate-400">No observations yet.</p>
+            <p className="text-sm font-black text-slate-400">No notes yet today.</p>
             <p className="text-xs text-slate-400 leading-relaxed px-6">
-              Select a student above, type what you observed, and tap <span className="font-bold">Finalize & Save</span>. Notes will appear here as you add them.
+              Select a student, tap an indicator, and hit <span className="font-bold">Save Note</span>. Done in seconds.
             </p>
           </div>
         )}

@@ -225,7 +225,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                     onClick={() => setPulseView('log')}
                     className="text-xs font-black text-sage hover:text-sage-dark transition-colors"
                   >
-                    ← Back to Log
+                    ← Back to Notes
                   </button>
                 </div>
               )}

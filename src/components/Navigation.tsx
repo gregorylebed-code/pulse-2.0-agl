@@ -41,7 +41,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
 export default function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex items-center justify-around px-2 z-50 no-print" style={{ height: '68px' }}>
-      <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Pulse" />
+      <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Notes" />
       <NavButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users />} label="Students" />
       {isFullMode && <NavButton active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} icon={<BarChart2 />} label="Insights" />}
       <NavButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings />} label="Settings" />

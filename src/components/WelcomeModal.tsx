@@ -17,7 +17,7 @@ const steps = [
     icon: <User className="w-5 h-5" />,
     color: 'bg-sage/10 text-sage border-sage/20',
     title: 'Set up your profile',
-    desc: 'Add your name and school so AI reports sign off correctly.',
+    desc: 'Add your name and school so composed reports sign off correctly.',
     action: 'onGoToProfile' as const,
     badge: 'Start here',
   },
@@ -32,8 +32,8 @@ const steps = [
   {
     icon: <PenLine className="w-5 h-5" />,
     color: 'bg-amber-50 text-amber-500 border-amber-100',
-    title: 'Log your first note',
-    desc: 'Tap a student, type an observation, done in 10 seconds.',
+    title: 'Add your first note',
+    desc: 'Tap a student, tap an indicator, done in 10 seconds.',
     action: 'onGoToPulse' as const,
     badge: null,
   },
@@ -81,13 +81,13 @@ export default function WelcomeModal({
                 <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-white/80 text-xs font-bold uppercase tracking-widest">Classroom Pulse</span>
+                <span className="text-white/80 text-xs font-bold uppercase tracking-widest">ShortHand</span>
               </div>
               <h1 className="text-white font-black text-2xl leading-tight">
                 Welcome{teacherName ? `, ${teacherName}` : ''}! 👋
               </h1>
               <p className="text-white/75 text-sm mt-2 leading-relaxed">
-                You're all set up. Here's how to get the most out of Pulse in the next few minutes.
+                You're all set up. Here's how to get the most out of ShortHand in the next few minutes.
               </p>
             </div>
 

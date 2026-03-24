@@ -32,12 +32,12 @@ function MilestonePips({ value, milestones, color }: { value: number; milestones
 }
 
 function getMotivationalMessage(notes: number): string {
-  if (notes === 0)   return "Start logging notes to track your impact!";
+  if (notes === 0)   return "Start adding notes to track your impact!";
   if (notes < 10)    return "Just getting started! 🌱";
   if (notes < 50)    return "Building great habits! 📈";
   if (notes < 100)   return "You're on a roll! 🔥";
   if (notes < 250)   return "Super Note-Taker! ⭐";
-  return "Pulse Legend! 🏆";
+  return "ShortHand Legend! 🏆";
 }
 
 export default function StatsCard({ notesCreated, reportsGenerated }: StatsCardProps) {
@@ -58,7 +58,7 @@ export default function StatsCard({ notesCreated, reportsGenerated }: StatsCardP
             <span className="text-[10px] font-black uppercase tracking-widest">Notes</span>
           </div>
           <p className="text-[32px] font-black text-orange-500 font-display">{notesCreated}</p>
-          <p className="text-[9px] text-orange-300 font-bold">logged</p>
+          <p className="text-[9px] text-orange-300 font-bold">scribbled</p>
         </div>
 
         {/* Reports */}

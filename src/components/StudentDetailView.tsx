@@ -70,7 +70,7 @@ interface StudentDetailViewProps {
   commTypes: any[];
   calendarEvents: CalendarEvent[];
   onBack: () => void;
-  onGenerateReport: (length: 'Quick Pulse' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<ReportData | undefined>;
+  onGenerateReport: (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<ReportData | undefined>;
   onNoteUpdate: () => void;
   addNote: (note: any) => Promise<any>;
   updateNote: (id: string, updates: any) => Promise<void>;
@@ -149,7 +149,7 @@ function StudentMiniDashboard({ student, notes, indicators }: {
   if (studentNotes.length === 0) {
     return (
       <div className="bg-white rounded-[24px] border border-dashed border-slate-200 p-5 text-center">
-        <p className="text-xs font-medium text-slate-400">No observations logged yet for this student.</p>
+        <p className="text-xs font-medium text-slate-400">No notes yet for this student.</p>
       </div>
     );
   }
@@ -284,7 +284,7 @@ export default function StudentDetailView({
 }: StudentDetailViewProps) {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, []);
 
-  const [reportLength, setReportLength] = useState<'Quick Pulse' | 'Standard' | 'Detailed'>('Standard');
+  const [reportLength, setReportLength] = useState<'Quick Note' | 'Standard' | 'Detailed'>('Standard');
   const [timeRange, setTimeRange] = useState('Last 7 Days');
   const [customStartDate, setCustomStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0]);
   const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
@@ -992,7 +992,7 @@ export default function StudentDetailView({
           <div className="mt-5 grid grid-cols-3 gap-2">
             {[
               { val: heroStats.total, label: 'Total notes' },
-              { val: heroStats.lastLogged, label: 'Last logged' },
+              { val: heroStats.lastLogged, label: 'Last noted' },
               { val: `${heroStats.positivePct}%`, label: 'Positive' },
             ].map(({ val, label }) => (
               <div key={label} className="bg-white/15 backdrop-blur-sm rounded-2xl px-3 py-2.5 text-center">
@@ -1110,7 +1110,7 @@ export default function StudentDetailView({
             activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
           )}
         >
-          AI Report
+          Compose
         </button>
         <button
           onClick={() => scrollToSection('history')}
@@ -1440,7 +1440,7 @@ export default function StudentDetailView({
           ))}
           {notes.length === 0 && (
             <div className="text-center py-20 bg-white rounded-[40px] border border-dashed border-slate-200">
-              <p className="text-sm text-slate-400 font-medium">No observations logged for this student.</p>
+              <p className="text-sm text-slate-400 font-medium">No notes yet for this student.</p>
             </div>
           )}
         </div>
@@ -1710,9 +1710,9 @@ export default function StudentDetailView({
               disabled={isGenerating || notes.length === 0}
               className="w-full py-5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-orange-200/50 flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Generate Report</>}
+              {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Compose with AI</>}
             </button>
-            {notes.length === 0 && <p className="text-[10px] text-center text-slate-400 italic">No notes available to generate a report.</p>}
+            {notes.length === 0 && <p className="text-[10px] text-center text-slate-400 italic">No notes available to compose a report.</p>}
 
             {/* Customize options — hidden by default */}
             <button
@@ -1753,7 +1753,7 @@ export default function StudentDetailView({
                   <div className="space-y-3">
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Report Type</h3>
                     <div className="grid grid-cols-3 gap-2">
-                      {(['Quick Pulse', 'Standard', 'Detailed'] as const).map(len => (
+                      {(['Quick Note', 'Standard', 'Detailed'] as const).map(len => (
                         <button key={len} onClick={() => setReportLength(len)} className={cn("py-3 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border-2", reportLength === len ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
                           {len}
                         </button>
@@ -1766,44 +1766,50 @@ export default function StudentDetailView({
           </div>
 
           {currentReport && (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-8 rounded-[32px] border border-sage/10 shadow-sm space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-sage">New Summary ({timeRange})</span>
-                <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
+            <>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-cream border border-cream-dark shadow-md rounded-[28px] overflow-hidden space-y-0">
+              {/* Document header */}
+              <div className="border-b-4 border-sage/30 px-8 pt-7 pb-5 flex items-start justify-between">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-sage/60 mb-1">Composed Report · {timeRange}</p>
+                  <p className="text-base font-black text-slate-800">{student.name}</p>
+                </div>
+                <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta mt-1"><X className="w-4 h-4" /></button>
               </div>
-              <div className="space-y-4">
+              {/* Document body */}
+              <div className="px-8 py-6 space-y-5">
                 <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.opening}</p>
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1.5">Glow</p>
+                <div className="border-l-4 border-emerald-400 pl-4 space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-600">Glow</p>
                   <p className="text-sm text-slate-700 leading-relaxed">{currentReport.glow}</p>
                 </div>
-                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1.5">Grow</p>
+                <div className="border-l-4 border-amber-400 pl-4 space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-600">Grow</p>
                   <p className="text-sm text-slate-700 leading-relaxed">{currentReport.grow}</p>
                 </div>
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1.5">Goal</p>
+                <div className="border-l-4 border-blue-400 pl-4 space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600">Goal</p>
                   <p className="text-sm text-slate-700 leading-relaxed">{currentReport.goal}</p>
                 </div>
                 <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.closing}</p>
               </div>
 
               {/* Refinement Section */}
-              <div className="space-y-3 pt-4 border-t border-slate-50">
+              <div className="space-y-3 px-8 pb-6 border-t border-cream-dark pt-5">
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <label htmlFor="refine_report_input" className="sr-only">Refine Report Instructions</label>
+                    <label htmlFor="refine_report_input" className="sr-only">Refine your draft</label>
                     <input
                       id="refine_report_input"
                       name="refine_report_input"
                       type="text"
                       value={refineInstructions}
                       onChange={(e) => setRefineInstructions(e.target.value)}
-                      placeholder="Ask the AI to refine this report... (e.g., 'Make it more formal')"
+                      placeholder="Tweak this draft... (e.g., 'Make it more formal')"
                       autoComplete="off"
                       data-1p-ignore
                       data-lpignore="true"
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-sage pr-10"
+                      className="w-full px-4 py-2 bg-white/70 border border-cream-dark rounded-xl text-xs focus:outline-none focus:border-sage pr-10"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && refineInstructions.trim() && !isRefining) {
                           handleRefine();
@@ -1830,7 +1836,10 @@ export default function StudentDetailView({
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-2">
+            </motion.div>
+
+            {/* Send / archive actions — outside the document */}
+            <div className="flex flex-wrap gap-2 pt-1">
                 <button
                   type="button"
                   onClick={handleCopyReport}
@@ -1875,8 +1884,8 @@ export default function StudentDetailView({
                     <Trash2 className="w-3.5 h-3.5" /> Archive & Clear Notes
                   </button>
                 </div>
-              </div>
-            </motion.div>
+            </div>
+            </>
           )}
 
           <div id="history" ref={historyRef} className="space-y-4 pt-6 mt-6 border-t border-slate-100 scroll-mt-header">
@@ -1933,8 +1942,8 @@ export default function StudentDetailView({
             <div className="space-y-3 pt-2">
               {!student.archivedSummaries || student.archivedSummaries.length === 0 ? (
                 <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200 px-6 space-y-1.5">
-                  <p className="text-xs font-black text-slate-400">No archived reports yet.</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">Generate a report above, then tap <span className="font-bold">Archive</span> to save a snapshot of this student's progress. Archived reports can be emailed, copied, or downloaded as a PDF.</p>
+                  <p className="text-xs font-black text-slate-400">No archived drafts yet.</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Compose a report above, then tap <span className="font-bold">Archive</span> to save a snapshot of this student's progress. Archived reports can be emailed, copied, or downloaded as a PDF.</p>
                 </div>
               ) : (
                 student.archivedSummaries.filter((s: any) => !pendingDeleteArchiveIds.has(s.id)).map((s: any) => {

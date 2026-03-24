@@ -53,8 +53,8 @@ export function scheduleDailyReminder(time: string, hasNotesToday: boolean): () 
 
   const id = setTimeout(() => {
     fireNotification(
-      '📝 Classroom Pulse',
-      "Don't forget to log today's observations!",
+      '📝 ShortHand',
+      "Don't forget to add today's notes!",
       'daily-reminder'
     );
   }, target.getTime() - now.getTime());
@@ -85,7 +85,7 @@ export function scheduleCalendarReminder(todayEvents: CalendarEvent[]): () => vo
 
   const fire = () => {
     localStorage.setItem(shownKey, '1');
-    fireNotification(`📅 Today: ${label}`, 'Tap to open Classroom Pulse', 'calendar-reminder');
+    fireNotification(`📅 Today: ${label}`, 'Tap to open ShortHand', 'calendar-reminder');
   };
 
   if (eightAM <= now) {

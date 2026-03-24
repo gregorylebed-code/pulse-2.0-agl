@@ -64,7 +64,7 @@ export interface Report {
   student_name: string;
   user_id: string;
   content: string;
-  length: 'Quick Pulse' | 'Standard' | 'Detailed';
+  length: 'Quick Note' | 'Standard' | 'Detailed';
   created_at: string;
 }
 

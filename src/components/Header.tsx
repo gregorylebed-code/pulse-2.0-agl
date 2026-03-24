@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, Activity, RotateCcw } from 'lucide-react';
+import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, PenLine, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
-import ClassroomPulseLogo from './ClassroomPulseLogo';
 import { getForecast, SpecialsConfig } from '../utils/rotationHelpers';
 
 interface Task { id: string; text: string; completed: boolean; color?: string; }
@@ -79,8 +78,7 @@ export default function Header({
               <div className="flex items-center gap-2 pr-8">
                 <h1 className="text-sm font-bold text-sage-dark leading-tight flex items-center gap-1.5">
                   {getGreeting(userName)}
-                  <ClassroomPulseLogo size={14} />
-                  <span className="text-[8px] font-semibold text-slate-300">v2.0</span>
+                  <span className="text-[8px] font-semibold text-slate-300 tracking-wide">ShortHand</span>
                 </h1>
                 <button
                   onClick={resetUserName}
@@ -237,7 +235,7 @@ export default function Header({
           </button>
 
           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100">
-            <Activity className="text-sage w-5 h-5" />
+            <PenLine className="text-sage w-5 h-5" />
           </div>
         </div>
       </div>

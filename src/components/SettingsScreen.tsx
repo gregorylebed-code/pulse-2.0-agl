@@ -685,7 +685,7 @@ export default function SettingsScreen({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors">Support the Project</p>
                 <p className="text-[11px] text-slate-400 font-medium leading-relaxed mt-1">
-                  Core features are free to use. If Classroom Pulse is already saving you time, contributions help cover AI and hosting costs while the app continues to grow.
+                  Core features are free to use. If ShortHand is already saving you time, contributions help cover AI and hosting costs while the app continues to grow.
                 </p>
                 <span className="inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-black text-amber-500 group-hover:text-amber-600 transition-colors">
                   Buy me a coffee <Coffee className="w-3 h-3" />
@@ -740,14 +740,14 @@ export default function SettingsScreen({
             </div>
 
             <div className="flex flex-col items-center gap-2 mt-4 pb-4">
-              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Classroom Pulse v2.0.0</p>
+              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">ShortHand v2.0.0</p>
               <a
                 href="https://classroom-pulse-landing.vercel.app/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[11px] font-bold text-sage/60 hover:text-sage transition-colors"
               >
-                What can Pulse do? →
+                What can ShortHand do? →
               </a>
             </div>
           </motion.div>
@@ -1321,7 +1321,7 @@ export default function SettingsScreen({
 
                   {(notificationPrefs.dailyReminderEnabled || notificationPrefs.calendarEventReminderEnabled) && (
                     <p className="text-[10px] text-slate-400 font-medium px-1">
-                      Notifications fire when the app is open or running in the background. For the most reliable delivery, add Classroom Pulse to your home screen.
+                      Notifications fire when the app is open or running in the background. For the most reliable delivery, add ShortHand to your home screen.
                     </p>
                   )}
                 </div>
@@ -1383,7 +1383,7 @@ export default function SettingsScreen({
               </div>
 
               <div className="space-y-4">
-                <p className="text-sm text-slate-500">Upload your school calendar (PDF or Image) to view it quickly from the Pulse screen.</p>
+                <p className="text-sm text-slate-500">Upload your school calendar (PDF or Image) to view it quickly from the Notes screen.</p>
                 <input
                   type="file"
                   accept="image/*,application/pdf"

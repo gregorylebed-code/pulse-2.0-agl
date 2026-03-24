@@ -32,7 +32,7 @@ export interface Profile {
 
 const DEFAULT_PROFILE: Profile = {
   userName: 'Teacher',
-  schoolName: 'Classroom Pulse Elementary',
+  schoolName: 'My School',
   teacherTitle: 'Mr.',
   teacherFirstName: '',
   teacherLastName: '',

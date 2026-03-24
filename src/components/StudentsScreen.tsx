@@ -87,7 +87,7 @@ export default function StudentsScreen({
   const reportToText = (report: ReportData): string =>
     [report.opening, '\nGlow:\n' + report.glow, '\nGrow:\n' + report.grow, '\nGoal:\n' + report.goal, '\n' + report.closing].join('\n');
 
-  const handleGenerateReport = async (length: 'Quick Pulse' | 'Standard' | 'Detailed', filteredNotes: Note[]): Promise<ReportData | undefined> => {
+  const handleGenerateReport = async (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]): Promise<ReportData | undefined> => {
     if (!selectedStudent) return;
     const report = await summarizeNotes(filteredNotes, length);
     await addReport({

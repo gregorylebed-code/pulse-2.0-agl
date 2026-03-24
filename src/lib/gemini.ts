@@ -196,12 +196,12 @@ function parseReportJson(raw: string): ReportData | null {
   }
 }
 
-export async function summarizeNotes(notes: Note[], length: 'Quick Pulse' | 'Standard' | 'Detailed' = 'Standard'): Promise<ReportData | null> {
+export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard'): Promise<ReportData | null> {
   const notesText = notes.map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name}: ${n.content}`).join('\n');
   const studentFirstName = notes[0]?.student_name?.split(' ')[0] || 'your child';
 
   let lengthInstruction = "Keep each section to 2-3 sentences.";
-  if (length === 'Quick Pulse') {
+  if (length === 'Quick Note') {
     lengthInstruction = "Keep each section to 1 sentence only — very brief.";
   } else if (length === 'Detailed') {
     lengthInstruction = "You can write up to 4 sentences per section.";

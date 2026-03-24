@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Classroom Pulse — Features</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fff;
+      color: #1e293b;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 16mm 18mm 14mm;
+      font-size: 9.5pt;
+      line-height: 1.45;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .logo-wrap {
+      flex-shrink: 0;
+    }
+
+
+    .header-text h1 {
+      font-size: 22pt;
+      font-weight: 800;
+      color: #0f766e;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
+    .header-text p {
+      font-size: 10pt;
+      color: #64748b;
+      margin-top: 3px;
+      font-weight: 500;
+    }
+
+    .divider {
+      height: 3px;
+      background: linear-gradient(to right, #14b8a6, #ccfbf1);
+      border-radius: 2px;
+      margin-bottom: 14px;
+    }
+
+    /* ── Intro blurb ── */
+    .intro {
+      font-size: 9.5pt;
+      color: #475569;
+      margin-bottom: 14px;
+      max-width: 95%;
+      line-height: 1.55;
+    }
+
+    /* ── Hero features ── */
+    .hero-features {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .hero-card {
+      background: linear-gradient(145deg, #0f766e, #14b8a6);
+      border-radius: 10px;
+      padding: 12px 13px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: '';
+      position: absolute;
+      top: -18px;
+      right: -18px;
+      width: 60px;
+      height: 60px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+
+    .hero-num {
+      font-size: 22pt;
+      font-weight: 800;
+      opacity: 0.25;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .hero-card h3 {
+      font-size: 9.5pt;
+      font-weight: 700;
+      margin-bottom: 5px;
+      line-height: 1.2;
+    }
+
+    .hero-card p {
+      font-size: 8pt;
+      opacity: 0.88;
+      line-height: 1.45;
+    }
+
+    .hero-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .hero-icon svg {
+      width: 15px;
+      height: 15px;
+      stroke: white;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ── Feature grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .icon-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: #ccfbf1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .icon-circle svg {
+      width: 14px;
+      height: 14px;
+      stroke: #0f766e;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .card h3 {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #0f766e;
+    }
+
+    .card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card ul li {
+      padding: 1.5px 0;
+      color: #334155;
+      font-size: 8.5pt;
+      padding-left: 10px;
+      position: relative;
+    }
+
+    .card ul li::before {
+      content: '·';
+      position: absolute;
+      left: 2px;
+      color: #14b8a6;
+      font-weight: 700;
+    }
+
+    /* ── Footer callout ── */
+    .callout {
+      background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+      color: white;
+      border-radius: 10px;
+      padding: 11px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .callout-left h4 {
+      font-size: 11pt;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .callout-left p {
+      font-size: 8.5pt;
+      opacity: 0.9;
+    }
+
+    .callout-right {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .callout-right .badge {
+      background: rgba(255,255,255,0.2);
+      border: 1.5px solid rgba(255,255,255,0.4);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 8.5pt;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    @media print {
+      body { padding: 14mm 16mm 12mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-wrap">
+      <img src="./Classroom Pulse app icon.png" alt="Classroom Pulse logo" style="width:54px;height:54px;border-radius:12px;display:block;" />
+    </div>
+    <div class="header-text">
+      <h1>Classroom Pulse</h1>
+      <p>Behavior &amp; mood tracking built for real teachers</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="intro">
+    Classroom Pulse helps you stay on top of student behavior and wellbeing without the paperwork.
+    Log a check-in in under 15 seconds, spot patterns over time, and communicate with parents faster —
+    all from your phone, tablet, or desktop.
+  </p>
+
+  <!-- Hero Features -->
+  <div class="hero-features">
+
+    <div class="hero-card">
+      <div class="hero-icon">
+        <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div class="hero-num">01</div>
+      <h3>15-Second Check-In</h3>
+      <p>Log any student's behavior or mood mid-class — faster than unlocking your phone.</p>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="hero-num">02</div>
+      <h3>Quick Note to Parent</h3>
+      <p>One tap. AI drafts the message from today's log. You review and send — done in seconds.</p>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      </div>
+      <div class="hero-num">03</div>
+      <h3>AI Report Generator</h3>
+      <p>Turn weeks of logged notes into a polished student report. Useful for IEPs, conferences, and referrals.</p>
+    </div>
+
+  </div>
+
+  <!-- Feature Grid -->
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-circle">
+          <!-- user icon -->
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <h3>Student Profiles</h3>
+      </div>
+      <ul>
+        <li>8-week history chart per student</li>
+        <li>Most-used tags at a glance</li>
+        <li>Full log history in one place</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-circle">
+          <!-- bar chart icon -->
+          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h3>AI Class Summary</h3>
+      </div>
+      <ul>
+        <li>Plain-language summary of class trends</li>
+        <li>Great for end-of-week reflection</li>
+        <li>Prep for admin meetings in seconds</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-circle">
+          <!-- settings / sliders icon -->
+          <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </div>
+        <h3>Roster &amp; Customization</h3>
+      </div>
+      <ul>
+        <li>Add and manage your class list</li>
+        <li>Customize indicators to your language</li>
+        <li>Light and dark mode</li>
+        <li>Installs as an app on any device (PWA)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-circle">
+          <!-- calendar icon -->
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <h3>Classroom Calendar</h3>
+      </div>
+      <ul>
+        <li>Add upcoming events and deadlines</li>
+        <li>Dashboard banner before key dates</li>
+        <li>Skips to next event after 4 PM</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-circle">
+          <!-- check square icon -->
+          <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <h3>Task List</h3>
+      </div>
+      <ul>
+        <li>Classroom to-do list always at hand</li>
+        <li>Drag to reorder, tap to complete</li>
+        <li>Undo accidental deletes</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Footer callout -->
+  <div class="callout">
+    <div class="callout-left">
+      <h4>Built by a teacher, for teachers.</h4>
+      <p>No complicated setup. No training required. Works on the device already in your pocket.</p>
+    </div>
+    <div class="callout-right">
+      <div class="badge">classroompulse.app</div>
+    </div>
+  </div>
+
+</body>
+</html>

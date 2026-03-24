@@ -465,13 +465,13 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
       <div className="grid grid-cols-4 gap-2.5">
         <StatTile
           value={filteredNotes.length}
-          label="Notes logged"
+          label="Notes"
           sub={noteDelta === 0 ? undefined : `${noteDelta > 0 ? '+' : ''}${noteDelta} vs ${bounds.prevLabel}`}
           subColor={noteDelta > 0 ? 'text-emerald-500' : noteDelta < 0 ? 'text-terracotta' : undefined}
         />
         <StatTile
           value={studentsLoggedCount}
-          label="Students logged"
+          label="Students noted"
           sub={`of ${students.length}`}
           subColor="text-slate-400"
         />
@@ -502,9 +502,9 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
             <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-black text-amber-700">
-                {notLoggedStudents.length} student{notLoggedStudents.length !== 1 ? 's' : ''} haven't been logged in 5+ days
+                {notLoggedStudents.length} student{notLoggedStudents.length !== 1 ? 's' : ''} haven't had a note in 5+ days
               </p>
-              <p className="text-[11px] text-amber-600 mt-0.5">Tap a student to log a quick note now.</p>
+              <p className="text-[11px] text-amber-600 mt-0.5">Tap a student to add a quick note.</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {notLoggedStudents.map(({ student, daysSince }) => (
                   <button
@@ -564,10 +564,10 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
       {/* 7-day student logging streak */}
       <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Logging streak · last 7 days</p>
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Note streak · last 7 days</p>
           <div className="flex items-center gap-3 text-[9px] font-bold text-slate-300">
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-sage inline-block" /> logged
+              <span className="w-2.5 h-2.5 rounded-sm bg-sage inline-block" /> noted
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2.5 h-2.5 rounded-sm bg-terracotta inline-block" /> missing today

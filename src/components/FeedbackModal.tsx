@@ -68,7 +68,7 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
 
   const placeholder =
     category === 'Bug'     ? 'Describe what happened and what you expected...' :
-    category === 'Feature' ? 'What would make Classroom Pulse better for you?' :
+    category === 'Feature' ? 'What would make ShortHand better for you?' :
                              "What's going well?";
 
   return (
