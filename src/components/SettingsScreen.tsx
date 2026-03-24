@@ -143,6 +143,8 @@ interface SettingsScreenProps {
   setView: (v: SettingsView) => void;
   notificationPrefs: import('../utils/notifications').NotificationPrefs;
   saveNotificationPrefs: (prefs: import('../utils/notifications').NotificationPrefs) => Promise<void>;
+  saveProfile: (profile: import('../hooks/useClassroomData').Profile) => Promise<void>;
+  profile: import('../hooks/useClassroomData').Profile;
 }
 
 export default function SettingsScreen({
@@ -197,6 +199,8 @@ export default function SettingsScreen({
   setView,
   notificationPrefs,
   saveNotificationPrefs,
+  saveProfile,
+  profile,
 }: SettingsScreenProps) {
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
@@ -440,11 +444,14 @@ export default function SettingsScreen({
   };
 
   const handleSaveProfile = () => {
-    setUserName(localUserName);
-    setSchoolName(localSchoolName);
-    setTeacherTitle(localTeacherTitle);
-    setTeacherFirstName(localTeacherFirstName);
-    setTeacherLastName(localTeacherLastName);
+    saveProfile({
+      ...profile,
+      userName: localUserName,
+      schoolName: localSchoolName,
+      teacherTitle: localTeacherTitle as import('../hooks/useClassroomData').Profile['teacherTitle'],
+      teacherFirstName: localTeacherFirstName,
+      teacherLastName: localTeacherLastName,
+    });
     toast.success('Profile updated successfully');
   };
 

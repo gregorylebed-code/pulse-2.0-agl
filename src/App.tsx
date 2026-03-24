@@ -212,8 +212,10 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const confettiRef = useRef<ConfettiHandle>(null);
   const prevStatsRef = useRef<{ notes_created: number; reports_generated: number } | null>(null);
   useEffect(() => {
+    // Don't seed or fire until the initial DB load is complete
+    if (loading) return;
     if (prevStatsRef.current === null) {
-      // First load — seed with current values so we only fire on new increments
+      // First time after load — seed with real DB values, no confetti
       prevStatsRef.current = { notes_created: stats.notes_created, reports_generated: stats.reports_generated };
       return;
     }
@@ -227,7 +229,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       toast.success('🎉 First report generated!');
     }
     prevStatsRef.current = { notes_created: stats.notes_created, reports_generated: stats.reports_generated };
-  }, [stats.notes_created, stats.reports_generated]);
+  }, [loading, stats.notes_created, stats.reports_generated]);
 
   return (
     <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20 overflow-x-hidden">
@@ -343,6 +345,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 setTeacherFirstName={(val: string) => saveProfile({ ...profile, teacherFirstName: val })}
                 teacherLastName={teacherLastName}
                 setTeacherLastName={(val: string) => saveProfile({ ...profile, teacherLastName: val })}
+                saveProfile={saveProfile}
+                profile={profile}
                 calendarEvents={calendarEvents} setCalendarEvents={updateCalendarEvents}
                 rotationMapping={rotationMapping} setRotationMapping={saveRotationMapping}
                 specialsNames={specialsNames} setSpecialsNames={saveSpecialsNames}
