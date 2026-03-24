@@ -1191,20 +1191,60 @@ export default function StudentDetailView({
 
           <AnimatePresence>
             {showTags && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
-                <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar px-1">
-                  {indicators.map(b => (
-                    <button key={b.label} onClick={() => toggleTag(b.label)} className={cn("flex-shrink-0 px-4 py-2 border-2 rounded-full text-base font-black flex items-center gap-2 transition-all shadow-sm", selectedTags.includes(b.label) ? b.type === 'positive' ? "bg-sage/15 border-sage text-sage-dark shadow-md" : b.type === 'neutral' ? "bg-amber-500/15 border-amber-500 text-amber-700 shadow-md" : "bg-terracotta/15 border-terracotta text-terracotta-dark shadow-md" : "bg-white border-slate-100 text-slate-500 hover:border-slate-300")}>
-                      <span>{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar px-1">
-                  {commTypes.map(c => (
-                    <button key={c.label} onClick={() => toggleComm(c.label)} className={cn("flex-shrink-0 px-4 py-2 border-2 rounded-full text-base font-black flex items-center gap-2 transition-all shadow-sm", selectedComm.includes(c.label) ? "bg-blue-500/15 border-blue-500 text-blue-700 shadow-md" : "bg-white border-slate-100 text-slate-500 hover:border-slate-300")}>
-                      <span>{c.icon ?? getIconForName(c.icon_name, 'neutral')}</span> {c.label}
-                    </button>
-                  ))}
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
+                {(['positive', 'neutral', 'growth'] as const).map(type => {
+                  const group = indicators.filter(b => b.type === type);
+                  if (group.length === 0) return null;
+                  const label = type === 'positive' ? 'Positive' : type === 'neutral' ? 'Neutral' : 'Growth Areas';
+                  const headerColor = type === 'positive' ? 'text-emerald-500' : type === 'neutral' ? 'text-amber-500' : 'text-rose-500';
+                  return (
+                    <div key={type} className="space-y-1.5">
+                      <h3 className={`text-[11px] font-black uppercase tracking-widest ml-1 flex items-center gap-1.5 ${headerColor}`}><span>✦</span> {label}</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {group.map(b => (
+                          <motion.button
+                            key={b.label}
+                            onClick={() => toggleTag(b.label)}
+                            whileTap={{ scale: 0.88 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                            className={cn(
+                              "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                              selectedTags.includes(b.label)
+                                ? type === 'positive' ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200"
+                                : type === 'neutral' ? "bg-amber-400 border-amber-400 text-white shadow-lg shadow-amber-200"
+                                : "bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-200"
+                                : type === 'positive' ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                : type === 'neutral' ? "bg-amber-50 border-amber-200 text-amber-700"
+                                : "bg-rose-50 border-rose-200 text-rose-700"
+                            )}
+                          >
+                            <span className="text-base leading-none">{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="space-y-1.5">
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-sky-500 ml-1 flex items-center gap-1.5"><span>✦</span> Family Comm</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {commTypes.map(c => (
+                      <motion.button
+                        key={c.label}
+                        onClick={() => toggleComm(c.label)}
+                        whileTap={{ scale: 0.88 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                        className={cn(
+                          "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                          selectedComm.includes(c.label)
+                            ? "bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-200"
+                            : "bg-sky-50 border-sky-200 text-sky-700"
+                        )}
+                      >
+                        <span className="text-base leading-none">{c.icon ?? getIconForName(c.icon_name, 'neutral')}</span> {c.label}
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             )}
