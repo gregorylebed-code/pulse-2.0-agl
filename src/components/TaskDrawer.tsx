@@ -295,7 +295,7 @@ export default function TaskDrawer({
                                         />
                                       ) : (
                                         <div className="flex flex-col gap-1">
-                                          <p className="text-xs font-medium cursor-pointer transition-all break-words leading-relaxed text-slate-900">
+                                          <p className="text-sm font-bold cursor-pointer transition-all break-words leading-relaxed text-slate-800">
                                             {task.text}
                                           </p>
                                           {!task.completed && (
