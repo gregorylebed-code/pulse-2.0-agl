@@ -236,6 +236,18 @@ ${notesText}`;
   return parseReportJson(raw);
 }
 
+export async function refineQuickNote(currentNote: string, instructions: string): Promise<string> {
+  const prompt = `Here is a short note a teacher drafted to send to a parent:
+
+"${currentNote}"
+
+The teacher wants to refine it with this instruction: "${instructions}"
+
+Rewrite the note following the instruction. Keep it concise, warm, and appropriate for a parent message. Return only the revised note text — no labels, no quotes, no extra commentary.`;
+
+  return (await callGroq(prompt, false, undefined, 'refine_quick_note')).trim();
+}
+
 export async function refineReport(current: ReportData, instructions: string): Promise<ReportData | null> {
   const prompt = `Here is a student progress report structured as a parent letter with Glow / Grow / Goal sections:
 

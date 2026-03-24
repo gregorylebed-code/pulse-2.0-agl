@@ -13,7 +13,7 @@ import { jsPDF } from 'jspdf';
 import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
-import { categorizeNote, refineReport, parseVoiceLog, quickParentNote, suggestGoals, ReportData } from '../lib/gemini';
+import { categorizeNote, refineReport, refineQuickNote, parseVoiceLog, quickParentNote, suggestGoals, ReportData } from '../lib/gemini';
 import { isFullMode } from '../lib/mode';
 import { cn } from '../utils/cn';
 
@@ -322,6 +322,8 @@ export default function StudentDetailView({
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
   const [quickNoteDays, setQuickNoteDays] = useState<0 | 1 | 3 | 5 | 7>(0);
+  const [quickNoteRefineInstructions, setQuickNoteRefineInstructions] = useState('');
+  const [isRefiningQuickNote, setIsRefiningQuickNote] = useState(false);
   const quickNoteRef = useRef<HTMLDivElement>(null);
   const goalsRef = useRef<HTMLDivElement>(null);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -812,6 +814,22 @@ export default function StudentDetailView({
       toast.error('Failed to generate quick note.');
     } finally {
       setIsGeneratingQuickNote(false);
+    }
+  };
+
+  const handleRefineQuickNote = async () => {
+    if (!quickNote || !quickNoteRefineInstructions.trim()) return;
+    setIsRefiningQuickNote(true);
+    try {
+      const refined = await refineQuickNote(quickNote, quickNoteRefineInstructions);
+      if (refined) {
+        setQuickNote(refined);
+        setQuickNoteRefineInstructions('');
+      }
+    } catch {
+      toast.error('Failed to refine note.');
+    } finally {
+      setIsRefiningQuickNote(false);
     }
   };
 
@@ -1354,6 +1372,38 @@ export default function StudentDetailView({
                 <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
               </div>
               <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
+
+              {/* Refine with AI */}
+              <div className="flex items-center gap-2 pt-1">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={quickNoteRefineInstructions}
+                    onChange={(e) => setQuickNoteRefineInstructions(e.target.value)}
+                    placeholder="Refine... (e.g. 'shorter', 'more positive')"
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-terracotta/40 pr-8"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && quickNoteRefineInstructions.trim() && !isRefiningQuickNote) {
+                        handleRefineQuickNote();
+                      }
+                    }}
+                  />
+                  <Sparkles className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefineQuickNote}
+                  disabled={isRefiningQuickNote || !quickNoteRefineInstructions.trim()}
+                  className="px-4 py-2 bg-terracotta text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  {isRefiningQuickNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {isRefiningQuickNote ? 'Refining...' : 'Refine'}
+                </button>
+              </div>
+
               <div className="flex flex-wrap gap-2 pt-2">
                 <button
                   type="button"
