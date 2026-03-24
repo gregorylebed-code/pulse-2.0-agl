@@ -620,7 +620,7 @@ export default function SettingsScreen({
             className="space-y-8 max-w-3xl mx-auto"
           >
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
-              <h3 className="text-[15px] font-black text-slate-400 uppercase tracking-widest">Account</h3>
+              <h3 className="text-[15px] font-black text-blue-600 uppercase tracking-widest">Account</h3>
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
                 <p className="text-sm font-bold text-slate-700">{userEmail}</p>
@@ -634,7 +634,7 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[15px] font-black text-slate-400 ml-1">Account</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Account</h3>
               <div className="space-y-1">
                 <SettingsItem icon={<User />} label="Profile Settings" onClick={() => setView('profile')} />
                 <SettingsItem icon={<MessageCircle />} label="Notifications" onClick={() => setView('notifications')} />
@@ -643,7 +643,7 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[15px] font-black text-slate-400 ml-1">Teacher Tools</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Teacher Tools</h3>
               <div className="space-y-1">
                 <SettingsItem icon={<Users2 />} label="Roster Management" onClick={() => setView('roster')} />
                 <SettingsItem icon={<Folder />} label="Class Management" onClick={() => setView('classes')} />
@@ -767,7 +767,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[15px] font-black text-slate-400 ml-1">Roster Management</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Roster Management</h3>
 
               <div className="space-y-4">
                 <div className="flex flex-col gap-2">
@@ -847,7 +847,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[15px] font-black text-slate-400 ml-1">Class Management</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Class Management</h3>
 
               <div className="space-y-4">
                 <div className="flex gap-2">
@@ -910,7 +910,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[15px] font-black text-slate-400 ml-1">Manage Indicators</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Manage Indicators</h3>
 
               <div className="space-y-4">
                 <div className="flex gap-2">
@@ -982,7 +982,7 @@ export default function SettingsScreen({
               </div>
 
               <div className="space-y-4 pt-6 border-t border-slate-100">
-                <h3 className="text-[11px] font-bold text-slate-400 ml-1">Communication Types</h3>
+                <h3 className="text-[11px] font-bold text-blue-600 ml-1">Communication Types</h3>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -1050,12 +1050,12 @@ export default function SettingsScreen({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Quick Grader</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Automatic Grade Calculation</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Automatic Grade Calculation</p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Total Number of Questions</label>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Total Number of Questions</label>
                 <input
                   type="number"
                   value={totalQuestions}
@@ -1067,7 +1067,7 @@ export default function SettingsScreen({
 
               {totalQuestions !== '' && totalQuestions > 0 && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 px-6 py-3 bg-slate-50 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <div className="grid grid-cols-3 px-6 py-3 bg-slate-50 rounded-xl text-[10px] font-bold uppercase tracking-widest text-blue-600">
                     <span>Wrong</span>
                     <span className="text-center">Score</span>
                     <span className="text-right">Correct</span>
@@ -1116,11 +1116,11 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[11px] font-bold text-slate-400 ml-1">Profile Settings</h3>
+              <h3 className="text-[11px] font-bold text-blue-600 ml-1">Profile Settings</h3>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Title</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Title</label>
                   <div className="flex gap-2 flex-wrap">
                     {(['Mr.', 'Mrs.', 'Ms.', 'Miss', 'Dr.'] as const).map(t => (
                       <button
@@ -1141,7 +1141,7 @@ export default function SettingsScreen({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">First Name</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">First Name</label>
                     <input
                       type="text"
                       value={teacherFirstName}
@@ -1151,7 +1151,7 @@ export default function SettingsScreen({
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Last Name</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Last Name</label>
                     <input
                       type="text"
                       value={teacherLastName}
@@ -1162,7 +1162,7 @@ export default function SettingsScreen({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Display Name (used in app header)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Display Name (used in app header)</label>
                   <input
                     type="text"
                     value={userName}
@@ -1171,7 +1171,7 @@ export default function SettingsScreen({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">School Name</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Name</label>
                   <input
                     type="text"
                     value={schoolName}
@@ -1194,7 +1194,7 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100">
-              <h3 className="text-[11px] font-bold text-slate-400 ml-1 mb-6">Appearance</h3>
+              <h3 className="text-[11px] font-bold text-blue-600 ml-1 mb-6">Appearance</h3>
               <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">Dark Mode</h4>
@@ -1231,7 +1231,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[11px] font-bold text-slate-400 ml-1">Notifications</h3>
+              <h3 className="text-[11px] font-bold text-blue-600 ml-1">Notifications</h3>
 
               {!notificationsSupported() && (
                 <p className="text-xs text-slate-400 bg-slate-50 rounded-2xl p-4 border border-slate-100">
@@ -1344,7 +1344,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[11px] font-bold text-slate-400 ml-1">Privacy & Security</h3>
+              <h3 className="text-[11px] font-bold text-blue-600 ml-1">Privacy & Security</h3>
 
               <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
                 <p className="text-sm text-slate-600 leading-relaxed font-medium">
@@ -1370,7 +1370,7 @@ export default function SettingsScreen({
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">School Calendar</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Calendar</h3>
                 {calendarEvents.length > 0 && (
                   <button
                     onClick={handleClearAllEvents}
@@ -1610,7 +1610,7 @@ export default function SettingsScreen({
 
                 {calendarEvents.length > 0 && !draftEvents && (
                   <div className="pt-6 space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Your Calendar Events</h4>
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Your Calendar Events</h4>
                     <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                       {[...calendarEvents]
                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())

@@ -76,9 +76,8 @@ export default function Header({
           ) : (
             <div className="group relative">
               <div className="flex items-center gap-2 pr-8">
-                <h1 className="text-sm font-bold text-sage-dark leading-tight flex items-center gap-1.5">
+                <h1 className="text-sm font-bold text-sage-dark leading-tight">
                   {getGreeting(userName)}
-                  <span className="text-[8px] font-semibold text-slate-300 tracking-wide">ShortHand</span>
                 </h1>
                 <button
                   onClick={resetUserName}
@@ -88,7 +87,7 @@ export default function Header({
                   <Edit2 className="w-3 h-3" />
                 </button>
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <div className="flex items-center gap-1.5 mt-3">
                 <Sparkles className="w-2.5 h-2.5 text-terracotta flex-shrink-0" />
                 <p className="text-[9px] font-medium text-slate-400 italic leading-snug">"{quote}"</p>
               </div>
@@ -96,22 +95,28 @@ export default function Header({
           )}
         </div>
 
-        <div className="flex items-center gap-2 ml-4">
+        <span className="self-center text-[16px] font-bold tracking-wide mx-2 flex-shrink-0">
+          {'ShortHand'.split('').map((letter, i) => {
+            const colors = ['#e2725b','#34d399','#f59e0b','#60a5fa','#a78bfa','#e2725b','#34d399','#f59e0b','#60a5fa'];
+            return <span key={i} style={{ color: colors[i] }}>{letter}</span>;
+          })}
+        </span>
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Rotation Dashboard Badge */}
           <div className="relative">
             <button
               onClick={() => setShowRotationForecast(!showRotationForecast)}
               className={cn(
-                'px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center gap-3 transition-all hover:border-sage/30 group',
+                'px-2.5 py-1.5 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 transition-all hover:border-sage/30 group max-w-[130px]',
                 showRotationForecast && 'ring-2 ring-sage/20 border-sage/40'
               )}
             >
               <div className="p-1.5 bg-sage/10 text-sage rounded-lg group-hover:bg-sage/20 transition-colors">
                 <School className="w-4 h-4" />
               </div>
-              <div className="text-left">
-                <p className="text-[11px] font-bold text-slate-400 leading-none">Rotation</p>
-                <p className="text-xs font-bold text-sage-dark">
+              <div className="text-left min-w-0">
+                <p className="text-[10px] font-bold text-slate-400 leading-none">Rotation</p>
+                <p className="text-[11px] font-bold text-sage-dark truncate">
                   {specialsConfig.mode === 'off'
                     ? 'Off'
                     : todayRotation
@@ -221,22 +226,7 @@ export default function Header({
             </AnimatePresence>
           </div>
 
-          <button
-            onClick={() => setShowTasks(true)}
-            className="p-2.5 bg-white text-slate-400 rounded-xl hover:text-sage transition-all shadow-sm border border-slate-100 flex items-center justify-center relative no-print"
-            title="Daily Tasks"
-          >
-            <ClipboardList className="w-5 h-5" />
-            {pendingTasks > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-terracotta text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                {pendingTasks}
-              </span>
-            )}
-          </button>
 
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100">
-            <PenLine className="text-sage w-5 h-5" />
-          </div>
         </div>
       </div>
     </header>

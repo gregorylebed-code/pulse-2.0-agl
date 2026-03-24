@@ -46,7 +46,7 @@ export default function StatsCard({ notesCreated, reportsGenerated }: StatsCardP
   return (
     <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[15px] font-black text-slate-400 ml-1 font-display">Your Impact</h3>
+        <h3 className="text-[15px] font-black text-blue-600 ml-1 font-display">Your Impact</h3>
         <span className="text-sm">{getMotivationalMessage(notesCreated)}</span>
       </div>
 

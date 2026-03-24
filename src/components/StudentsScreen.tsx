@@ -335,7 +335,7 @@ export default function StudentsScreen({
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-[11px] font-bold text-slate-400">Your Roster</h2>
+          <h2 className="text-[11px] font-bold text-blue-600">Your Roster</h2>
           <button
             onClick={() => setIsBirthdayModalOpen(true)}
             className="p-1.5 bg-pink-50 text-pink-400 rounded-lg hover:bg-pink-100 hover:text-pink-500 transition-colors"

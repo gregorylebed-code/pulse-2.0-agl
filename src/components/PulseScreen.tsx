@@ -617,7 +617,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         ) : (
           <>
             <div className="space-y-3 relative max-w-2xl">
-              <label className="text-[15px] font-black text-slate-400 ml-1">Select Student</label>
+              <label className="text-[15px] font-black text-blue-600 ml-1">Select Student</label>
               <div className="relative">
                 <input
                   type="text"
@@ -825,7 +825,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       <TodayAtAGlance notes={notes} indicators={indicators} />
 
       <div className="space-y-4 pb-20">
-        <h2 className="text-[15px] font-black text-slate-400 ml-1">Recent Activity</h2>
+        <h2 className="text-[15px] font-black text-blue-600 ml-1">Recent Activity</h2>
         {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
           <div className="text-center py-10 space-y-2 bg-white rounded-[28px] border border-dashed border-slate-200">
             <p className="text-sm font-black text-slate-400">No notes yet today.</p>
