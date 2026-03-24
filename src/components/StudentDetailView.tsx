@@ -2032,6 +2032,18 @@ export default function StudentDetailView({
                     >
                       <MessageSquare className="w-3.5 h-3.5" /> Text
                     </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() };
+                        await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] });
+                        toast.success('Saved to history!');
+                        onNoteUpdate();
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terracotta/10 text-terracotta rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-terracotta/20 transition-all"
+                    >
+                      <Archive className="w-3.5 h-3.5" /> Save to History
+                    </button>
                   </div>
                 </motion.div>
               )}
