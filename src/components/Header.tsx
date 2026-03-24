@@ -96,7 +96,7 @@ export default function Header({
         </div>
 
         <motion.img
-          src="/ShortHand Logo White Background.png"
+          src="/shorthand-logo.png"
           alt="ShortHand"
           className="self-center h-8 mx-2 flex-shrink-0"
           style={{ filter: 'drop-shadow(0 0 8px rgba(52,211,153,0.35)) drop-shadow(0 2px 4px rgba(0,0,0,0.08))' }}
