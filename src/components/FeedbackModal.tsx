@@ -53,7 +53,7 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
       // Fire-and-forget — don't let ntfy failure block the submission
       fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
         method: 'POST',
-        headers: { 'Title': `Pulse Feedback — ${category}`, 'Priority': 'default' },
+        headers: { 'Title': `ShortHand Feedback — ${category}`, 'Priority': 'default' },
         body: `${message.trim()}\n\nScreen: ${currentView}`,
       }).catch(() => {});
 

@@ -1,6 +1,6 @@
 {
-  "name": "Classroom Pulse",
-  "short_name": "Pulse",
+  "name": "ShortHand",
+  "short_name": "ShortHand",
   "description": "Student observation and classroom management for teachers",
   "start_url": "/",
   "display": "standalone",

@@ -5,7 +5,7 @@ import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations'
 import imageCompression from 'browser-image-compression';
 import {
   Mic, Image as ImageIcon, Send, Trash2, Edit2, Copy,
-  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Cake
+  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Cake, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -118,6 +118,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [selectedComm, setSelectedComm] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<'positive' | 'neutral' | 'growth' | 'comm' | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [editStudentName, setEditStudentName] = useState('');
@@ -245,7 +246,6 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     setStudentInput(name);
     setShowSuggestions(false);
     setValidationError(null);
-    noteInputRef.current?.focus();
   };
 
   const handleClear = () => {
@@ -683,92 +683,92 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </>
         )}
 
-        {/* ── Indicators — always visible, tag-first ── */}
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-500 ml-1 flex items-center gap-1.5"><span>✦</span> Positive</h3>
-            <div className="flex flex-wrap gap-2">
-              {indicators.filter(b => b.type === 'positive').map(b => (
-                <motion.button
-                  key={b.label}
-                  onClick={() => toggleTag(b.label)}
-                  whileTap={{ scale: 0.88 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+        {/* ── Indicators — accordion by category ── */}
+        <div className="space-y-2">
+          {([
+            { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive'), selectedCount: indicators.filter(b => b.type === 'positive' && selectedTags.includes(b.label)).length },
+            { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral'), selectedCount: indicators.filter(b => b.type === 'neutral' && selectedTags.includes(b.label)).length },
+            { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicators.filter(b => b.type === 'growth'), selectedCount: indicators.filter(b => b.type === 'growth' && selectedTags.includes(b.label)).length },
+            { key: 'comm' as const, label: 'Family Comm', color: 'sky', items: commTypes, selectedCount: selectedComm.length },
+          ].map(cat => {
+            const isOpen = expandedCategory === cat.key;
+            const headerColors: Record<string, string> = {
+              emerald: 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+              amber: 'text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100',
+              rose: 'text-rose-600 bg-rose-50 border-rose-200 hover:bg-rose-100',
+              sky: 'text-sky-600 bg-sky-50 border-sky-200 hover:bg-sky-100',
+            };
+            const badgeColors: Record<string, string> = {
+              emerald: 'bg-emerald-500 text-white',
+              amber: 'bg-amber-400 text-white',
+              rose: 'bg-rose-500 text-white',
+              sky: 'bg-sky-500 text-white',
+            };
+            const activeItemColors: Record<string, string> = {
+              emerald: 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200',
+              amber: 'bg-amber-400 border-amber-400 text-white shadow-lg shadow-amber-200',
+              rose: 'bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-200',
+              sky: 'bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-200',
+            };
+            const inactiveItemColors: Record<string, string> = {
+              emerald: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+              amber: 'bg-amber-50 border-amber-200 text-amber-700',
+              rose: 'bg-rose-50 border-rose-200 text-rose-700',
+              sky: 'bg-sky-50 border-sky-200 text-sky-700',
+            };
+            return (
+              <div key={cat.key}>
+                <button
+                  type="button"
+                  onClick={() => setExpandedCategory(isOpen ? null : cat.key)}
                   className={cn(
-                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                    selectedTags.includes(b.label)
-                      ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200"
-                      : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                    "w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 font-black text-sm transition-all",
+                    headerColors[cat.color]
                   )}
                 >
-                  <span className="text-base leading-none">{b.icon}</span> {b.label}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-500 ml-1 flex items-center gap-1.5"><span>✦</span> Neutral</h3>
-            <div className="flex flex-wrap gap-2">
-              {indicators.filter(b => b.type === 'neutral').map(b => (
-                <motion.button
-                  key={b.label}
-                  onClick={() => toggleTag(b.label)}
-                  whileTap={{ scale: 0.88 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                  className={cn(
-                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                    selectedTags.includes(b.label)
-                      ? "bg-amber-400 border-amber-400 text-white shadow-lg shadow-amber-200"
-                      : "bg-amber-50 border-amber-200 text-amber-700"
+                  <span className="uppercase tracking-widest text-[11px]">{cat.label}</span>
+                  <div className="flex items-center gap-2">
+                    {cat.selectedCount > 0 && (
+                      <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
+                        {cat.selectedCount}
+                      </span>
+                    )}
+                    <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', isOpen && 'rotate-180')} />
+                  </div>
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-wrap gap-2 pt-3 pb-1 px-1">
+                        {cat.items.map((b: any) => {
+                          const isSelected = cat.key === 'comm' ? selectedComm.includes(b.label) : selectedTags.includes(b.label);
+                          return (
+                            <motion.button
+                              key={b.label}
+                              onClick={() => cat.key === 'comm' ? toggleComm(b.label) : toggleTag(b.label)}
+                              whileTap={{ scale: 0.88 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                              className={cn(
+                                "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                                isSelected ? activeItemColors[cat.color] : inactiveItemColors[cat.color]
+                              )}
+                            >
+                              <span className="text-base leading-none">{b.icon}</span> {b.label}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
                   )}
-                >
-                  <span className="text-base leading-none">{b.icon}</span> {b.label}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-[11px] font-black uppercase tracking-widest text-rose-500 ml-1 flex items-center gap-1.5"><span>✦</span> Growth Areas</h3>
-            <div className="flex flex-wrap gap-2">
-              {indicators.filter(b => b.type === 'growth').map(b => (
-                <motion.button
-                  key={b.label}
-                  onClick={() => toggleTag(b.label)}
-                  whileTap={{ scale: 0.88 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                  className={cn(
-                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                    selectedTags.includes(b.label)
-                      ? "bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-200"
-                      : "bg-rose-50 border-rose-200 text-rose-700"
-                  )}
-                >
-                  <span className="text-base leading-none">{b.icon}</span> {b.label}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-[11px] font-black uppercase tracking-widest text-sky-500 ml-1 flex items-center gap-1.5"><span>✦</span> Family Comm</h3>
-            <div className="flex flex-wrap gap-2">
-              {commTypes.map(b => (
-                <motion.button
-                  key={b.label}
-                  onClick={() => toggleComm(b.label)}
-                  whileTap={{ scale: 0.88 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                  className={cn(
-                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                    selectedComm.includes(b.label)
-                      ? "bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-200"
-                      : "bg-sky-50 border-sky-200 text-sky-700"
-                  )}
-                >
-                  <span className="text-base leading-none">{b.icon}</span> {b.label}
-                </motion.button>
-              ))}
-            </div>
-          </div>
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
 
         {/* ── Optional text note ── */}

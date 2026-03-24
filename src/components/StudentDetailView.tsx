@@ -309,6 +309,7 @@ export default function StudentDetailView({
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<'positive' | 'neutral' | 'growth' | 'comm' | null>(null);
   const [showReportOptions, setShowReportOptions] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -320,6 +321,7 @@ export default function StudentDetailView({
   const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note'>('timeline');
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
+  const [quickNoteDays, setQuickNoteDays] = useState<0 | 1 | 3 | 5 | 7>(0);
   const quickNoteRef = useRef<HTMLDivElement>(null);
   const goalsRef = useRef<HTMLDivElement>(null);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -780,19 +782,31 @@ export default function StudentDetailView({
 
   const handleGenerateQuickNote = async () => {
     const today = new Date();
-    const todayNotes = notes.filter(n => {
+    const filtered = notes.filter(n => {
       const d = new Date(n.created_at);
-      return d.getFullYear() === today.getFullYear() &&
-             d.getMonth() === today.getMonth() &&
-             d.getDate() === today.getDate();
+      const noteDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      if (quickNoteDays === 0) {
+        // Today only
+        const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        return noteDay.getTime() === todayDay.getTime();
+      } else if (quickNoteDays === 1) {
+        // Yesterday only
+        const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+        return noteDay.getTime() === yesterday.getTime();
+      } else {
+        // Last N calendar days (not including today if we want strict past, but include today too)
+        const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (quickNoteDays - 1));
+        return noteDay >= cutoff;
+      }
     });
-    if (todayNotes.length === 0) {
-      toast.error('No notes from today to base this on.');
+    const rangeLabel = quickNoteDays === 0 ? 'today' : quickNoteDays === 1 ? 'yesterday' : `the past ${quickNoteDays} days`;
+    if (filtered.length === 0) {
+      toast.error(`No notes from ${rangeLabel} to base this on.`);
       return;
     }
     setIsGeneratingQuickNote(true);
     try {
-      const result = await quickParentNote(todayNotes, teacherTitle, teacherLastName);
+      const result = await quickParentNote(filtered, teacherTitle, teacherLastName, student.name);
       setQuickNote(result.trim());
     } catch {
       toast.error('Failed to generate quick note.');
@@ -1084,6 +1098,15 @@ export default function StudentDetailView({
 
       <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex items-center justify-between gap-1 no-print">
         <button
+          onClick={() => scrollToSection('quick-note')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
+            activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "text-slate-500 hover:bg-white/60"
+          )}
+        >
+          Note
+        </button>
+        <button
           onClick={() => scrollToSection('timeline')}
           className={cn(
             "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
@@ -1120,15 +1143,6 @@ export default function StudentDetailView({
           )}
         >
           History
-        </button>
-        <button
-          onClick={() => scrollToSection('quick-note')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-            activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "text-slate-500 hover:bg-white/60"
-          )}
-        >
-          Note
         </button>
       </div>
 
@@ -1171,84 +1185,91 @@ export default function StudentDetailView({
           </div>
         )}
 
-        <div className="space-y-3 pt-2">
-          <button
-            type="button"
-            onClick={() => setShowTags(v => !v)}
-            className="flex items-center gap-2 text-slate-400 hover:text-slate-600 transition-colors text-xs font-black uppercase tracking-widest"
-          >
-            <Tag className="w-3.5 h-3.5" />
-            {showTags ? 'Hide tags' : 'Add tags'}
-            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', showTags && 'rotate-180')} />
-          </button>
-
-          {!showTags && (selectedTags.length > 0 || selectedComm.length > 0) && (
-            <div className="flex flex-wrap gap-1.5">
-              {selectedTags.map(t => <span key={t} className="px-2 py-0.5 bg-sage/10 text-sage text-xs font-bold rounded-full">{t}</span>)}
-              {selectedComm.map(t => <span key={t} className="px-2 py-0.5 bg-blue-50 text-blue-500 text-xs font-bold rounded-full">{t}</span>)}
-            </div>
-          )}
-
-          <AnimatePresence>
-            {showTags && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
-                {(['positive', 'neutral', 'growth'] as const).map(type => {
-                  const group = indicators.filter(b => b.type === type);
-                  if (group.length === 0) return null;
-                  const label = type === 'positive' ? 'Positive' : type === 'neutral' ? 'Neutral' : 'Growth Areas';
-                  const headerColor = type === 'positive' ? 'text-emerald-500' : type === 'neutral' ? 'text-amber-500' : 'text-rose-500';
-                  return (
-                    <div key={type} className="space-y-1.5">
-                      <h3 className={`text-[11px] font-black uppercase tracking-widest ml-1 flex items-center gap-1.5 ${headerColor}`}><span>✦</span> {label}</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {group.map(b => (
-                          <motion.button
-                            key={b.label}
-                            onClick={() => toggleTag(b.label)}
-                            whileTap={{ scale: 0.88 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                            className={cn(
-                              "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                              selectedTags.includes(b.label)
-                                ? type === 'positive' ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200"
-                                : type === 'neutral' ? "bg-amber-400 border-amber-400 text-white shadow-lg shadow-amber-200"
-                                : "bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-200"
-                                : type === 'positive' ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                                : type === 'neutral' ? "bg-amber-50 border-amber-200 text-amber-700"
-                                : "bg-rose-50 border-rose-200 text-rose-700"
-                            )}
-                          >
-                            <span className="text-base leading-none">{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="space-y-1.5">
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-sky-500 ml-1 flex items-center gap-1.5"><span>✦</span> Family Comm</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {commTypes.map(c => (
-                      <motion.button
-                        key={c.label}
-                        onClick={() => toggleComm(c.label)}
-                        whileTap={{ scale: 0.88 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                        className={cn(
-                          "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
-                          selectedComm.includes(c.label)
-                            ? "bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-200"
-                            : "bg-sky-50 border-sky-200 text-sky-700"
-                        )}
-                      >
-                        <span className="text-base leading-none">{c.icon ?? getIconForName(c.icon_name, 'neutral')}</span> {c.label}
-                      </motion.button>
-                    ))}
+        <div className="space-y-2 pt-2">
+          {([
+            { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive'), selectedCount: indicators.filter(b => b.type === 'positive' && selectedTags.includes(b.label)).length },
+            { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral'), selectedCount: indicators.filter(b => b.type === 'neutral' && selectedTags.includes(b.label)).length },
+            { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicators.filter(b => b.type === 'growth'), selectedCount: indicators.filter(b => b.type === 'growth' && selectedTags.includes(b.label)).length },
+            { key: 'comm' as const, label: 'Family Comm', color: 'sky', items: commTypes, selectedCount: selectedComm.length },
+          ].map(cat => {
+            const isOpen = expandedCategory === cat.key;
+            const headerColors: Record<string, string> = {
+              emerald: 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+              amber: 'text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100',
+              rose: 'text-rose-600 bg-rose-50 border-rose-200 hover:bg-rose-100',
+              sky: 'text-sky-600 bg-sky-50 border-sky-200 hover:bg-sky-100',
+            };
+            const badgeColors: Record<string, string> = {
+              emerald: 'bg-emerald-500 text-white',
+              amber: 'bg-amber-400 text-white',
+              rose: 'bg-rose-500 text-white',
+              sky: 'bg-sky-500 text-white',
+            };
+            const activeItemColors: Record<string, string> = {
+              emerald: 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200',
+              amber: 'bg-amber-400 border-amber-400 text-white shadow-lg shadow-amber-200',
+              rose: 'bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-200',
+              sky: 'bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-200',
+            };
+            const inactiveItemColors: Record<string, string> = {
+              emerald: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+              amber: 'bg-amber-50 border-amber-200 text-amber-700',
+              rose: 'bg-rose-50 border-rose-200 text-rose-700',
+              sky: 'bg-sky-50 border-sky-200 text-sky-700',
+            };
+            return (
+              <div key={cat.key}>
+                <button
+                  type="button"
+                  onClick={() => setExpandedCategory(isOpen ? null : cat.key)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 font-black text-sm transition-all",
+                    headerColors[cat.color]
+                  )}
+                >
+                  <span className="uppercase tracking-widest text-[11px]">{cat.label}</span>
+                  <div className="flex items-center gap-2">
+                    {cat.selectedCount > 0 && (
+                      <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
+                        {cat.selectedCount}
+                      </span>
+                    )}
+                    <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', isOpen && 'rotate-180')} />
                   </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-wrap gap-2 pt-3 pb-1 px-1">
+                        {cat.items.map((b: any) => {
+                          const isSelected = cat.key === 'comm' ? selectedComm.includes(b.label) : selectedTags.includes(b.label);
+                          return (
+                            <motion.button
+                              key={b.label}
+                              onClick={() => cat.key === 'comm' ? toggleComm(b.label) : toggleTag(b.label)}
+                              whileTap={{ scale: 0.88 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                              className={cn(
+                                "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                                isSelected ? activeItemColors[cat.color] : inactiveItemColors[cat.color]
+                              )}
+                            >
+                              <span className="text-base leading-none">{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">
@@ -1270,6 +1291,107 @@ export default function StudentDetailView({
             {isSavingNote ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Save Note</>}
           </button>
         </div>
+      </div>
+
+      {/* Quick Note to Parent */}
+      <div id="quick-note" ref={quickNoteRef} className="space-y-4 scroll-mt-header">
+        <div>
+          <h3 className="text-sm font-bold text-terracotta flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" /> Quick Note to Parent
+          </h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+            Choose which observations to include
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {([
+            { label: 'Today', days: 0 },
+            { label: 'Yesterday', days: 1 },
+            { label: 'Last 3 Days', days: 3 },
+            { label: 'Last 5 Days', days: 5 },
+            { label: 'Last 7 Days', days: 7 },
+          ] as { label: string; days: 0 | 1 | 3 | 5 | 7 }[]).map(opt => (
+            <button
+              key={opt.days}
+              type="button"
+              onClick={() => { setQuickNoteDays(opt.days); setQuickNote(null); }}
+              className={cn(
+                "px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border-2 transition-all",
+                quickNoteDays === opt.days
+                  ? "bg-terracotta text-white border-terracotta shadow-md"
+                  : "bg-white text-slate-400 border-slate-100 hover:border-terracotta/40"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGenerateQuickNote}
+          disabled={isGeneratingQuickNote}
+          className="w-full py-5 bg-terracotta text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-terracotta/20 flex items-center justify-center gap-3 disabled:opacity-50"
+        >
+          {isGeneratingQuickNote
+            ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing note...</>
+            : <><MessageSquare className="w-4 h-4" /> Draft a Note Home</>
+          }
+        </button>
+
+        <AnimatePresence>
+          {quickNote && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-terracotta">
+                  {quickNoteDays === 0 ? "Today's Note" : quickNoteDays === 1 ? "Yesterday's Note" : `Last ${quickNoteDays} Days`}
+                </span>
+                <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
+              </div>
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
+              <div className="flex flex-wrap gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(quickNote); toast.success('Copied!'); }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
+                >
+                  <Copy className="w-3.5 h-3.5" /> Copy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => triggerEmail(quickNote, `Note about ${student.name}`)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
+                >
+                  <Mail className="w-3.5 h-3.5" /> Email Parent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> Text
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() };
+                    await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] });
+                    toast.success('Saved to history!');
+                    onNoteUpdate();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terracotta/10 text-terracotta rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-terracotta/20 transition-all"
+                >
+                  <Archive className="w-3.5 h-3.5" /> Save to History
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div id="timeline" ref={timelineRef} className="space-y-6 pt-4 scroll-mt-header">
@@ -2024,80 +2146,6 @@ export default function StudentDetailView({
             </div>
           </div>
 
-          {/* Quick Note to Parent */}
-          <div id="quick-note" ref={quickNoteRef} className="space-y-4 pt-6 mt-6 border-t border-slate-100 scroll-mt-header">
-            <div>
-              <h3 className="text-sm font-bold text-terracotta flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" /> Quick Note to Parent
-              </h3>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                Based on today's observations only
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGenerateQuickNote}
-              disabled={isGeneratingQuickNote}
-              className="w-full py-5 bg-terracotta text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-terracotta/20 flex items-center justify-center gap-3 disabled:opacity-50"
-            >
-              {isGeneratingQuickNote
-                ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing note...</>
-                : <><MessageSquare className="w-4 h-4" /> Generate Quick Note</>
-              }
-            </button>
-
-            <AnimatePresence>
-              {quickNote && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-terracotta">Today's Note</span>
-                    <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
-                  </div>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => { navigator.clipboard.writeText(quickNote); toast.success('Copied!'); }}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
-                    >
-                      <Copy className="w-3.5 h-3.5" /> Copy
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => triggerEmail(quickNote, `Note about ${student.name}`)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
-                    >
-                      <Mail className="w-3.5 h-3.5" /> Email Parent
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" /> Text
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() };
-                        await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] });
-                        toast.success('Saved to history!');
-                        onNoteUpdate();
-                      }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terracotta/10 text-terracotta rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-terracotta/20 transition-all"
-                    >
-                      <Archive className="w-3.5 h-3.5" /> Save to History
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
       </div>
 

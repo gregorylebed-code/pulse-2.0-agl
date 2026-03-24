@@ -395,15 +395,15 @@ Return JSON:
   }
 }
 
-export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string): Promise<string> {
+export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string, studentName: string): Promise<string> {
   const notesText = notes.map(n => n.content).join('\n- ');
   const signOff = teacherLastName.trim()
     ? `${teacherTitle} ${teacherLastName}`
     : 'Your Child\'s Teacher';
 
-  const prompt = `You are a teacher writing a short, direct parent note about what happened today with a student.
+  const prompt = `You are a teacher writing a short, direct parent note about a student named ${studentName}.
 
-Today's observations:
+Observations:
 - ${notesText}
 
 RULES:
@@ -413,6 +413,7 @@ RULES:
 - If the overall tone of the observations is POSITIVE: end with exactly this line on a new line: "I am very proud and thought you would be too! — ${signOff}"
 - If the overall tone is NEGATIVE or CONCERNING: end with exactly this line on a new line: "I am disappointed in what happened today, but I thought you should know. — ${signOff}"
 - If the tone is MIXED: use your judgment on which sign-off fits better
+- IMPORTANT: If any other student's name appears in the observations (any name that is NOT "${studentName}"), replace it with "another student" in the note — EXCEPT names preceded by a title like Mr., Mrs., Miss, Ms., Dr., Coach, etc., which are teachers or staff and should be kept as-is
 - Do NOT include any labels like "Positive:" or "Note:" — just output the message directly
 - Do NOT add any extra commentary, headers, or explanation`;
 
