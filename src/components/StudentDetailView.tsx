@@ -1103,17 +1103,15 @@ export default function StudentDetailView({
             Goals
           </button>
         )}
-        {isFullMode && (
-          <button
-            onClick={() => scrollToSection('ai-report')}
-            className={cn(
-              "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-              activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
-            )}
-          >
-            AI Report
-          </button>
-        )}
+        <button
+          onClick={() => scrollToSection('ai-report')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
+            activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
+          )}
+        >
+          AI Report
+        </button>
         <button
           onClick={() => scrollToSection('history')}
           className={cn(
@@ -1662,7 +1660,7 @@ export default function StudentDetailView({
 
       <div className="pt-6 border-t border-slate-100" />
 
-      <div id="ai-report" ref={aiReportRef} className={cn("space-y-6 pt-4 scroll-mt-header", !isFullMode && "hidden")}>
+      <div id="ai-report" ref={aiReportRef} className="space-y-6 pt-4 scroll-mt-header">
         <div className="bg-cream/30 p-8 rounded-[40px] border border-sage/10 space-y-6">
           <div className="space-y-4">
             {/* Primary action — always visible */}
