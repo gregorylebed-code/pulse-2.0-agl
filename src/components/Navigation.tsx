@@ -11,8 +11,10 @@ interface NavigationProps {
 
 function NavButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
+      whileTap={{ scale: 0.88 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 25 }}
       className="flex flex-col items-center gap-1.5 transition-all duration-200 relative px-5 py-1"
     >
       <div className="relative flex items-center justify-center">
@@ -34,7 +36,12 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
       )}>
         {label}
       </span>
-    </button>
+      <motion.div
+        className="h-1 w-1 rounded-full bg-sage"
+        animate={{ scale: active ? 1 : 0, opacity: active ? 1 : 0 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+      />
+    </motion.button>
   );
 }
 

@@ -95,12 +95,14 @@ export default function Header({
           )}
         </div>
 
-        <span className="self-center text-[16px] font-bold tracking-wide mx-2 flex-shrink-0">
-          {'ShortHand'.split('').map((letter, i) => {
-            const colors = ['#e2725b','#34d399','#f59e0b','#60a5fa','#a78bfa','#e2725b','#34d399','#f59e0b','#60a5fa'];
-            return <span key={i} style={{ color: colors[i] }}>{letter}</span>;
-          })}
-        </span>
+        <motion.img
+          src="/ShortHand Logo White Background.png"
+          alt="ShortHand"
+          className="self-center h-8 mx-2 flex-shrink-0"
+          style={{ filter: 'drop-shadow(0 0 8px rgba(52,211,153,0.35)) drop-shadow(0 2px 4px rgba(0,0,0,0.08))' }}
+          animate={{ filter: ['drop-shadow(0 0 6px rgba(52,211,153,0.25)) drop-shadow(0 2px 4px rgba(0,0,0,0.08))', 'drop-shadow(0 0 14px rgba(52,211,153,0.5)) drop-shadow(0 2px 6px rgba(0,0,0,0.1))', 'drop-shadow(0 0 6px rgba(52,211,153,0.25)) drop-shadow(0 2px 4px rgba(0,0,0,0.08))'] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        />
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Rotation Dashboard Badge */}
           <div className="relative">

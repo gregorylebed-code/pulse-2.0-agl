@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Note, Student, CalendarEvent } from '../types';
 import { parseVoiceLog, categorizeNote } from '../lib/gemini';
 import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations';
@@ -120,10 +120,40 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [isUpdating, setIsUpdating] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<'positive' | 'neutral' | 'growth' | 'comm' | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [latestNoteId, setLatestNoteId] = useState<string | null>(null);
+
+  // Streak: count consecutive school days (Mon–Fri) going back from today with at least one note
+  const streak = useMemo(() => {
+    const loggedDates = new Set(notes.map(n => n.created_at.slice(0, 10)));
+    let count = 0;
+    const d = new Date();
+    for (let i = 0; i < 30; i++) {
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) { // skip weekends
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (loggedDates.has(key)) count++;
+        else if (i > 0) break; // gap — streak ends (allow today to be incomplete)
+      }
+      d.setDate(d.getDate() - 1);
+    }
+    return count;
+  }, [notes]);
   const [editContent, setEditContent] = useState('');
   const [editStudentName, setEditStudentName] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
   const [editComm, setEditComm] = useState<string[]>([]);
+
+  // Flash the newest note green when it arrives
+  const prevTopNoteId = useRef<string | null>(null);
+  useEffect(() => {
+    const top = notes[0]?.id ?? null;
+    if (top && top !== prevTopNoteId.current) {
+      setLatestNoteId(top);
+      const t = setTimeout(() => setLatestNoteId(null), 1500);
+      prevTopNoteId.current = top;
+      return () => clearTimeout(t);
+    }
+  }, [notes]);
 
   const startEditing = (note: Note) => {
     setEditingNoteId(note.id);
@@ -752,6 +782,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                               key={b.label}
                               onClick={() => cat.key === 'comm' ? toggleComm(b.label) : toggleTag(b.label)}
                               whileTap={{ scale: 0.88 }}
+                              animate={isSelected ? { scale: [1, 1.15, 0.95, 1] } : { scale: 1 }}
                               transition={{ type: 'spring', stiffness: 500, damping: 20 }}
                               className={cn(
                                 "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
@@ -825,7 +856,23 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       <TodayAtAGlance notes={notes} indicators={indicators} />
 
       <div className="space-y-4 pb-20">
-        <h2 className="text-[15px] font-black text-blue-600 ml-1">Recent Activity</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-[15px] font-black text-blue-600 ml-1">Recent Activity</h2>
+          <AnimatePresence>
+            {streak >= 3 && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                className="flex items-center gap-1 px-2.5 py-1 bg-orange-50 border border-orange-200 rounded-full"
+              >
+                <span className="text-sm">🔥</span>
+                <span className="text-[10px] font-black text-orange-500">{streak} day streak</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
           <div className="text-center py-10 space-y-2 bg-white rounded-[28px] border border-dashed border-slate-200">
             <p className="text-sm font-black text-slate-400">No notes yet today.</p>
@@ -834,11 +881,26 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             </p>
           </div>
         )}
-        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, 5).map(note => (
-          <div key={note.id} className={cn(
-            "bg-white p-6 rounded-[32px] card-shadow border flex items-start gap-4",
-            note.class_name ? "border-blue-100" : "border-slate-100"
-          )}>
+        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, 5).map((note, i) => (
+          <motion.div
+            key={note.id}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, delay: i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+          <motion.div
+            animate={latestNoteId === note.id ? {
+              backgroundColor: ['#ffffff', '#d1fae5', '#ffffff'],
+              boxShadow: ['0 1px 3px rgba(0,0,0,0.04)', '0 0 0 3px rgba(52,211,153,0.3)', '0 1px 3px rgba(0,0,0,0.04)'],
+            } : {}}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
+            className={cn(
+              "p-6 rounded-[32px] card-shadow border flex items-start gap-4",
+              note.class_name
+                ? "bg-gradient-to-br from-white to-blue-50/40 border-blue-100"
+                : "bg-gradient-to-br from-white to-slate-50/60 border-slate-100"
+            )}
+          >
             <div className={cn(
               "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
               note.class_name ? "bg-blue-500/10" : "bg-sage/10"
@@ -969,7 +1031,8 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 </>
               )}
             </div>
-          </div>
+          </motion.div>
+          </motion.div>
         ))}
       </div>
 

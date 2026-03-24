@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 import { useClassroomData } from './hooks/useClassroomData';
 import { useAuth, signOut } from './lib/auth';
@@ -17,10 +17,17 @@ import { cn } from './utils/cn';
 import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
 import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notifications';
 import WelcomeModal from './components/WelcomeModal';
+import Confetti, { ConfettiHandle } from './components/Confetti';
 
 import { Sparkles, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'sonner';
+
+const tabVariants = {
+  enter: (dir: number) => ({ x: dir * 40, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] } },
+  exit: (dir: number) => ({ x: dir * -40, opacity: 0, transition: { duration: 0.16, ease: [0.55, 0, 1, 0.45] } }),
+};
 
 const QUOTES = [
   "Progress, not perfection.",
@@ -57,6 +64,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   }, [theme]);
 
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'insights' | 'settings'>('pulse');
+  const tabOrder = { pulse: 0, students: 1, insights: 2, settings: 3 } as const;
+  const prevTabRef = useRef<typeof activeTab>('pulse');
+  const tabDirection = tabOrder[activeTab] >= tabOrder[prevTabRef.current] ? 1 : -1;
   const [classSummaries, setClassSummaries] = useState<Record<string, string>>({});
   const [pulseView, setPulseView] = useState<'log' | 'summary'>('log');
   const [settingsView, setSettingsView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
@@ -144,7 +154,10 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const pulseViewRef = useRef(pulseView);
   const selectedStudentIdRef = useRef(selectedStudentId);
   const settingsViewRef = useRef(settingsView);
-  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => {
+    prevTabRef.current = activeTabRef.current;
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
   useEffect(() => { pulseViewRef.current = pulseView; }, [pulseView]);
   useEffect(() => { selectedStudentIdRef.current = selectedStudentId; }, [selectedStudentId]);
   useEffect(() => { settingsViewRef.current = settingsView; }, [settingsView]);
@@ -196,6 +209,21 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [activeTab, settingsView]);
 
+  const confettiRef = useRef<ConfettiHandle>(null);
+  const prevStatsRef = useRef({ notes_created: 0, reports_generated: 0 });
+  useEffect(() => {
+    const prev = prevStatsRef.current;
+    if (prev.notes_created === 0 && stats.notes_created === 1) {
+      confettiRef.current?.fire();
+      toast.success('🎉 First note saved! You\'re on your way.');
+    }
+    if (prev.reports_generated === 0 && stats.reports_generated === 1) {
+      setTimeout(() => confettiRef.current?.fire(), 300);
+      toast.success('🎉 First report generated!');
+    }
+    prevStatsRef.current = { notes_created: stats.notes_created, reports_generated: stats.reports_generated };
+  }, [stats.notes_created, stats.reports_generated]);
+
   return (
     <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20 overflow-x-hidden">
       <Header
@@ -215,9 +243,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       />
 
       <main ref={mainRef} className="flex-1 px-6 pb-24 overflow-y-auto">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={tabDirection}>
           {activeTab === 'pulse' && (
-            <motion.div key="pulse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+            <motion.div key="pulse" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit" className="space-y-4">
               {pulseView === 'summary' && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Class Summary</span>
@@ -261,7 +289,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
             </motion.div>
           )}
           {activeTab === 'students' && (
-            <motion.div key="students" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="students" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
               <StudentsScreen
                 students={students} notes={notes} reports={reports}
                 goals={goals}
@@ -281,7 +309,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
             </motion.div>
           )}
           {activeTab === 'insights' && (
-            <motion.div key="insights" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="insights" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
               <InsightsScreen
                 notes={notes}
                 students={students}
@@ -294,7 +322,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
             </motion.div>
           )}
           {activeTab === 'settings' && (
-            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="settings" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
               <SettingsScreen
                 indicators={indicators} setIndicators={updateIndicators}
                 commTypes={commTypes} setCommTypes={updateCommTypes}
@@ -385,6 +413,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         onGoToCalendar={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('calendar'); }}
         onDismiss={markOnboardingComplete}
       />
+
+      <Confetti ref={confettiRef} />
 
       {isUsingBackup && (
         <motion.div
