@@ -45,6 +45,20 @@ const DEFAULT_COMM_TYPES: Indicator[] = [
   { label: 'Meeting', type: 'neutral', icon_name: 'Users' },
 ];
 
+const DEFAULT_INDICATORS: Indicator[] = [
+  { label: 'Participation', type: 'positive', icon_name: 'Smile' },
+  { label: 'Kindness', type: 'positive', icon_name: 'Smile' },
+  { label: 'Persistence', type: 'positive', icon_name: 'Smile' },
+  { label: 'Disruption', type: 'growth', icon_name: 'Frown' },
+  { label: 'Peer Conflict', type: 'growth', icon_name: 'Frown' },
+  { label: 'Distracted', type: 'growth', icon_name: 'Frown' },
+  { label: 'Missing HW', type: 'growth', icon_name: 'Frown' },
+  { label: 'Unprepared', type: 'growth', icon_name: 'Frown' },
+  { label: 'Observation', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Independent Work', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Group Work', type: 'neutral', icon_name: 'Meh' },
+];
+
 const DEFAULT_SPECIALS: Record<string, string> = {
   'A': 'Art',
   'B': 'PE',
@@ -232,7 +246,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         // Use DB indicators directly; fall back to previous state if DB is empty
         indicators: (indicatorsData && indicatorsData.length > 0)
           ? (indicatorsData as Indicator[])
-          : prev.indicators,
+          : prev.indicators.length > 0 ? prev.indicators : DEFAULT_INDICATORS,
         commTypes: (commTypesData && commTypesData.length > 0)
           ? (commTypesData as Indicator[])
           : DEFAULT_COMM_TYPES,
