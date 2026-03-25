@@ -51,6 +51,9 @@ export default async function handler(req: Request): Promise<Response> {
         });
 
         const data = await cerebrasRes.text();
+        if (!cerebrasRes.ok) {
+          console.error(`[groq.ts] Cerebras error ${cerebrasRes.status}:`, data);
+        }
         return new Response(data, {
           status: cerebrasRes.status,
           headers: { 'Content-Type': 'application/json' },
