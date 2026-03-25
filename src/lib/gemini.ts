@@ -100,6 +100,7 @@ export async function performSmartScan(fileData: string, mimeType: string) {
             IMPORTANT: Assume the current academic year is 2025-2026. Do NOT default to year 2001. If a year is not specified, infer it based on a typical US school year starting in August 2025 and ending in June 2026.
             Date Sorting: Ensure the final JSON array is sorted by the soonest date first.
 
+            IMPORTANT: Do NOT include regular weekend days (Saturday/Sunday) unless a specific school event falls on that day.
             Return a JSON array of objects EXCLUSIVELY: [{ "date": "YYYY-MM-DD", "type": "Holiday" | "Early Dismissal" | "Conference" | "Other", "title": "Name of event paired with the date" }]. Do NOT wrap the array in an object like { "events": [...] }.`;
 
   const imageData = mimeType.startsWith('image/') ? { data: fileData, mimeType } : undefined;
@@ -134,7 +135,14 @@ export async function performSmartScan(fileData: string, mimeType: string) {
         }
     }
 
-    return Array.isArray(parsed) ? parsed : [];
+    const events = Array.isArray(parsed) ? parsed : [];
+    // Strip out weekends (Saturday=6, Sunday=0) as a safety net
+    return events.filter((e: any) => {
+      if (!e.date) return true;
+      const [y, m, d] = e.date.split('-').map(Number);
+      const day = new Date(y, m - 1, d).getDay();
+      return day !== 0 && day !== 6;
+    });
   } catch (e) {
     console.error("Failed to parse JSON from AI response:", e);
     return [];

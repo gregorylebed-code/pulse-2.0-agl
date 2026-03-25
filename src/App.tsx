@@ -457,6 +457,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       <Navigation activeTab={activeTab} setActiveTab={(tab) => {
         if (tab === activeTab) {
           // Tapping the current tab resets its sub-view
+          if (tab === 'pulse') setPulseView('log');
           if (tab === 'settings') setSettingsView('main');
           if (tab === 'students') setSelectedStudentId(null);
         } else {
