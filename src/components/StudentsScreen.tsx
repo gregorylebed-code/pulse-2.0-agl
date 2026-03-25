@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, PinOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent, StudentGoal } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -66,6 +66,21 @@ export default function StudentsScreen({
 }: StudentsScreenProps) {
   const [filter, setFilter] = useState<string>('All');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('pulse_pinned_students');
+      return new Set(stored ? JSON.parse(stored) : []);
+    } catch { return new Set(); }
+  });
+
+  const togglePin = (id: string) => {
+    setPinnedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      localStorage.setItem('pulse_pinned_students', JSON.stringify([...next]));
+      return next;
+    });
+  };
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiQuery, setAiQuery] = useState('');
@@ -331,13 +346,21 @@ export default function StudentsScreen({
 
   const sections = Object.keys(groupedStudents).sort();
 
-  // Sort students within each section by last name, or first name if no last name
+  // Sort students within each section: pinned first (by pin order), then alphabetical by last name
   const sortKey = (name: string) => {
     const parts = name.trim().split(/\s+/);
     return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : parts[0].toLowerCase();
   };
+  const pinnedOrder = [...pinnedIds]; // preserve insertion order
   sections.forEach(section => {
-    groupedStudents[section].sort((a, b) => sortKey(a.name).localeCompare(sortKey(b.name)));
+    groupedStudents[section].sort((a, b) => {
+      const aPinned = pinnedIds.has(a.id);
+      const bPinned = pinnedIds.has(b.id);
+      if (aPinned && bPinned) return pinnedOrder.indexOf(a.id) - pinnedOrder.indexOf(b.id);
+      if (aPinned) return -1;
+      if (bPinned) return 1;
+      return sortKey(a.name).localeCompare(sortKey(b.name));
+    });
   });
 
   return (
@@ -489,15 +512,31 @@ export default function StudentsScreen({
                 {groupedStudents[section].map(s => {
                   const status = getStudentStatus(s.name);
                   const noteCount = notes.filter(n => n.student_name === s.name).length;
+                  const isPinned = pinnedIds.has(s.id);
                   return (
                     <motion.div
                       key={s.id}
                       onClick={() => setSelectedStudentId(s.id)}
                       whileTap={{ scale: 0.94 }}
-                      className="bg-white p-2 rounded-2xl card-shadow border border-slate-100 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-sage/30 hover:-translate-y-0.5 transition-all text-center relative"
+                      className={cn(
+                        "bg-white p-2 rounded-2xl card-shadow border flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:-translate-y-0.5 transition-all text-center relative",
+                        isPinned ? "border-amber-200 bg-amber-50/40 hover:border-amber-300" : "border-slate-100 hover:border-sage/30"
+                      )}
                     >
                       {/* Status dot */}
                       <span className={cn('absolute top-1.5 right-1.5 w-2 h-2 rounded-full', statusDot[status])} />
+
+                      {/* Pin button */}
+                      <button
+                        onClick={e => { e.stopPropagation(); togglePin(s.id); }}
+                        className={cn(
+                          'absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center transition-all',
+                          isPinned ? 'text-amber-400' : 'text-slate-200 hover:text-slate-400'
+                        )}
+                        title={isPinned ? 'Unpin student' : 'Pin to top'}
+                      >
+                        <Pin className={cn('w-3 h-3', isPinned && 'fill-amber-400')} />
+                      </button>
 
                       {/* Photo / avatar with status ring */}
                       {s.photo_url ? (
