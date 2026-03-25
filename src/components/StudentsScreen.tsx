@@ -331,6 +331,15 @@ export default function StudentsScreen({
 
   const sections = Object.keys(groupedStudents).sort();
 
+  // Sort students within each section by last name, or first name if no last name
+  const sortKey = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : parts[0].toLowerCase();
+  };
+  sections.forEach(section => {
+    groupedStudents[section].sort((a, b) => sortKey(a.name).localeCompare(sortKey(b.name)));
+  });
+
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
       <div className="flex items-center justify-between px-2">

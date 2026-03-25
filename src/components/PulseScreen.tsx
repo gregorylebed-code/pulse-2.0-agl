@@ -122,6 +122,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [expandedCategory, setExpandedCategory] = useState<'positive' | 'neutral' | 'growth' | 'comm' | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [latestNoteId, setLatestNoteId] = useState<string | null>(null);
+  const [visibleNoteCount, setVisibleNoteCount] = useState(5);
 
   // Streak: count consecutive school days (Mon–Fri) going back from today with at least one note
   const streak = useMemo(() => {
@@ -918,7 +919,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             </p>
           </div>
         )}
-        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, 5).map((note, i) => (
+        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, visibleNoteCount).map((note, i) => (
           <motion.div
             key={note.id}
             initial={{ opacity: 0, y: 18 }}
@@ -1071,6 +1072,17 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </motion.div>
           </motion.div>
         ))}
+        {(() => {
+          const filteredNotes = notes.filter(n => !pendingDeleteNoteIds.has(n.id));
+          return filteredNotes.length > visibleNoteCount && (
+            <button
+              onClick={() => setVisibleNoteCount(c => c + 10)}
+              className="w-full py-3 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-sage transition-colors"
+            >
+              See 10 more
+            </button>
+          );
+        })()}
       </div>
 
       <AnimatePresence>
