@@ -45,7 +45,9 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
   });
 
   if (!response.ok) {
-    throw new Error(`Groq API error: ${response.status}`);
+    const errBody = await response.json().catch(() => ({}));
+    const errMsg = errBody?.error?.message || JSON.stringify(errBody);
+    throw new Error(`Groq API error: ${response.status} — ${errMsg}`);
   }
 
   const data = await response.json();
