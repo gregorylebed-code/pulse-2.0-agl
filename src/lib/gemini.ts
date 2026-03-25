@@ -31,17 +31,35 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
 
   const model = imageData?.mimeType.startsWith('image/') ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.3-70b-versatile';
 
-  // All AI calls go through our server-side proxy — key never touches the browser
-  const response = await fetch('/api/groq', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      messages,
-      response_format: isJson ? { type: 'json_object' } : undefined
-    }),
-    signal,
-  });
+  // Combine caller's abort signal with a 90-second hard timeout
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), 90_000);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutController.signal])
+    : timeoutController.signal;
+
+  let response: Response;
+  try {
+    // All AI calls go through our server-side proxy — key never touches the browser
+    response = await fetch('/api/groq', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages,
+        response_format: isJson ? { type: 'json_object' } : undefined
+      }),
+      signal: combinedSignal,
+    });
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    // Distinguish user-cancel from hard timeout
+    if (err?.name === 'AbortError' && timeoutController.signal.aborted && !signal?.aborted) {
+      throw new Error('AI request timed out after 90 seconds. Please try again.');
+    }
+    throw err;
+  }
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     const errBody = await response.json().catch(() => ({}));

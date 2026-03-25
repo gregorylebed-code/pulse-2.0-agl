@@ -302,7 +302,7 @@ export default function SettingsScreen({
         toast('Rotation scan cancelled');
       } else {
         console.error('Rotation scan error:', err);
-        toast.error('Failed to scan rotation schedule.', { id: loadingToast });
+        toast.error(err?.message || 'Failed to scan rotation schedule.', { id: loadingToast });
       }
       setIsScanningRotation(false);
       rotationAbortRef.current = null;
