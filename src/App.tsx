@@ -209,6 +209,30 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [activeTab, settingsView]);
 
+  // Swipe to change tabs
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const tabs = ['pulse', 'students', 'insights', 'settings'] as const;
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    swipeStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!swipeStartRef.current) return;
+    const dx = e.changedTouches[0].clientX - swipeStartRef.current.x;
+    const dy = e.changedTouches[0].clientY - swipeStartRef.current.y;
+    swipeStartRef.current = null;
+    // Only trigger if mostly horizontal and at least 60px
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const currentIndex = tabs.indexOf(activeTab);
+    if (dx < 0 && currentIndex < tabs.length - 1) {
+      prevTabRef.current = activeTab;
+      setActiveTab(tabs[currentIndex + 1]);
+    } else if (dx > 0 && currentIndex > 0) {
+      prevTabRef.current = activeTab;
+      setActiveTab(tabs[currentIndex - 1]);
+    }
+  };
+
   const confettiRef = useRef<ConfettiHandle>(null);
   const prevStatsRef = useRef<{ notes_created: number; reports_generated: number } | null>(null);
   useEffect(() => {
@@ -249,7 +273,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         setShowTasks={setShowTasks}
       />
 
-      <main ref={mainRef} className="flex-1 px-6 pb-24 overflow-y-auto">
+      <main ref={mainRef} className="flex-1 px-6 pb-24 overflow-y-auto" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <AnimatePresence mode="wait" custom={tabDirection}>
           {activeTab === 'pulse' && (
             <motion.div key="pulse" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit" className="space-y-4">
