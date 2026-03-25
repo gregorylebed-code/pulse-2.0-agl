@@ -29,8 +29,7 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
     messages = [{ role: 'user', content: prompt }];
   }
 
-  const isVisionModel = imageData?.mimeType.startsWith('image/');
-  const model = isVisionModel ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile';
+  const model = imageData?.mimeType.startsWith('image/') ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.3-70b-versatile';
 
   // All AI calls go through our server-side proxy — key never touches the browser
   const response = await fetch('/api/groq', {
@@ -39,8 +38,7 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
     body: JSON.stringify({
       model,
       messages,
-      // Vision models don't support response_format — only send it for text models
-      response_format: isJson && !isVisionModel ? { type: 'json_object' } : undefined
+      response_format: isJson ? { type: 'json_object' } : undefined
     })
   });
 
