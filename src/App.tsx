@@ -347,6 +347,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 setTeacherLastName={(val: string) => saveProfile({ ...profile, teacherLastName: val })}
                 saveProfile={saveProfile}
                 profile={profile}
+                onboardingComplete={onboardingComplete}
+                markOnboardingComplete={markOnboardingComplete}
+                onGoToProfile={() => { setSettingsView('profile'); }}
+                onGoToRoster={() => { setSettingsView('data-management'); }}
+                onGoToPulse={() => { setActiveTab('pulse'); }}
+                onGoToCalendar={() => { setSettingsView('calendar'); }}
                 calendarEvents={calendarEvents} setCalendarEvents={updateCalendarEvents}
                 rotationMapping={rotationMapping} setRotationMapping={saveRotationMapping}
                 specialsNames={specialsNames} setSpecialsNames={saveSpecialsNames}

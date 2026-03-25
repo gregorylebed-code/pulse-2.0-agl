@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import imageCompression from 'browser-image-compression';
 import {
-  User, MessageCircle, Shield, Sparkles, Users2, Folder, TrendingUp, Calendar,
+  User, MessageCircle, Shield, Sparkles, Users2, Folder, TrendingUp, Calendar, PenLine,
   School, FileInput, MessageSquare, Trash2, Plus, X, Loader2, CheckCircle2,
   GripVertical, CalendarX, Edit2, ChevronDown, Upload, ArrowRight, Coffee,
   Smile, Meh, Frown, Activity, AlertCircle, Users, Clock, Mail, Phone, ChevronRight,
@@ -145,6 +145,12 @@ interface SettingsScreenProps {
   saveNotificationPrefs: (prefs: import('../utils/notifications').NotificationPrefs) => Promise<void>;
   saveProfile: (profile: import('../hooks/useClassroomData').Profile) => Promise<void>;
   profile: import('../hooks/useClassroomData').Profile;
+  onboardingComplete: boolean;
+  markOnboardingComplete: () => Promise<void>;
+  onGoToProfile: () => void;
+  onGoToRoster: () => void;
+  onGoToPulse: () => void;
+  onGoToCalendar: () => void;
 }
 
 export default function SettingsScreen({
@@ -201,6 +207,12 @@ export default function SettingsScreen({
   saveNotificationPrefs,
   saveProfile,
   profile,
+  onboardingComplete,
+  markOnboardingComplete,
+  onGoToProfile,
+  onGoToRoster,
+  onGoToPulse,
+  onGoToCalendar,
 }: SettingsScreenProps) {
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
@@ -633,6 +645,42 @@ export default function SettingsScreen({
             exit={{ opacity: 0, scale: 0.95 }}
             className="space-y-8 max-w-3xl mx-auto"
           >
+            {/* Getting Started card — always visible */}
+            <div className="bg-white rounded-[32px] p-6 card-shadow border border-sage/30 space-y-3 relative">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-[13px] font-black text-sage uppercase tracking-widest">Getting Started</h3>
+              </div>
+              {[
+                { icon: <User className="w-4 h-4" />, title: 'Set up your profile', desc: 'Add your name and school so reports sign off correctly.', action: onGoToProfile, badge: 'Start here' },
+                { icon: <Users className="w-4 h-4" />, title: 'Add your students', desc: 'Paste your whole class list and AI sorts it all out.', action: onGoToRoster, badge: null },
+                { icon: <PenLine className="w-4 h-4" />, title: 'Add your first note', desc: 'Tap a student, tap an indicator, done in 5 seconds.', action: onGoToPulse, badge: null },
+                { icon: <Calendar className="w-4 h-4" />, title: 'Upload your school calendar', desc: 'Get specials rotation and event reminders automatically.', action: onGoToCalendar, badge: 'Optional' },
+              ].map((step) => (
+                <button
+                  key={step.title}
+                  type="button"
+                  onClick={step.action}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage border border-sage/20 flex items-center justify-center flex-shrink-0">
+                    {step.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-800">{step.title}</span>
+                      {step.badge && (
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${step.badge === 'Start here' ? 'bg-sage/10 text-sage' : 'bg-slate-100 text-slate-400'}`}>
+                          {step.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">{step.desc}</p>
+                  </div>
+                  <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
+                </button>
+              ))}
+            </div>
+
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
               <h3 className="text-[15px] font-black text-blue-600 uppercase tracking-widest">Account</h3>
               <div>
