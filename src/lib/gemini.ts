@@ -426,12 +426,13 @@ Return JSON:
 }
 
 export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string, studentName: string): Promise<string> {
+  const firstName = studentName.split(' ')[0];
   const notesText = notes.map(n => n.content).join('\n- ');
   const signOff = teacherLastName.trim()
     ? `${teacherTitle} ${teacherLastName}`
     : 'Your Child\'s Teacher';
 
-  const prompt = `You are a teacher writing a short, direct parent note about a student named ${studentName}.
+  const prompt = `You are a teacher writing a short, direct parent note about a student named ${firstName}.
 
 Observations:
 - ${notesText}
