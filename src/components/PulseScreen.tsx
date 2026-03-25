@@ -1029,6 +1029,38 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                       </button>
                     ))}
                   </div>
+                  {/* Unknown tags added by AI that aren't in indicators or commTypes */}
+                  {(() => {
+                    const knownLabels = new Set([...indicators.map(i => i.label), ...commTypes.map(c => c.label)]);
+                    const unknownTags = editTags.filter(t => !knownLabels.has(t));
+                    if (unknownTags.length === 0) return null;
+                    return (
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">AI-added tags</p>
+                        <div className="flex flex-wrap gap-2">
+                          {unknownTags.map(tag => (
+                            <button
+                              key={tag}
+                              onClick={() => setEditTags(prev => prev.filter(t => t !== tag))}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-black bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-all"
+                            >
+                              {tag}
+                              <X className="w-3 h-3" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {/* Clear all tags */}
+                  {(editTags.length > 0 || editComm.length > 0) && (
+                    <button
+                      onClick={() => { setEditTags([]); setEditComm([]); }}
+                      className="text-[10px] font-bold text-slate-300 hover:text-terracotta transition-colors self-start"
+                    >
+                      Clear all tags
+                    </button>
+                  )}
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveEdit}
