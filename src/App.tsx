@@ -175,6 +175,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       // Immediately re-push so Android never sees an empty history stack
       pushEntry();
 
+      const tab = activeTabRef.current;
+      const sv = settingsViewRef.current;
+      const sid = selectedStudentIdRef.current;
+      const pv = pulseViewRef.current;
+      toast.info(`back: tab=${tab} sv=${sv} sid=${!!sid} pv=${pv}`, { duration: 4000 });
+
       if (selectedStudentIdRef.current) {
         selectedStudentIdRef.current = null;
         setSelectedStudentId(null);
