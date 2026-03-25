@@ -14,6 +14,7 @@ import SettingsScreen from './components/SettingsScreen';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import { cn } from './utils/cn';
+import { isFullMode } from './lib/mode';
 import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
 import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notifications';
 import WelcomeModal from './components/WelcomeModal';
@@ -163,6 +164,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   useEffect(() => { settingsViewRef.current = settingsView; }, [settingsView]);
 
   // Android back button — navigate one level deeper → shallower instead of closing the app
+  const exitPromptRef = useRef(false);
+  const exitToastRef = useRef<string | number | null>(null);
   useEffect(() => {
     history.pushState(null, '');
     const handlePopState = () => {
@@ -180,7 +183,16 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         activeTabRef.current = 'pulse';
         setActiveTab('pulse');
       } else {
-        return; // already at home — let Android close the app
+        // Already at home — require a second back press to exit
+        if (exitPromptRef.current) {
+          return; // second press — let Android close the app
+        }
+        exitPromptRef.current = true;
+        if (exitToastRef.current) toast.dismiss(exitToastRef.current);
+        exitToastRef.current = toast('Press back again to exit', { duration: 2000 });
+        setTimeout(() => { exitPromptRef.current = false; }, 2000);
+        history.pushState(null, '');
+        return;
       }
       history.pushState(null, ''); // re-push so the next back still fires popstate
     };
@@ -211,7 +223,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   // Swipe to change tabs
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const tabs = ['pulse', 'students', 'insights', 'settings'] as const;
+  const tabs = (['pulse', 'students', isFullMode ? 'insights' : null, 'settings'] as const).filter(Boolean) as ('pulse' | 'students' | 'insights' | 'settings')[];
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
     swipeStartRef.current = { x: t.clientX, y: t.clientY };
@@ -223,6 +235,10 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     swipeStartRef.current = null;
     // Only trigger if mostly horizontal and at least 60px
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    // Don't swipe when in a sub-menu
+    if (settingsViewRef.current !== 'main') return;
+    if (selectedStudentIdRef.current) return;
+    if (pulseViewRef.current === 'summary') return;
     const currentIndex = tabs.indexOf(activeTab);
     if (dx < 0 && currentIndex < tabs.length - 1) {
       prevTabRef.current = activeTab;
