@@ -214,6 +214,7 @@ export default function SettingsScreen({
   onGoToPulse,
   onGoToCalendar,
 }: SettingsScreenProps) {
+  const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
   // Abbreviations state
@@ -645,40 +646,64 @@ export default function SettingsScreen({
             exit={{ opacity: 0, scale: 0.95 }}
             className="space-y-8 max-w-3xl mx-auto"
           >
-            {/* Getting Started card — always visible */}
-            <div className="bg-white rounded-[32px] p-6 card-shadow border border-sage/30 space-y-3 relative">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-[13px] font-black text-sage uppercase tracking-widest">Getting Started</h3>
-              </div>
-              {[
-                { icon: <User className="w-4 h-4" />, title: 'Set up your profile', desc: 'Add your name and school so reports sign off correctly.', action: onGoToProfile, badge: 'Start here' },
-                { icon: <Users className="w-4 h-4" />, title: 'Add your students', desc: 'Paste your whole class list and AI sorts it all out.', action: onGoToRoster, badge: null },
-                { icon: <PenLine className="w-4 h-4" />, title: 'Add your first note', desc: 'Tap a student, tap an indicator, done in 5 seconds.', action: onGoToPulse, badge: null },
-                { icon: <Calendar className="w-4 h-4" />, title: 'Upload your school calendar', desc: 'Get specials rotation and event reminders automatically.', action: onGoToCalendar, badge: 'Optional' },
-              ].map((step) => (
-                <button
-                  key={step.title}
-                  type="button"
-                  onClick={step.action}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage border border-sage/20 flex items-center justify-center flex-shrink-0">
-                    {step.icon}
+            {/* Getting Started accordion */}
+            <div className="bg-white rounded-[32px] card-shadow border border-sage/30 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setGettingStartedOpen(o => !o)}
+                className="w-full flex items-center justify-between px-6 py-5 hover:bg-sage/5 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage border border-sage/20 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-slate-800">{step.title}</span>
-                      {step.badge && (
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${step.badge === 'Start here' ? 'bg-sage/10 text-sage' : 'bg-slate-100 text-slate-400'}`}>
-                          {step.badge}
-                        </span>
-                      )}
+                  <span className="text-[13px] font-black text-sage uppercase tracking-widest">Getting Started</span>
+                </div>
+                <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", gettingStartedOpen && "rotate-180")} />
+              </button>
+              <AnimatePresence initial={false}>
+                {gettingStartedOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-4 space-y-2 border-t border-slate-100">
+                      {[
+                        { icon: <User className="w-4 h-4" />, title: 'Set up your profile', desc: 'Add your name and school so reports sign off correctly.', action: onGoToProfile, badge: 'Start here' },
+                        { icon: <Users className="w-4 h-4" />, title: 'Add your students', desc: 'Paste your whole class list and AI sorts it all out.', action: onGoToRoster, badge: null },
+                        { icon: <PenLine className="w-4 h-4" />, title: 'Add your first note', desc: 'Tap a student, tap an indicator, done in 5 seconds.', action: onGoToPulse, badge: null },
+                        { icon: <Calendar className="w-4 h-4" />, title: 'Upload your school calendar', desc: 'Get specials rotation and event reminders automatically.', action: onGoToCalendar, badge: 'Optional' },
+                      ].map((step) => (
+                        <button
+                          key={step.title}
+                          type="button"
+                          onClick={step.action}
+                          className="w-full flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group mt-2"
+                        >
+                          <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage border border-sage/20 flex items-center justify-center flex-shrink-0">
+                            {step.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-slate-800">{step.title}</span>
+                              {step.badge && (
+                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${step.badge === 'Start here' ? 'bg-sage/10 text-sage' : 'bg-slate-100 text-slate-400'}`}>
+                                  {step.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-medium mt-0.5">{step.desc}</p>
+                          </div>
+                          <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
+                        </button>
+                      ))}
                     </div>
-                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">{step.desc}</p>
-                  </div>
-                  <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
-                </button>
-              ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
@@ -863,26 +888,21 @@ export default function SettingsScreen({
                 <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
                   {rosterStudents.map(s => (
                     <div key={s.id} className="flex items-center justify-between p-4 bg-white rounded-[32px] border border-slate-100 card-shadow">
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-1.5 flex-1 min-w-0 mr-3">
                         <span className="text-sm font-bold text-slate-900">{s.name}</span>
-                        <div className="flex gap-2 mt-1 overflow-x-auto no-scrollbar max-w-[200px]">
+                        <select
+                          value={(typeof s.class_id === 'object' ? (s.class_id as any)?.label || (s.class_id as any)?.value : s.class_id) || classes[0]}
+                          onChange={(e) => handleUpdateSection(s.id, e.target.value)}
+                          className="w-full px-3 py-1.5 bg-sage/8 border border-sage/20 rounded-xl text-xs font-bold text-sage focus:outline-none focus:ring-2 focus:ring-sage/20 transition-all cursor-pointer"
+                        >
                           {classes.map(c => (
-                            <button
-                              key={c}
-                              onClick={() => handleUpdateSection(s.id, c)}
-                              className={cn(
-                                "px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest border transition-all whitespace-nowrap",
-                                (typeof s.class_id === 'object' ? (s.class_id as any)?.label || (s.class_id as any)?.value : s.class_id) === c ? "bg-sage text-white border-sage" : "bg-white text-slate-400 border-slate-100 hover:border-sage/30"
-                              )}
-                            >
-                              {c}
-                            </button>
+                            <option key={c} value={c}>{c}</option>
                           ))}
-                        </div>
+                        </select>
                       </div>
                       <button
                         onClick={() => handleRemoveStudent(s.id, s.name)}
-                        className="p-2 text-slate-300 hover:text-terracotta transition-colors"
+                        className="p-2 text-slate-300 hover:text-terracotta transition-colors flex-shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
