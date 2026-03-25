@@ -46,17 +46,38 @@ const DEFAULT_COMM_TYPES: Indicator[] = [
 ];
 
 const DEFAULT_INDICATORS: Indicator[] = [
-  { label: 'Participation', type: 'positive', icon_name: 'Smile' },
+  // Positive
   { label: 'Kindness', type: 'positive', icon_name: 'Smile' },
+  { label: 'Participation', type: 'positive', icon_name: 'Smile' },
   { label: 'Persistence', type: 'positive', icon_name: 'Smile' },
+  { label: 'Independent Work', type: 'positive', icon_name: 'Smile' },
+  { label: 'Team Work', type: 'positive', icon_name: 'Smile' },
+  { label: 'Leadership', type: 'positive', icon_name: 'Smile' },
+  { label: 'Growth Mindset', type: 'positive', icon_name: 'Smile' },
+  { label: 'On Task', type: 'positive', icon_name: 'Smile' },
+  // Neutral
+  { label: 'Check-In', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Absent', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Late', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Modified Work', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Nurse/Office', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Parent Contact', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Speech', type: 'neutral', icon_name: 'Meh' },
+  { label: 'OT', type: 'neutral', icon_name: 'Meh' },
+  { label: 'PT', type: 'neutral', icon_name: 'Meh' },
+  // Growth Areas
   { label: 'Disruption', type: 'growth', icon_name: 'Frown' },
-  { label: 'Peer Conflict', type: 'growth', icon_name: 'Frown' },
   { label: 'Distracted', type: 'growth', icon_name: 'Frown' },
-  { label: 'Missing HW', type: 'growth', icon_name: 'Frown' },
+  { label: 'Off Task', type: 'growth', icon_name: 'Frown' },
+  { label: 'Emotional Regulation', type: 'growth', icon_name: 'Frown' },
+  { label: 'Peer Conflict', type: 'growth', icon_name: 'Frown' },
+  { label: 'Social Difficulty', type: 'growth', icon_name: 'Frown' },
+  { label: 'Disrespect', type: 'growth', icon_name: 'Frown' },
   { label: 'Unprepared', type: 'growth', icon_name: 'Frown' },
-  { label: 'Observation', type: 'neutral', icon_name: 'Meh' },
-  { label: 'Independent Work', type: 'neutral', icon_name: 'Meh' },
-  { label: 'Group Work', type: 'neutral', icon_name: 'Meh' },
+  { label: 'Missing HW', type: 'growth', icon_name: 'Frown' },
+  { label: 'Incomplete Work', type: 'growth', icon_name: 'Frown' },
+  { label: 'Redirected', type: 'growth', icon_name: 'Frown' },
+  { label: 'Technology Misuse', type: 'growth', icon_name: 'Frown' },
 ];
 
 const DEFAULT_SPECIALS: Record<string, string> = {
@@ -243,7 +264,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         notes: notesWithNames as Note[],
         students: studentsWithCamel as Student[],
         goals: (goalsData || []) as StudentGoal[],
-        // Use DB indicators directly; fall back to previous state if DB is empty
+        // Use DB indicators directly; seed defaults for new accounts
         indicators: (indicatorsData && indicatorsData.length > 0)
           ? (indicatorsData as Indicator[])
           : prev.indicators.length > 0 ? prev.indicators : DEFAULT_INDICATORS,
@@ -269,6 +290,19 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         onboardingComplete,
         loading: false,
       }));
+
+      // Seed default indicators into Supabase for brand-new accounts
+      if (!indicatorsData || indicatorsData.length === 0) {
+        const toSeed = DEFAULT_INDICATORS.map(ind => ({
+          label: ind.label,
+          type: ind.type,
+          icon_name: ind.icon_name || 'Smile',
+          user_id: userId,
+        }));
+        supabase.from('indicators').insert(toSeed).then(({ error }) => {
+          if (error) console.error('Error seeding default indicators:', error);
+        });
+      }
 
       setupSubscriptions();
     } catch (error) {
