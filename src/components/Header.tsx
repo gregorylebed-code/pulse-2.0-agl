@@ -3,6 +3,7 @@ import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, PenL
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { getForecast, SpecialsConfig } from '../utils/rotationHelpers';
+import { isFullMode } from '../lib/mode';
 
 interface Task { id: string; text: string; completed: boolean; color?: string; }
 
@@ -112,7 +113,7 @@ export default function Header({
         </span>
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Rotation Dashboard Badge */}
-          <div className="relative">
+          {isFullMode && <div className="relative">
             <button
               onClick={() => setShowRotationForecast(!showRotationForecast)}
               className={cn(
@@ -233,7 +234,7 @@ export default function Header({
                 </>
               )}
             </AnimatePresence>
-          </div>
+          </div>}
 
 
         </div>
