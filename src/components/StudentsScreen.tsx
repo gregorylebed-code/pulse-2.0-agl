@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, PinOff } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent, StudentGoal } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -80,6 +80,28 @@ export default function StudentsScreen({
       localStorage.setItem('pulse_pinned_students', JSON.stringify([...next]));
       return next;
     });
+  };
+
+  const [pressingId, setPressingId] = useState<string | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didPin = useRef(false);
+
+  const startPress = (id: string) => {
+    didPin.current = false;
+    setPressingId(id);
+    pressTimer.current = setTimeout(() => {
+      didPin.current = true;
+      const willBePinned = !pinnedIds.has(id);
+      togglePin(id);
+      setPressingId(null);
+      const student = students.find(s => s.id === id);
+      if (student) toast(willBePinned ? `📌 ${student.name.split(' ')[0]} pinned to top` : `${student.name.split(' ')[0]} unpinned`);
+    }, 2000);
+  };
+
+  const cancelPress = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    setPressingId(null);
   };
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -513,30 +535,39 @@ export default function StudentsScreen({
                   const status = getStudentStatus(s.name);
                   const noteCount = notes.filter(n => n.student_name === s.name).length;
                   const isPinned = pinnedIds.has(s.id);
+                  const isPressing = pressingId === s.id;
                   return (
                     <motion.div
                       key={s.id}
-                      onClick={() => setSelectedStudentId(s.id)}
+                      onClick={() => { if (!didPin.current) setSelectedStudentId(s.id); didPin.current = false; }}
+                      onMouseDown={() => startPress(s.id)}
+                      onMouseUp={cancelPress}
+                      onMouseLeave={cancelPress}
+                      onTouchStart={() => startPress(s.id)}
+                      onTouchEnd={cancelPress}
+                      onTouchCancel={cancelPress}
+                      onContextMenu={e => e.preventDefault()}
                       whileTap={{ scale: 0.94 }}
                       className={cn(
-                        "bg-white p-2 rounded-2xl card-shadow border flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:-translate-y-0.5 transition-all text-center relative",
-                        isPinned ? "border-amber-200 bg-amber-50/40 hover:border-amber-300" : "border-slate-100 hover:border-sage/30"
+                        "bg-white p-2 rounded-2xl card-shadow border flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:-translate-y-0.5 transition-all text-center relative select-none",
+                        isPinned ? "border-amber-200 bg-amber-50/40 hover:border-amber-300" : "border-slate-100 hover:border-sage/30",
+                        isPressing && "scale-95"
                       )}
                     >
+                      {/* Long-press progress overlay */}
+                      {isPressing && (
+                        <span className="pin-press-ring absolute inset-0 rounded-2xl pointer-events-none" style={{ zIndex: 10 }} />
+                      )}
+
                       {/* Status dot */}
                       <span className={cn('absolute top-1.5 right-1.5 w-2 h-2 rounded-full', statusDot[status])} />
 
-                      {/* Pin button */}
-                      <button
-                        onClick={e => { e.stopPropagation(); togglePin(s.id); }}
-                        className={cn(
-                          'absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center transition-all',
-                          isPinned ? 'text-amber-400' : 'text-slate-200 hover:text-slate-400'
-                        )}
-                        title={isPinned ? 'Unpin student' : 'Pin to top'}
-                      >
-                        <Pin className={cn('w-3 h-3', isPinned && 'fill-amber-400')} />
-                      </button>
+                      {/* Pin indicator (pinned students only) */}
+                      {isPinned && (
+                        <span className="absolute top-1 left-1">
+                          <Pin className="w-3 h-3 text-amber-400 fill-amber-400" />
+                        </span>
+                      )}
 
                       {/* Photo / avatar with status ring */}
                       {s.photo_url ? (
@@ -557,6 +588,9 @@ export default function StudentsScreen({
                   );
                 })}
               </div>
+              <p className="text-center text-[10px] text-slate-300 pt-1 pb-2 flex items-center justify-center gap-1">
+                <Pin className="w-2.5 h-2.5 inline" /> Hold a student card for 2 seconds to pin to top
+              </p>
             </div>
           );
         })}

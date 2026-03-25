@@ -61,6 +61,16 @@
   }
 }
 
+/* ===== PIN LONG-PRESS ANIMATION ===== */
+@keyframes pin-progress {
+  from { box-shadow: inset 0 0 0 0px rgba(245, 158, 11, 0); opacity: 0.4; }
+  to   { box-shadow: inset 0 0 0 3px rgba(245, 158, 11, 0.7); opacity: 1; }
+}
+.pin-press-ring {
+  animation: pin-progress 2s linear forwards;
+  border-radius: 1rem;
+}
+
 /* ===== DARK MODE ===== */
 html.dark {
   color-scheme: dark;
