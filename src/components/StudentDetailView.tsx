@@ -851,7 +851,9 @@ export default function StudentDetailView({
     setIsGenerating(true);
     try {
       const filtered = filterNotesByTimeRange(notes, timeRange);
+      console.log('[handleGenerate] filtered notes count:', filtered.length, 'timeRange:', timeRange);
       const summary = await onGenerateReport(reportLength, filtered);
+      console.log('[handleGenerate] summary result:', summary);
       if (summary) setCurrentReport(summary);
       else toast.error('Failed to generate report. Please try again.');
     } catch (err: any) {

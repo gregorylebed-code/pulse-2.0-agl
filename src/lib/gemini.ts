@@ -196,6 +196,7 @@ export interface ReportData {
 }
 
 function parseReportJson(raw: string): ReportData | null {
+  console.log('[parseReportJson] raw:', raw?.substring(0, 300));
   try {
     // Strip markdown code fences if present (e.g. ```json ... ```)
     let clean = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
@@ -205,9 +206,10 @@ function parseReportJson(raw: string): ReportData | null {
     if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1);
     const parsed = JSON.parse(clean);
     const { opening, glow, grow, goal, closing } = parsed;
-    if (!opening || !glow || !grow || !goal || !closing) return null;
+    if (!opening || !glow || !grow || !goal || !closing) { console.log('[parseReportJson] missing fields:', { opening: !!opening, glow: !!glow, grow: !!grow, goal: !!goal, closing: !!closing }); return null; }
     return { opening, glow, grow, goal, closing };
-  } catch {
+  } catch (e) {
+    console.error('[parseReportJson] parse error:', e);
     return null;
   }
 }
