@@ -21,15 +21,25 @@ export default async function handler(req: Request): Promise<Response> {
 
   const body = await req.text();
 
-  // Try Groq first
-  const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body,
-  });
+  // Try Groq first (55s timeout — leaves margin before Vercel edge limit)
+  let groqRes: Response;
+  try {
+    groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+      signal: AbortSignal.timeout(55_000),
+    });
+  } catch (err: any) {
+    const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
+    return new Response(
+      JSON.stringify({ error: { message: timedOut ? 'Groq request timed out after 55s' : err?.message ?? 'Groq fetch failed' } }),
+      { status: 504, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 
   // On rate limit (429) or server error (5xx), try Together AI as fallback
   if ((groqRes.status === 429 || groqRes.status >= 500) && process.env.TOGETHER_API_KEY) {
@@ -45,6 +55,7 @@ export default async function handler(req: Request): Promise<Response> {
           'Content-Type': 'application/json',
         },
         body: togetherBody,
+        signal: AbortSignal.timeout(55_000),
       });
 
       const data = await togetherRes.text();

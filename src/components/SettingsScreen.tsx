@@ -256,45 +256,42 @@ export default function SettingsScreen({
     rotationAbortRef.current = controller;
     setIsScanningRotation(true);
     const loadingToast = toast.loading('AI is extracting rotation mappings...');
+
+    const readAsDataURL = (f: Blob): Promise<string> => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(f);
+    });
+
     try {
-      const processFileData = async (processFile: File | Blob, isPdf = false) => {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const dataUrl = reader.result as string;
-          const base64Data = dataUrl.split(',')[1];
-          const mimeType = isPdf ? 'application/pdf' : dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';'));
-
-          const mapping = await extractRotationMapping(base64Data, mimeType, controller.signal);
-
-          if (mapping && Object.keys(mapping).length > 0) {
-            setRotationMapping(mapping);
-            toast.success(`Successfully extracted ${Object.keys(mapping).length} date mappings!`, { id: loadingToast });
-          } else {
-            toast.error('AI could not find a rotation schedule in this file.', { id: loadingToast });
-          }
-          setIsScanningRotation(false);
-          rotationAbortRef.current = null;
-        };
-        reader.readAsDataURL(processFile);
-      };
+      let dataUrl: string;
+      let mimeType: string;
 
       if (file.type === 'application/pdf') {
         if (file.size > 4 * 1024 * 1024) {
           toast.error('PDF must be smaller than 4MB', { id: loadingToast });
-          setIsScanningRotation(false);
           return;
         }
-        await processFileData(file, true);
+        dataUrl = await readAsDataURL(file);
+        mimeType = 'application/pdf';
       } else if (file.type.startsWith('image/')) {
-        const compressedFile = await imageCompression(file, {
-          maxSizeMB: 1.9,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true
-        });
-        await processFileData(compressedFile);
+        const compressed = await imageCompression(file, { maxSizeMB: 1.9, maxWidthOrHeight: 1920, useWebWorker: true });
+        dataUrl = await readAsDataURL(compressed);
+        mimeType = dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';'));
       } else {
         toast.error('Please upload an image or PDF', { id: loadingToast });
-        setIsScanningRotation(false);
+        return;
+      }
+
+      const base64Data = dataUrl.split(',')[1];
+      const mapping = await extractRotationMapping(base64Data, mimeType, controller.signal);
+
+      if (mapping && Object.keys(mapping).length > 0) {
+        setRotationMapping(mapping);
+        toast.success(`Successfully extracted ${Object.keys(mapping).length} date mappings!`, { id: loadingToast });
+      } else {
+        toast.error('AI could not find a rotation schedule in this file.', { id: loadingToast });
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {
@@ -304,6 +301,7 @@ export default function SettingsScreen({
         console.error('Rotation scan error:', err);
         toast.error(err?.message || 'Failed to scan rotation schedule.', { id: loadingToast });
       }
+    } finally {
       setIsScanningRotation(false);
       rotationAbortRef.current = null;
     }
