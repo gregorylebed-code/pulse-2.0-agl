@@ -358,6 +358,7 @@ export default function SettingsScreen({
   const [newStudentName, setNewStudentName] = useState('');
   const [newStudentSection, setNewStudentSection] = useState<string>(classes[0] || 'AM');
   const [isAddingStudent, setIsAddingStudent] = useState(false);
+  const [rosterFilter, setRosterFilter] = useState<string>('all');
 
   // Class Management state
   const [newClassName, setNewClassName] = useState('');
@@ -446,7 +447,7 @@ export default function SettingsScreen({
 
   const handleUpdateSection = async (id: string, section: string) => {
     try {
-      await updateStudent(id, { class_id: section, class_period: section });
+      await updateStudent(id, { class_period: section } as any);
       toast.success('Student section updated');
       fetchRoster();
       onImportComplete();
@@ -857,7 +858,27 @@ export default function SettingsScreen({
               <h3 className="text-[15px] font-black text-blue-600 ml-1">Roster Management</h3>
 
               <div className="space-y-4">
+                {/* Filter by class */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1 mb-1 block">Filter by Class</label>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => setRosterFilter('all')}
+                      className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all", rosterFilter === 'all' ? "bg-sage/15 border-sage text-sage-dark" : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100")}
+                    >All</button>
+                    {classes.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setRosterFilter(c)}
+                        className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all", rosterFilter === c ? "bg-sage/15 border-sage text-sage-dark" : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100")}
+                      >{c}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Add new student */}
                 <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Add Student</label>
                   <input
                     type="text"
                     value={newStudentName}
@@ -872,7 +893,7 @@ export default function SettingsScreen({
                       className="flex-1 px-4 py-3 bg-white border border-slate-100 rounded-full text-xs font-bold uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-2 focus:ring-sage/20 shadow-sm"
                     >
                       {classes.map(c => (
-                        <option key={c} value={c}>Class Period {c}</option>
+                        <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                     <button
@@ -886,12 +907,12 @@ export default function SettingsScreen({
                 </div>
 
                 <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                  {rosterStudents.map(s => (
+                  {rosterStudents.filter(s => rosterFilter === 'all' || s.class_period === rosterFilter).map(s => (
                     <div key={s.id} className="flex items-center justify-between p-4 bg-white rounded-[32px] border border-slate-100 card-shadow">
                       <div className="flex flex-col gap-1.5 flex-1 min-w-0 mr-3">
                         <span className="text-sm font-bold text-slate-900">{s.name}</span>
                         <select
-                          value={(typeof s.class_id === 'object' ? (s.class_id as any)?.label || (s.class_id as any)?.value : s.class_id) || classes[0]}
+                          value={s.class_period || classes[0]}
                           onChange={(e) => handleUpdateSection(s.id, e.target.value)}
                           className="w-full px-3 py-1.5 bg-sage/8 border border-sage/20 rounded-xl text-xs font-bold text-sage focus:outline-none focus:ring-2 focus:ring-sage/20 transition-all cursor-pointer"
                         >
