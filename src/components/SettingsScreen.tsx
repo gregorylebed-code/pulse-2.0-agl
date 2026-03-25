@@ -226,6 +226,10 @@ export default function SettingsScreen({
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editEventTitle, setEditEventTitle] = useState('');
   const [editEventDate, setEditEventDate] = useState('');
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventType, setNewEventType] = useState('Other');
   const [draftEvents, setDraftEvents] = useState<(CalendarEvent & { selected: boolean })[] | null>(null);
   const [newComm, setNewComm] = useState('');
   const [isScanningRotation, setIsScanningRotation] = useState(false);
@@ -1701,6 +1705,78 @@ export default function SettingsScreen({
                     </div>
                   </div>
                 )}
+
+                {/* Manual Add Event */}
+                <div className="pt-2">
+                  {!showAddEvent ? (
+                    <button
+                      onClick={() => setShowAddEvent(true)}
+                      className="w-full py-3 border-2 border-dashed border-sage/30 text-sage hover:border-sage/60 hover:bg-sage/5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                    >
+                      <span className="text-base leading-none">+</span> Add Event Manually
+                    </button>
+                  ) : (
+                    <div className="bg-sage/5 rounded-2xl p-4 space-y-3 border border-sage/20">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-sage">New Event</p>
+                      <input
+                        type="text"
+                        value={newEventTitle}
+                        onChange={e => setNewEventTitle(e.target.value)}
+                        placeholder="Event name (e.g. Picture Day)"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-sage"
+                      />
+                      <input
+                        type="date"
+                        value={newEventDate}
+                        onChange={e => setNewEventDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+                      />
+                      <select
+                        value={newEventType}
+                        onChange={e => setNewEventType(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+                      >
+                        {['Holiday', 'Early Dismissal', 'Conference', 'Other'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            if (!newEventTitle.trim() || !newEventDate) {
+                              toast.error('Please enter a title and date.');
+                              return;
+                            }
+                            const newEvent: CalendarEvent = {
+                              id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                              title: newEventTitle.trim(),
+                              date: newEventDate,
+                              type: newEventType,
+                              user_id: userId,
+                              created_at: new Date().toISOString(),
+                            };
+                            const updated = [...calendarEvents, newEvent].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                            setCalendarEvents(updated);
+                            setNewEventTitle('');
+                            setNewEventDate('');
+                            setNewEventType('Other');
+                            setShowAddEvent(false);
+                            toast.success('Event added!');
+                          }}
+                          className="flex-1 py-2 bg-sage text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-colors"
+                        >
+                          Save Event
+                        </button>
+                        <button
+                          onClick={() => { setShowAddEvent(false); setNewEventTitle(''); setNewEventDate(''); setNewEventType('Other'); }}
+                          className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {calendarEvents.length === 0 && !draftEvents && (
                   <div className="pt-4 text-center space-y-1">

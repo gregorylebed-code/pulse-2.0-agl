@@ -221,6 +221,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [eventsExpanded, setEventsExpanded] = useState(false);
   const calendarData = localStorage.getItem('school_calendar');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
@@ -487,9 +488,11 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const eventCutoff = now.getHours() >= 16 ? tomorrowStart : todayStart;
   // Parse "YYYY-MM-DD" as local midnight (not UTC) to avoid timezone off-by-one
   const parseLocalDate = (d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); };
-  const nextEvent = calendarEvents
+  const upcomingEvents = calendarEvents
     ?.filter(e => parseLocalDate(e.date) >= eventCutoff)
-    .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())[0];
+    .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
+    .slice(0, 10) ?? [];
+  const nextEvent = upcomingEvents[0];
 
   const todayMonth = now.getMonth() + 1;
   const todayDay = now.getDate();
@@ -506,31 +509,63 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-sage/10 border border-sage/20 px-6 py-3 rounded-2xl flex items-center justify-between group"
+            className="bg-sage/10 border border-sage/20 rounded-2xl overflow-hidden"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-sage/20 rounded-full flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-sage" />
+            {/* Header row — tappable */}
+            <button
+              onClick={() => setEventsExpanded(v => !v)}
+              className="w-full px-6 py-3 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-sage/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-4 h-4 text-sage" />
+                </div>
+                <div className="text-left">
+                  <span className="text-[11px] font-bold text-sage/60">Next School Event</span>
+                  <p className="text-xs font-bold text-slate-700">{nextEvent.title} • {new Date(nextEvent.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+                </div>
               </div>
-              <div>
-                <span className="text-[11px] font-bold text-sage/60">Next School Event</span>
-                <p className="text-xs font-bold text-slate-700">{nextEvent.title} • {new Date(nextEvent.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-1 bg-sage/20 rounded-lg">
+                  <span className="text-[10px] font-bold text-sage">{nextEvent.type}</span>
+                </div>
+                {calendarData && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setShowCalendar(true); }}
+                    className="p-1.5 bg-white/50 hover:bg-white text-sage rounded-lg transition-colors shadow-sm"
+                    title="View Original Calendar"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <ChevronDown className={cn('w-4 h-4 text-sage transition-transform duration-200', eventsExpanded && 'rotate-180')} />
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="px-3 py-1 bg-sage/20 rounded-lg">
-                <span className="text-[10px] font-bold text-sage">{nextEvent.type}</span>
-              </div>
-              {calendarData && (
-                <button
-                  onClick={() => setShowCalendar(true)}
-                  className="p-1.5 bg-white/50 hover:bg-white text-sage rounded-lg transition-colors shadow-sm"
-                  title="View Original Calendar"
+            </button>
+
+            {/* Expanded event list */}
+            <AnimatePresence>
+              {eventsExpanded && upcomingEvents.length > 1 && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
                 >
-                  <Eye className="w-3.5 h-3.5" />
-                </button>
+                  <div className="border-t border-sage/20 px-4 py-2 space-y-1">
+                    {upcomingEvents.slice(1).map(event => (
+                      <div key={event.id} className="flex items-center justify-between py-1.5 px-2">
+                        <div>
+                          <p className="text-xs font-bold text-slate-700">{event.title}</p>
+                          <p className="text-[10px] text-sage/70">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                        </div>
+                        <span className="text-[9px] font-bold uppercase tracking-wide bg-sage/20 text-sage px-2 py-0.5 rounded-md">{event.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
