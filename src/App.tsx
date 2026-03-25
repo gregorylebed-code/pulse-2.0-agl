@@ -169,18 +169,11 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   useEffect(() => {
     let pushCount = 0;
     const pushEntry = () => history.pushState({ id: ++pushCount }, '');
-    pushEntry();
+    // Push enough entries to cover max navigation depth (sub-menu → settings → pulse → exit warning)
+    // Android PWA ignores pushState during popstate, so we pre-load the back stack at startup.
+    for (let i = 0; i < 6; i++) pushEntry();
 
     const handlePopState = () => {
-      // Immediately re-push so Android never sees an empty history stack
-      pushEntry();
-
-      const tab = activeTabRef.current;
-      const sv = settingsViewRef.current;
-      const sid = selectedStudentIdRef.current;
-      const pv = pulseViewRef.current;
-      toast.info(`back: tab=${tab} sv=${sv} sid=${!!sid} pv=${pv}`, { duration: 4000 });
-
       if (selectedStudentIdRef.current) {
         selectedStudentIdRef.current = null;
         setSelectedStudentId(null);
@@ -196,15 +189,17 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       } else {
         // Already at home — require a second back press to exit
         if (exitPromptRef.current) {
-          // Let Android close the app by not re-pushing
-          history.go(-1);
-          return;
+          return; // let Android close the app
         }
         exitPromptRef.current = true;
         if (exitToastRef.current) toast.dismiss(exitToastRef.current);
         exitToastRef.current = toast('Press back again to exit', { duration: 2000 });
         setTimeout(() => { exitPromptRef.current = false; }, 2000);
       }
+      // Re-push an entry so the next back press also fires popstate.
+      // Use setTimeout so it runs outside the popstate event (Android ignores
+      // pushState called synchronously during popstate).
+      setTimeout(pushEntry, 50);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
