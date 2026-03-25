@@ -20,24 +20,11 @@ export default async function handler(req: Request): Promise<Response> {
 
   const body = await req.text();
 
-  // Try Groq first
-  const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body,
-  });
-
-  // If Groq succeeded, return immediately
-  if (groqRes.ok) {
-    const data = await groqRes.text();
-    return new Response(data, { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
+  // TEMP TEST: force Cerebras only — revert after testing
+  const groqRes = { ok: false, status: 429 } as any;
 
   // On rate limit (429) or server error (5xx), try Cerebras as fallback
-  const shouldFallback = groqRes.status === 429 || groqRes.status >= 500;
+  const shouldFallback = true;
   const cerebrasKey = process.env.CEREBRAS_API_KEY;
 
   if (shouldFallback && cerebrasKey) {
@@ -49,8 +36,10 @@ export default async function handler(req: Request): Promise<Response> {
 
       if (!hasImage) {
         // Swap model name to Cerebras equivalent if needed
+        // Also strip response_format — Cerebras doesn't support it
         const cerebrasModel = CEREBRAS_MODEL_MAP[parsed.model] ?? parsed.model;
-        const cerebrasBody = JSON.stringify({ ...parsed, model: cerebrasModel });
+        const { response_format: _rf, ...rest } = parsed;
+        const cerebrasBody = JSON.stringify({ ...rest, model: cerebrasModel });
 
         const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
           method: 'POST',
