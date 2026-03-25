@@ -21,8 +21,15 @@ export default async function handler(req: Request): Promise<Response> {
 
   const body = await req.text();
 
-  // TEMP: force Together AI for testing — revert after
-  const groqRes = { ok: false, status: 429 } as any;
+  // Try Groq first
+  const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body,
+  });
 
   // On rate limit (429) or server error (5xx), try Together AI as fallback
   if ((groqRes.status === 429 || groqRes.status >= 500) && process.env.TOGETHER_API_KEY) {
