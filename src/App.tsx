@@ -167,7 +167,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const exitPromptRef = useRef(false);
   const exitToastRef = useRef<string | number | null>(null);
   useEffect(() => {
-    history.pushState(null, '');
+    history.pushState({ id: 0 }, '');
+    let pushCount = 1;
     const handlePopState = () => {
       // Update refs synchronously so rapid back presses don't race against React re-renders
       if (selectedStudentIdRef.current) {
@@ -191,10 +192,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         if (exitToastRef.current) toast.dismiss(exitToastRef.current);
         exitToastRef.current = toast('Press back again to exit', { duration: 2000 });
         setTimeout(() => { exitPromptRef.current = false; }, 2000);
-        history.pushState(null, '');
+        // Defer pushState so Android WebView registers it after the popstate event settles
+        setTimeout(() => history.pushState({ id: ++pushCount }, ''), 0);
         return;
       }
-      history.pushState(null, ''); // re-push so the next back still fires popstate
+      // Defer pushState so Android WebView registers it after the popstate event settles
+      setTimeout(() => history.pushState({ id: ++pushCount }, ''), 0);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
