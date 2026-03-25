@@ -1,8 +1,9 @@
 export const config = { runtime: 'edge' };
 
-// Map Groq model names to their Cerebras equivalents
-const CEREBRAS_MODEL_MAP: Record<string, string> = {
-  'llama-3.3-70b-versatile': 'llama-3.3-70b',
+// Map Groq model names to Together AI equivalents
+const TOGETHER_MODEL_MAP: Record<string, string> = {
+  'llama-3.3-70b-versatile': 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+  'meta-llama/llama-4-scout-17b-16e-instruct': 'meta-llama/Llama-4-Scout-17B-16E-Instruct',
 };
 
 export default async function handler(req: Request): Promise<Response> {
@@ -20,47 +21,42 @@ export default async function handler(req: Request): Promise<Response> {
 
   const body = await req.text();
 
-  // TEMP TEST: force Cerebras only — revert after testing
-  const groqRes = { ok: false, status: 429 } as any;
+  // Try Groq first
+  const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body,
+  });
 
-  // On rate limit (429) or server error (5xx), try Cerebras as fallback
-  const shouldFallback = true;
-  const cerebrasKey = process.env.CEREBRAS_API_KEY;
-
-  if (shouldFallback && cerebrasKey) {
+  // On rate limit (429) or server error (5xx), try Together AI as fallback
+  if ((groqRes.status === 429 || groqRes.status >= 500) && process.env.TOGETHER_API_KEY) {
     try {
       const parsed = JSON.parse(body);
-      // Skip fallback for vision/image requests — Cerebras doesn't support them
-      const hasImage = Array.isArray(parsed.messages?.[0]?.content) &&
-        parsed.messages[0].content.some((c: any) => c.type === 'image_url');
+      const togetherModel = TOGETHER_MODEL_MAP[parsed.model] ?? parsed.model;
+      const togetherBody = JSON.stringify({ ...parsed, model: togetherModel });
 
-      if (!hasImage) {
-        // Swap model name to Cerebras equivalent if needed
-        // Also strip response_format — Cerebras doesn't support it
-        const cerebrasModel = CEREBRAS_MODEL_MAP[parsed.model] ?? parsed.model;
-        const { response_format: _rf, ...rest } = parsed;
-        const cerebrasBody = JSON.stringify({ ...rest, model: cerebrasModel });
+      const togetherRes = await fetch('https://api.together.xyz/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.TOGETHER_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: togetherBody,
+      });
 
-        const cerebrasRes = await fetch('https://api.cerebras.ai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${cerebrasKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: cerebrasBody,
-        });
-
-        const data = await cerebrasRes.text();
-        if (!cerebrasRes.ok) {
-          console.error(`[groq.ts] Cerebras error ${cerebrasRes.status}:`, data);
-        }
-        return new Response(data, {
-          status: cerebrasRes.status,
-          headers: { 'Content-Type': 'application/json' },
-        });
+      const data = await togetherRes.text();
+      if (!togetherRes.ok) {
+        console.error(`[groq.ts] Together AI error ${togetherRes.status}:`, data);
       }
+      return new Response(data, {
+        status: togetherRes.status,
+        headers: { 'Content-Type': 'application/json' },
+      });
     } catch {
-      // If fallback itself errors, fall through and return the original Groq error
+      // If fallback errors, fall through and return the original Groq error
     }
   }
 
