@@ -1538,16 +1538,15 @@ export default function SettingsScreen({
                                 selected: false
                               }));
                               setDraftEvents(eventsWithIds);
+                              toast.dismiss(loadingToast);
                               toast.success(`AI found ${futureEvents.length} upcoming draft events. Please review.`);
+                              onNoteAdded();
+                              setView('main');
+                              setTimeout(() => setView('calendar'), 10);
                             } else {
+                              toast.dismiss(loadingToast);
                               toast.warning('AI could not find any valid upcoming events in this file.');
                             }
-
-                            toast.dismiss(loadingToast);
-                            toast.success('Calendar saved successfully');
-                            onNoteAdded();
-                            setView('main');
-                            setTimeout(() => setView('calendar'), 10);
                           } catch (err: any) {
                             console.error(err);
                             toast.dismiss(loadingToast);
@@ -1596,16 +1595,15 @@ export default function SettingsScreen({
                                 selected: false
                               }));
                               setDraftEvents(eventsWithIds);
+                              toast.dismiss(loadingToast);
                               toast.success(`AI found ${futureEvents.length} upcoming draft events. Please review.`);
+                              onNoteAdded();
+                              setView('main');
+                              setTimeout(() => setView('calendar'), 10);
                             } else {
+                              toast.dismiss(loadingToast);
                               toast.warning('AI could not find any valid upcoming events in this file.');
                             }
-
-                            toast.dismiss(loadingToast);
-                            toast.success('Calendar saved successfully');
-                            onNoteAdded();
-                            setView('main');
-                            setTimeout(() => setView('calendar'), 10);
                           } catch (err: any) {
                             console.error(err);
                             toast.dismiss(loadingToast);
