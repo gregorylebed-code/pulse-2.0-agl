@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import imageCompression from 'browser-image-compression';
@@ -233,6 +233,10 @@ export default function SettingsScreen({
   const [draftEvents, setDraftEvents] = useState<(CalendarEvent & { selected: boolean })[] | null>(null);
   const [newComm, setNewComm] = useState('');
   const [isScanningRotation, setIsScanningRotation] = useState(false);
+  const [isScanningCalendar, setIsScanningCalendar] = useState(false);
+  const [showRotationMappingView, setShowRotationMappingView] = useState(false);
+  const calendarAbortRef = useRef<AbortController | null>(null);
+  const rotationAbortRef = useRef<AbortController | null>(null);
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
 
@@ -248,6 +252,8 @@ export default function SettingsScreen({
   };
 
   const handleScanRotation = async (file: File) => {
+    const controller = new AbortController();
+    rotationAbortRef.current = controller;
     setIsScanningRotation(true);
     const loadingToast = toast.loading('AI is extracting rotation mappings...');
     try {
@@ -258,15 +264,16 @@ export default function SettingsScreen({
           const base64Data = dataUrl.split(',')[1];
           const mimeType = isPdf ? 'application/pdf' : dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';'));
 
-          const mapping = await extractRotationMapping(base64Data, mimeType);
+          const mapping = await extractRotationMapping(base64Data, mimeType, controller.signal);
 
           if (mapping && Object.keys(mapping).length > 0) {
             setRotationMapping(mapping);
-            toast.success(`Succesfully extracted ${Object.keys(mapping).length} date mappings!`, { id: loadingToast });
+            toast.success(`Successfully extracted ${Object.keys(mapping).length} date mappings!`, { id: loadingToast });
           } else {
             toast.error('AI could not find a rotation schedule in this file.', { id: loadingToast });
           }
           setIsScanningRotation(false);
+          rotationAbortRef.current = null;
         };
         reader.readAsDataURL(processFile);
       };
@@ -289,10 +296,16 @@ export default function SettingsScreen({
         toast.error('Please upload an image or PDF', { id: loadingToast });
         setIsScanningRotation(false);
       }
-    } catch (err) {
-      console.error('Rotation scan error:', err);
-      toast.error('Failed to scan rotation schedule.', { id: loadingToast });
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        toast.dismiss(loadingToast);
+        toast('Rotation scan cancelled');
+      } else {
+        console.error('Rotation scan error:', err);
+        toast.error('Failed to scan rotation schedule.', { id: loadingToast });
+      }
       setIsScanningRotation(false);
+      rotationAbortRef.current = null;
     }
   };
 
@@ -1543,142 +1556,112 @@ export default function SettingsScreen({
 
               <div className="space-y-4">
                 <p className="text-sm text-slate-500">Upload your school calendar (PDF or Image) to view it quickly from the Notes screen.</p>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
 
-                    const loadingToast = toast.loading('Processing calendar with AI...');
-                    try {
-                      let dataToStore = '';
-                      if (file.type.startsWith('image/')) {
-                        const compressedFile = await imageCompression(file, {
-                          maxSizeMB: 1.9,
-                          maxWidthOrHeight: 1920,
-                          useWebWorker: true
-                        });
-                        const reader = new FileReader();
-                        reader.onloadend = async () => {
-                          dataToStore = reader.result as string;
-                          const base64Data = dataToStore.split(',')[1];
-                          const actualMimeType = dataToStore.substring(dataToStore.indexOf(':') + 1, dataToStore.indexOf(';'));
-                          try {
-                            try {
-                              localStorage.setItem('school_calendar', dataToStore);
-                            } catch (e) {
-                              console.warn("Could not save calendar image to localStorage due to quota limits.");
-                            }
+                {isScanningCalendar ? (
+                  <div className="flex items-center gap-3 p-4 bg-sage/5 border border-dashed border-sage/20 rounded-2xl">
+                    <Loader2 className="w-4 h-4 text-sage animate-spin flex-shrink-0" />
+                    <span className="text-sm text-slate-500 flex-1">AI is scanning your calendar…</span>
+                    <button
+                      onClick={() => { calendarAbortRef.current?.abort(); }}
+                      className="text-xs font-bold text-terracotta hover:text-red-600 transition-colors px-3 py-1.5 bg-red-50 rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
 
-                            // Call Gemini 3.1 Flash for Smart Scan
-                            const extractedEvents = await performSmartScan(base64Data, actualMimeType);
+                      const controller = new AbortController();
+                      calendarAbortRef.current = controller;
+                      setIsScanningCalendar(true);
+                      const loadingToast = toast.loading('Processing calendar with AI...');
 
-                            if (Array.isArray(extractedEvents) && extractedEvents.length > 0) {
-                              const today = new Date();
-                              today.setHours(0, 0, 0, 0);
-
-                              const futureEvents = extractedEvents.filter((event: any) => {
-                                if (!event.date) return false;
-                                const eventDate = new Date(event.date);
-                                return !isNaN(eventDate.getTime()) && eventDate >= today;
-                              });
-
-                              futureEvents.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                              const eventsWithIds = futureEvents.map((event: any) => ({
-                                ...event,
-                                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                                user_id: userId,
-                                created_at: new Date().toISOString(),
-                                selected: false
-                              }));
-                              setDraftEvents(eventsWithIds);
-                              toast.dismiss(loadingToast);
-                              toast.success(`AI found ${futureEvents.length} upcoming draft events. Please review.`);
-                              onNoteAdded();
-                              setView('main');
-                              setTimeout(() => setView('calendar'), 10);
-                            } else {
-                              toast.dismiss(loadingToast);
-                              toast.warning('AI could not find any valid upcoming events in this file.');
-                            }
-                          } catch (err: any) {
-                            console.error(err);
-                            toast.dismiss(loadingToast);
-                            toast.error(err.message || 'Error processing calendar data.');
-                          }
-                        };
-                        reader.readAsDataURL(compressedFile);
-                      } else if (file.type === 'application/pdf') {
-                        if (file.size > 4 * 1024 * 1024) {
+                      const finishScan = (events: any[], signal: AbortSignal) => {
+                        if (signal.aborted) return;
+                        if (Array.isArray(events) && events.length > 0) {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const futureEvents = events.filter((event: any) => {
+                            if (!event.date) return false;
+                            const eventDate = new Date(event.date);
+                            return !isNaN(eventDate.getTime()) && eventDate >= today;
+                          });
+                          futureEvents.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                          const eventsWithIds = futureEvents.map((event: any) => ({
+                            ...event,
+                            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                            user_id: userId,
+                            created_at: new Date().toISOString(),
+                            selected: false
+                          }));
+                          setDraftEvents(eventsWithIds);
                           toast.dismiss(loadingToast);
-                          toast.error('PDF must be smaller than 4MB');
-                          return;
+                          toast.success(`AI found ${futureEvents.length} upcoming draft events. Please review.`);
+                          onNoteAdded();
+                          setView('main');
+                          setTimeout(() => setView('calendar'), 10);
+                        } else {
+                          toast.dismiss(loadingToast);
+                          toast.warning('AI could not find any valid upcoming events in this file.');
                         }
-                        const reader = new FileReader();
-                        reader.onloadend = async () => {
-                          dataToStore = reader.result as string;
-                          const base64Data = dataToStore.split(',')[1];
-                          const actualMimeType = dataToStore.substring(dataToStore.indexOf(':') + 1, dataToStore.indexOf(';'));
-                          try {
+                        setIsScanningCalendar(false);
+                        calendarAbortRef.current = null;
+                      };
+
+                      try {
+                        if (file.type.startsWith('image/')) {
+                          const compressedFile = await imageCompression(file, { maxSizeMB: 1.9, maxWidthOrHeight: 1920, useWebWorker: true });
+                          const reader = new FileReader();
+                          reader.onloadend = async () => {
+                            const dataToStore = reader.result as string;
+                            try { localStorage.setItem('school_calendar', dataToStore); } catch {}
+                            const base64Data = dataToStore.split(',')[1];
+                            const actualMimeType = dataToStore.substring(dataToStore.indexOf(':') + 1, dataToStore.indexOf(';'));
                             try {
-                              localStorage.setItem('school_calendar', dataToStore);
-                            } catch (e) {
-                              console.warn("Could not save calendar PDF to localStorage due to quota limits.");
+                              const extractedEvents = await performSmartScan(base64Data, actualMimeType, controller.signal);
+                              finishScan(extractedEvents, controller.signal);
+                            } catch (err: any) {
+                              if (err?.name === 'AbortError') { toast.dismiss(loadingToast); toast('Calendar scan cancelled'); }
+                              else { toast.dismiss(loadingToast); toast.error(err.message || 'Error processing calendar data.'); }
+                              setIsScanningCalendar(false);
+                              calendarAbortRef.current = null;
                             }
-
-                            // Call Gemini 3.1 Flash for Smart Scan
-                            const extractedEvents = await performSmartScan(base64Data, actualMimeType);
-
-                            if (Array.isArray(extractedEvents) && extractedEvents.length > 0) {
-                              const today = new Date();
-                              today.setHours(0, 0, 0, 0);
-
-                              const futureEvents = extractedEvents.filter((event: any) => {
-                                if (!event.date) return false;
-                                const eventDate = new Date(event.date);
-                                return !isNaN(eventDate.getTime()) && eventDate >= today;
-                              });
-
-                              futureEvents.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                              const eventsWithIds = futureEvents.map((event: any) => ({
-                                ...event,
-                                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                                user_id: userId,
-                                created_at: new Date().toISOString(),
-                                selected: false
-                              }));
-                              setDraftEvents(eventsWithIds);
-                              toast.dismiss(loadingToast);
-                              toast.success(`AI found ${futureEvents.length} upcoming draft events. Please review.`);
-                              onNoteAdded();
-                              setView('main');
-                              setTimeout(() => setView('calendar'), 10);
-                            } else {
-                              toast.dismiss(loadingToast);
-                              toast.warning('AI could not find any valid upcoming events in this file.');
+                          };
+                          reader.readAsDataURL(compressedFile);
+                        } else if (file.type === 'application/pdf') {
+                          if (file.size > 4 * 1024 * 1024) { toast.dismiss(loadingToast); toast.error('PDF must be smaller than 4MB'); setIsScanningCalendar(false); return; }
+                          const reader = new FileReader();
+                          reader.onloadend = async () => {
+                            const dataToStore = reader.result as string;
+                            try { localStorage.setItem('school_calendar', dataToStore); } catch {}
+                            const base64Data = dataToStore.split(',')[1];
+                            const actualMimeType = dataToStore.substring(dataToStore.indexOf(':') + 1, dataToStore.indexOf(';'));
+                            try {
+                              const extractedEvents = await performSmartScan(base64Data, actualMimeType, controller.signal);
+                              finishScan(extractedEvents, controller.signal);
+                            } catch (err: any) {
+                              if (err?.name === 'AbortError') { toast.dismiss(loadingToast); toast('Calendar scan cancelled'); }
+                              else { toast.dismiss(loadingToast); toast.error(err.message || 'Error processing calendar data.'); }
+                              setIsScanningCalendar(false);
+                              calendarAbortRef.current = null;
                             }
-                          } catch (err: any) {
-                            console.error(err);
-                            toast.dismiss(loadingToast);
-                            toast.error(err.message || 'Error processing calendar data.');
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      } else {
-                        toast.dismiss(loadingToast);
-                        toast.error('Please upload an image or PDF');
+                          };
+                          reader.readAsDataURL(file);
+                        } else {
+                          toast.dismiss(loadingToast); toast.error('Please upload an image or PDF'); setIsScanningCalendar(false);
+                        }
+                      } catch (err) {
+                        toast.dismiss(loadingToast); toast.error('Error processing file'); setIsScanningCalendar(false);
                       }
-                    } catch (err) {
-                      console.error(err);
-                      toast.dismiss(loadingToast);
-                      toast.error('Error processing file');
-                    }
-                  }}
-                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sage/10 file:text-sage hover:file:bg-sage/20 transition-all"
-                />
+                    }}
+                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sage/10 file:text-sage hover:file:bg-sage/20 transition-all"
+                  />
+                )}
 
                 {localStorage.getItem('school_calendar') && (
                   <button
@@ -2044,30 +2027,72 @@ export default function SettingsScreen({
                       <h4 className="text-sm font-bold text-slate-900">AI Rotation Scan</h4>
                       <p className="text-xs text-slate-500 mt-1">Upload your school calendar to map dates to letter days automatically.</p>
                     </div>
-                    <div className="relative inline-block">
-                      <input
-                        type="file"
-                        id="rotation-upload"
-                        className="hidden"
-                        accept="image/*,application/pdf"
-                        onChange={(e) => { const file = e.target.files?.[0]; if (file) handleScanRotation(file); }}
-                        disabled={isScanningRotation}
-                      />
-                      <label
-                        htmlFor="rotation-upload"
-                        className={cn(
-                          "flex items-center gap-2 px-6 py-3 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 cursor-pointer",
-                          isScanningRotation && "opacity-50 cursor-not-allowed"
-                        )}
-                      >
-                        {isScanningRotation ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning...</> : <><Upload className="w-4 h-4" /> Scan Calendar</>}
-                      </label>
-                    </div>
+                    {isScanningRotation ? (
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-6 py-3 bg-orange-100 text-orange-500 rounded-full font-bold text-xs">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Scanning...
+                        </div>
+                        <button
+                          onClick={() => { rotationAbortRef.current?.abort(); }}
+                          className="text-xs font-bold text-terracotta hover:text-red-600 transition-colors px-4 py-3 bg-red-50 rounded-full"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative inline-block">
+                        <input
+                          type="file"
+                          id="rotation-upload"
+                          className="hidden"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => { const file = e.target.files?.[0]; if (file) handleScanRotation(file); }}
+                        />
+                        <label
+                          htmlFor="rotation-upload"
+                          className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 cursor-pointer"
+                        >
+                          <Upload className="w-4 h-4" /> Scan Calendar
+                        </label>
+                      </div>
+                    )}
                     {Object.keys(rotationMapping).length > 0 && (
-                      <p className="text-[11px] font-bold text-sage flex items-center justify-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {Object.keys(rotationMapping).length} date mappings active
-                      </p>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => setShowRotationMappingView(v => !v)}
+                          className="text-[11px] font-bold text-sage flex items-center justify-center gap-1.5 hover:text-sage-dark transition-colors"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {Object.keys(rotationMapping).length} date mappings active
+                          <ChevronDown className={cn('w-3 h-3 transition-transform', showRotationMappingView && 'rotate-180')} />
+                        </button>
+                        <AnimatePresence>
+                          {showRotationMappingView && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="max-h-64 overflow-y-auto space-y-1 pt-2 text-left">
+                                {Object.entries(rotationMapping)
+                                  .sort(([a], [b]) => a.localeCompare(b))
+                                  .map(([date, letter]) => {
+                                    const [y, m, d] = date.split('-').map(Number);
+                                    const label = new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                                    return (
+                                      <div key={date} className="flex items-center justify-between px-3 py-1.5 bg-white rounded-lg border border-slate-100 text-xs">
+                                        <span className="text-slate-500">{label}</span>
+                                        <span className="font-black text-orange-500 w-6 text-center">{letter}</span>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     )}
                   </div>
                 </div>

@@ -13,7 +13,7 @@ async function logTokenUsage(callType: string, usage: { prompt_tokens: number; c
   }).then(); // fire-and-forget
 }
 
-async function callGroq(prompt: string, isJson: boolean, imageData?: { data: string; mimeType: string }, callType = 'unknown'): Promise<string> {
+async function callGroq(prompt: string, isJson: boolean, imageData?: { data: string; mimeType: string }, callType = 'unknown', signal?: AbortSignal): Promise<string> {
   let messages: any[];
 
   if (imageData?.mimeType.startsWith('image/')) {
@@ -39,7 +39,8 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
       model,
       messages,
       response_format: isJson ? { type: 'json_object' } : undefined
-    })
+    }),
+    signal,
   });
 
   if (!response.ok) {
@@ -53,7 +54,7 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
   return data.choices[0].message.content as string;
 }
 
-export async function extractRotationMapping(fileData: string, mimeType: string) {
+export async function extractRotationMapping(fileData: string, mimeType: string, signal?: AbortSignal) {
   const prompt = `Analyze this school calendar or rotation schedule (e.g., 'Special Area Calendar.pdf').
             I need to map specific dates to their "Letter Days" (e.g., A, B, C, D, E).
 
@@ -68,7 +69,7 @@ export async function extractRotationMapping(fileData: string, mimeType: string)
             IMPORTANT: Map EVERY date found. If a month is missing or cutoff, do your best with what is visible.`;
 
   const imageData = mimeType.startsWith('image/') ? { data: fileData, mimeType } : undefined;
-  const text = await callGroq(prompt, true, imageData, 'extract_rotation_mapping');
+  const text = await callGroq(prompt, true, imageData, 'extract_rotation_mapping', signal);
 
   try {
     let cleanText = text || '{}';
@@ -84,7 +85,7 @@ export async function extractRotationMapping(fileData: string, mimeType: string)
   }
 }
 
-export async function performSmartScan(fileData: string, mimeType: string) {
+export async function performSmartScan(fileData: string, mimeType: string, signal?: AbortSignal) {
   const prompt = `Analyze this document (likely a school calendar or schedule screenshot).
             Specifically look for a "Chronological List" of dates and events.
             Identify any text that looks like a date (e.g., "3/20", "March 20th", "Next Tuesday").
@@ -104,7 +105,7 @@ export async function performSmartScan(fileData: string, mimeType: string) {
             Return a JSON array of objects EXCLUSIVELY: [{ "date": "YYYY-MM-DD", "type": "Holiday" | "Early Dismissal" | "Conference" | "Other", "title": "Name of event paired with the date" }]. Do NOT wrap the array in an object like { "events": [...] }.`;
 
   const imageData = mimeType.startsWith('image/') ? { data: fileData, mimeType } : undefined;
-  const text = await callGroq(prompt, true, imageData, 'smart_scan');
+  const text = await callGroq(prompt, true, imageData, 'smart_scan', signal);
 
   try {
     let cleanText = text || '[]';
