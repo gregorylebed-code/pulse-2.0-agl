@@ -7,7 +7,7 @@ import {
   School, FileInput, MessageSquare, Trash2, Plus, X, Loader2, CheckCircle2,
   GripVertical, CalendarX, Edit2, ChevronDown, Upload, ArrowRight, Coffee,
   Smile, Meh, Frown, Activity, AlertCircle, Users, Clock, Mail, Phone, ChevronRight,
-  LogOut
+  LogOut, Lock, Ban, UserCheck, Bot, Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, CalendarEvent } from '../types';
@@ -1452,12 +1452,63 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[11px] font-bold text-blue-600 ml-1">Privacy & Security</h3>
+              <div>
+                <h3 className="text-[11px] font-bold text-blue-600 ml-1 mb-1">Privacy & Security</h3>
+                <p className="text-xs text-slate-400 ml-1">You're trusting this app with notes about real kids. Here's exactly how that data is protected.</p>
+              </div>
 
-              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                  Your data is saved locally in this browser using LocalStorage. It never leaves your device and is not sent to any cloud service. To back up your data, use the Data Management section.
-                </p>
+              <div className="space-y-3">
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Lock className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">Bank-Level Encryption</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">Every note is encrypted in transit using SSL/TLS — the same technology banks use. Data is stored securely in Supabase, not on your device. If anyone tried to intercept it, they'd see gibberish.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <Ban className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">No Data Selling. Ever.</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">This app is made by a teacher, not a data broker. Your notes and student information are never sold, shared, or used for advertising. Period.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <UserCheck className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">The "First Name" Rule</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">The app doesn't require full legal names or student IDs. You can use initials or nicknames to keep your records even more private.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <Database className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">You Own the Data</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">If you decide to stop using the app, you can delete your account and every single note instantly from the Data Management section. We don't keep a copy.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">AI with Boundaries</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">The AI only sees your notes when you explicitly ask it to write a report or answer a question. It doesn't watch you while you work.</p>
+                  </div>
+                </div>
+
               </div>
             </div>
           </motion.div>
