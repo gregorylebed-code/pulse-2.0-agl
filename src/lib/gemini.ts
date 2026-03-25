@@ -197,7 +197,13 @@ export interface ReportData {
 
 function parseReportJson(raw: string): ReportData | null {
   try {
-    const parsed = JSON.parse(raw);
+    // Strip markdown code fences if present (e.g. ```json ... ```)
+    let clean = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    // Extract first JSON object
+    const start = clean.indexOf('{');
+    const end = clean.lastIndexOf('}');
+    if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1);
+    const parsed = JSON.parse(clean);
     const { opening, glow, grow, goal, closing } = parsed;
     if (!opening || !glow || !grow || !goal || !closing) return null;
     return { opening, glow, grow, goal, closing };

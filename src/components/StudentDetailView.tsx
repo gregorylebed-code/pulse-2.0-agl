@@ -853,6 +853,7 @@ export default function StudentDetailView({
       const filtered = filterNotesByTimeRange(notes, timeRange);
       const summary = await onGenerateReport(reportLength, filtered);
       if (summary) setCurrentReport(summary);
+      else toast.error('Failed to generate report. Please try again.');
     } finally {
       setIsGenerating(false);
     }
