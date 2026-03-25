@@ -24,6 +24,7 @@ interface PulseScreenProps {
   updateNote: (id: string, updates: any) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
+  resetKey?: number;
 }
 
 // ─── Today at a Glance ───────────────────────────────────────────────────────
@@ -108,7 +109,7 @@ function TodayAtAGlance({ notes, indicators }: { notes: Note[]; indicators: any[
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations }: PulseScreenProps) {
+function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey }: PulseScreenProps) {
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [studentInput, setStudentInput] = useState('');
   const [suggestions, setSuggestions] = useState<Student[]>([]);
@@ -195,6 +196,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   };
 
   const [noteMode, setNoteMode] = useState<'student' | 'class'>('student');
+  useEffect(() => { if (resetKey) setNoteMode('student'); }, [resetKey]);
   const [selectedClass, setSelectedClass] = useState<string>('');
 
   const [isListening, setIsListening] = useState(false);

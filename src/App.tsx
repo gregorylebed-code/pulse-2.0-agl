@@ -70,6 +70,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const tabDirection = tabOrder[activeTab] >= tabOrder[prevTabRef.current] ? 1 : -1;
   const [classSummaries, setClassSummaries] = useState<Record<string, string>>({});
   const [pulseView, setPulseView] = useState<'log' | 'summary'>('log');
+  const [pulseResetKey, setPulseResetKey] = useState(0);
   const [settingsView, setSettingsView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
   const [showTasks, setShowTasks] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -334,6 +335,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   updateNote={updateNote}
                   deleteNote={deleteNote}
                   abbreviations={abbreviations}
+                  resetKey={pulseResetKey}
                 />
               ) : (
                 <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} summaries={classSummaries} setSummaries={setClassSummaries} />
@@ -457,7 +459,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       <Navigation activeTab={activeTab} setActiveTab={(tab) => {
         if (tab === activeTab) {
           // Tapping the current tab resets its sub-view
-          if (tab === 'pulse') setPulseView('log');
+          if (tab === 'pulse') { setPulseView('log'); setPulseResetKey(k => k + 1); }
           if (tab === 'settings') setSettingsView('main');
           if (tab === 'students') setSelectedStudentId(null);
         } else {
