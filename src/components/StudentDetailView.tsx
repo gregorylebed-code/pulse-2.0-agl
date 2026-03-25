@@ -854,6 +854,8 @@ export default function StudentDetailView({
       const summary = await onGenerateReport(reportLength, filtered);
       if (summary) setCurrentReport(summary);
       else toast.error('Failed to generate report. Please try again.');
+    } catch (err: any) {
+      toast.error(`Report error: ${err?.message || 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
     }
