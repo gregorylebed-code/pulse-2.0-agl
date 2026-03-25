@@ -832,9 +832,10 @@ export default function SettingsScreen({
             </div>
 
             <div className="flex flex-col items-center gap-2 mt-4 pb-4">
+              <img src="/icon-192.png" alt="ShortHand" className="w-12 h-12 rounded-2xl shadow-sm" />
               <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">ShortHand v2.0.0</p>
               <a
-                href="https://classroom-pulse-landing.vercel.app/"
+                href="https://www.getshorthand.app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[11px] font-bold text-sage/60 hover:text-sage transition-colors"
