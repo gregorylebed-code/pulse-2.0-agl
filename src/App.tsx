@@ -473,6 +473,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           if (tab === 'settings') setSettingsView('main');
           if (tab === 'students') setSelectedStudentId(null);
         } else {
+          if (activeTab === 'students') setSelectedStudentId(null);
           setActiveTab(tab);
         }
       }} />
