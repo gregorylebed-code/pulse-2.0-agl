@@ -77,7 +77,7 @@ export default function Header({
           ) : (
             <div className="group relative">
               <div className="flex items-center gap-2 pr-8">
-                <h1 className="text-sm font-bold text-sage-dark leading-tight">
+                <h1 className="text-base font-bold text-sage-dark leading-tight">
                   {getGreeting(userName)}
                 </h1>
                 <button
@@ -88,9 +88,8 @@ export default function Header({
                   <Edit2 className="w-3 h-3" />
                 </button>
               </div>
-              <div className="flex items-center gap-1.5 mt-3">
-                <Sparkles className="w-2.5 h-2.5 text-terracotta flex-shrink-0" />
-                <p className="text-[11px] font-medium text-slate-400 italic leading-snug">"{quote}"</p>
+              <div className="flex items-center mt-0.5">
+                <p className="text-[11px] font-medium text-slate-300 italic leading-snug">"{quote}"</p>
               </div>
             </div>
           )}
