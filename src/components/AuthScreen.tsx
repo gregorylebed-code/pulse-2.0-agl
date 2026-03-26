@@ -34,8 +34,38 @@ export default function AuthScreen() {
     <div className="min-h-screen bg-cream flex items-center justify-center p-6">
       <div className="bg-white rounded-[32px] card-shadow border border-sage/5 p-8 w-full max-w-sm space-y-6">
         {/* Header */}
-        <div className="text-center space-y-1">
-          <h1 className="text-4xl font-black text-slate-900">PULSE</h1>
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-0.5">
+            {['S','h','o','r','t','H','a','n','d'].map((letter, i) => {
+              const colors = [
+                'text-sage',
+                'text-terracotta',
+                'text-blue-400',
+                'text-amber-400',
+                'text-purple-400',
+                'text-sage',
+                'text-pink-400',
+                'text-cyan-400',
+                'text-terracotta',
+              ];
+              return (
+                <motion.span
+                  key={i}
+                  className={`text-4xl font-black ${colors[i]}`}
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{
+                    duration: 1.8,
+                    repeat: Infinity,
+                    delay: i * 0.1,
+                    ease: 'easeInOut',
+                  }}
+                  style={{ fontFamily: "'Boogaloo', cursive" }}
+                >
+                  {letter}
+                </motion.span>
+              );
+            })}
+          </div>
           <p className="text-sm text-slate-400 font-medium">Your classroom, organized.</p>
         </div>
 
