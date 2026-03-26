@@ -948,7 +948,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 : <User className="text-sage w-5 h-5" />}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-2">
                 {note.class_name ? (
                   <div className="flex items-center gap-2">
                     <h4 className="font-black text-slate-900 text-base font-display">{note.class_name}</h4>
@@ -1080,7 +1080,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
               ) : (
                 <>
                   <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed">{note.content}</p>
-                  <div className="flex gap-1.5 mt-3 flex-wrap">
+                  <div className="flex gap-2 mt-3 flex-wrap">
                     {note.tags.map(t => {
                       const indicator = indicators.find(i => i.label === t);
                       const isComm = note.is_parent_communication && note.parent_communication_type?.includes(t);
@@ -1092,7 +1092,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                       if (isComm) colorClass = "bg-blue-50 text-blue-500 border-blue-100";
 
                       return (
-                        <span key={t} className={cn("px-2.5 py-1 rounded-md text-[11px] font-black border", colorClass)}>
+                        <span key={t} className={cn("px-3 py-1 rounded-full text-[11px] font-black border", colorClass)}>
                           {t}
                         </span>
                       );
