@@ -151,6 +151,7 @@ interface SettingsScreenProps {
   onGoToRoster: () => void;
   onGoToPulse: () => void;
   onGoToCalendar: () => void;
+  onGoToReport: () => void;
 }
 
 export default function SettingsScreen({
@@ -213,6 +214,7 @@ export default function SettingsScreen({
   onGoToRoster,
   onGoToPulse,
   onGoToCalendar,
+  onGoToReport,
 }: SettingsScreenProps) {
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const [newIndicator, setNewIndicator] = useState('');
@@ -691,6 +693,7 @@ export default function SettingsScreen({
                         { icon: <User className="w-4 h-4" />, title: 'Set up your profile', desc: 'Add your name and school so reports sign off correctly.', action: onGoToProfile, badge: 'Start here' },
                         { icon: <Users className="w-4 h-4" />, title: 'Add your students', desc: 'Paste your whole class list and AI sorts it all out.', action: onGoToRoster, badge: null },
                         { icon: <PenLine className="w-4 h-4" />, title: 'Add your first note', desc: 'Tap a student, tap an indicator, done in 5 seconds.', action: onGoToPulse, badge: null },
+                        { icon: <FileInput className="w-4 h-4" />, title: 'Compose your first report', desc: 'Turn your notes into a polished parent report with one tap of AI.', action: onGoToReport, badge: null },
                         { icon: <Calendar className="w-4 h-4" />, title: 'Upload your school calendar', desc: 'Get specials rotation and event reminders automatically.', action: onGoToCalendar, badge: 'Optional' },
                       ].map((step) => (
                         <button

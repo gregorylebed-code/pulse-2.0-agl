@@ -400,6 +400,16 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 onGoToRoster={() => { setSettingsView('data-management'); }}
                 onGoToPulse={() => { setActiveTab('pulse'); }}
                 onGoToCalendar={() => { setSettingsView('calendar'); }}
+                onGoToReport={() => {
+                  const studentWithNotes = students.find(s => notes.some(n => n.student_id === s.id));
+                  if (studentWithNotes) {
+                    setSelectedStudentId(studentWithNotes.id);
+                    setActiveTab('students');
+                  } else {
+                    setActiveTab('pulse');
+                    toast('Write a note about a student first, then come back to compose a report.');
+                  }
+                }}
                 calendarEvents={calendarEvents} setCalendarEvents={updateCalendarEvents}
                 rotationMapping={rotationMapping} setRotationMapping={saveRotationMapping}
                 specialsNames={specialsNames} setSpecialsNames={saveSpecialsNames}
