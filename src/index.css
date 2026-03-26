@@ -38,7 +38,15 @@
 }
 
 .card-shadow {
-  box-shadow: 0 4px 20px -2px rgba(138, 154, 91, 0.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
+  border: none;
+}
+
+.nav-frosted {
+  background: rgba(255, 249, 229, 0.75);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.6);
 }
 
 .pop-feedback:active {
@@ -111,7 +119,12 @@ html.dark {
 .dark .hover\:text-slate-600:hover { color: #94a3b8; }
 
 .dark .card-shadow {
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.35);
+}
+
+.dark .nav-frosted {
+  background: rgba(15, 23, 42, 0.75);
+  border-top: 1px solid rgba(255,255,255,0.06);
 }
 
 .dark .shadow-inner {
