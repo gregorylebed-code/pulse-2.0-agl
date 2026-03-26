@@ -411,7 +411,7 @@ export default function StudentsScreen({
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap",
+                "px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap",
                 filter === f ? "bg-sage text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -519,11 +519,11 @@ export default function StudentsScreen({
                 <span className={cn('font-black text-sm flex-1', palette.text)}>
                   {section === 'Unassigned' ? 'Unassigned' : `Period ${section}`}
                 </span>
-                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg', palette.badge)}>
+                <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-lg', palette.badge)}>
                   {groupedStudents[section].length} students
                 </span>
                 {thisWeekNotes > 0 && (
-                  <span className="text-[10px] font-bold text-slate-400 mr-2">
+                  <span className="text-[11px] font-bold text-slate-400 mr-2">
                     {thisWeekNotes} notes this week
                   </span>
                 )}
@@ -582,13 +582,13 @@ export default function StudentsScreen({
 
                       {/* Note count */}
                       {noteCount > 0 && (
-                        <span className="text-[9px] font-bold text-slate-400">{noteCount} note{noteCount !== 1 ? 's' : ''}</span>
+                        <span className="text-[11px] font-bold text-slate-400">{noteCount} note{noteCount !== 1 ? 's' : ''}</span>
                       )}
                     </motion.div>
                   );
                 })}
               </div>
-              <p className="text-center text-[10px] text-slate-300 pt-1 pb-2 flex items-center justify-center gap-1">
+              <p className="text-center text-[11px] text-slate-300 pt-1 pb-2 flex items-center justify-center gap-1">
                 <Pin className="w-2.5 h-2.5 inline" /> Hold a student card for 2 seconds to pin to top
               </p>
             </div>
@@ -671,7 +671,7 @@ export default function StudentsScreen({
                             </select>
                           )}
                           {b.matchedId && resolvedName && resolvedName !== b.studentName && (
-                            <p className="text-[10px] text-green-500 mt-0.5">→ {resolvedName}</p>
+                            <p className="text-[11px] text-green-500 mt-0.5">→ {resolvedName}</p>
                           )}
                         </div>
                       );

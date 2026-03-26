@@ -64,8 +64,8 @@ function TodayAtAGlance({ notes, indicators }: { notes: Note[]; indicators: any[
       className="bg-white rounded-[24px] border border-slate-100 shadow-sm px-5 py-4"
     >
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Today at a glance</p>
-        <div className="flex items-center gap-3 text-[10px] font-bold">
+        <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Today at a glance</p>
+        <div className="flex items-center gap-3 text-[11px] font-bold">
           <span className="text-slate-400">{total} note{total !== 1 ? 's' : ''}</span>
           <span className="text-slate-300">·</span>
           <span className="text-slate-400">{students} student{students !== 1 ? 's' : ''}</span>
@@ -99,9 +99,9 @@ function TodayAtAGlance({ notes, indicators }: { notes: Note[]; indicators: any[
         )}
       </div>
       <div className="flex items-center gap-4">
-        {positive > 0 && <span className="flex items-center gap-1 text-[10px] font-bold text-sage"><span className="w-2 h-2 rounded-full bg-sage inline-block" />{positive} positive</span>}
-        {neutral > 0 && <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block" />{neutral} neutral</span>}
-        {growth > 0 && <span className="flex items-center gap-1 text-[10px] font-bold text-terracotta"><span className="w-2 h-2 rounded-full bg-terracotta inline-block" />{growth} growth area</span>}
+        {positive > 0 && <span className="flex items-center gap-1 text-[11px] font-bold text-sage"><span className="w-2 h-2 rounded-full bg-sage inline-block" />{positive} positive</span>}
+        {neutral > 0 && <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block" />{neutral} neutral</span>}
+        {growth > 0 && <span className="flex items-center gap-1 text-[11px] font-bold text-terracotta"><span className="w-2 h-2 rounded-full bg-terracotta inline-block" />{growth} growth area</span>}
       </div>
     </motion.div>
   );
@@ -530,7 +530,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
               </div>
               <div className="flex items-center gap-2">
                 <div className="px-3 py-1 bg-sage/20 rounded-lg">
-                  <span className="text-[10px] font-bold text-sage">{nextEvent.type}</span>
+                  <span className="text-[11px] font-bold text-sage">{nextEvent.type}</span>
                 </div>
                 {calendarData && (
                   <button
@@ -560,9 +560,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                       <div key={event.id} className="flex items-center justify-between py-1.5 px-2">
                         <div>
                           <p className="text-xs font-bold text-slate-700">{event.title}</p>
-                          <p className="text-[10px] text-sage/70">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                          <p className="text-[11px] text-sage/70">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
                         </div>
-                        <span className="text-[9px] font-bold uppercase tracking-wide bg-sage/20 text-sage px-2 py-0.5 rounded-md">{event.type}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wide bg-sage/20 text-sage px-2 py-0.5 rounded-md">{event.type}</span>
                       </div>
                     ))}
                   </div>
@@ -642,7 +642,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           <div className="flex justify-end -mt-2 mb-2">
             <button
               onClick={() => setShowCalendar(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-sage/10 text-sage rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-sage/20 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-sage/10 text-sage rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage/20 transition-colors"
             >
               <Calendar className="w-4 h-4" /> View Calendar
             </button>
@@ -656,7 +656,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </span>
           <button
             onClick={() => setNoteMode(noteMode === 'class' ? 'student' : 'class')}
-            className="text-[10px] font-bold text-slate-400 hover:text-blue-500 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50 flex items-center gap-1"
+            className="text-[11px] font-bold text-slate-400 hover:text-blue-500 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50 flex items-center gap-1"
           >
             {noteMode === 'class' ? '← Switch to Student Note' : 'Switch to Class Note →'}
           </button>
@@ -797,7 +797,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   <span className="uppercase tracking-widest text-[11px]">{cat.label}</span>
                   <div className="flex items-center gap-2">
                     {cat.selectedCount > 0 && (
-                      <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
+                      <span className={cn("text-[11px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
                         {cat.selectedCount}
                       </span>
                     )}
@@ -906,7 +906,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 className="flex items-center gap-1 px-2.5 py-1 bg-orange-50 border border-orange-200 rounded-full"
               >
                 <span className="text-sm">🔥</span>
-                <span className="text-[10px] font-black text-orange-500">{streak} day streak</span>
+                <span className="text-[11px] font-black text-orange-500">{streak} day streak</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -952,7 +952,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 {note.class_name ? (
                   <div className="flex items-center gap-2">
                     <h4 className="font-black text-slate-900 text-base font-display">{note.class_name}</h4>
-                    <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">Class Note</span>
+                    <span className="text-[11px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">Class Note</span>
                   </div>
                 ) : (
                   <h4 className="font-black text-slate-900 text-base truncate font-display">{note.student_name}</h4>
@@ -1036,7 +1036,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                     if (unknownTags.length === 0) return null;
                     return (
                       <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">AI-added tags</p>
+                        <p className="text-[11px] font-bold text-amber-500 uppercase tracking-widest">AI-added tags</p>
                         <div className="flex flex-wrap gap-2">
                           {unknownTags.map(tag => (
                             <button
@@ -1056,7 +1056,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   {(editTags.length > 0 || editComm.length > 0) && (
                     <button
                       onClick={() => { setEditTags([]); setEditComm([]); }}
-                      className="text-[10px] font-bold text-slate-300 hover:text-terracotta transition-colors self-start"
+                      className="text-[11px] font-bold text-slate-300 hover:text-terracotta transition-colors self-start"
                     >
                       Clear all tags
                     </button>
@@ -1092,7 +1092,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                       if (isComm) colorClass = "bg-blue-50 text-blue-500 border-blue-100";
 
                       return (
-                        <span key={t} className={cn("px-2.5 py-1 rounded-md text-[10px] font-black border", colorClass)}>
+                        <span key={t} className={cn("px-2.5 py-1 rounded-md text-[11px] font-black border", colorClass)}>
                           {t}
                         </span>
                       );

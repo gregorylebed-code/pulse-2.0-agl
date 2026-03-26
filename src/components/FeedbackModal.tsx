@@ -128,7 +128,7 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="font-black text-slate-900 text-lg">Send Feedback</h3>
-                        <p className="text-[10px] text-slate-400 font-bold mt-0.5 tracking-wide">
+                        <p className="text-[11px] text-slate-400 font-bold mt-0.5 tracking-wide">
                           v{APP_VERSION} · {currentView}
                         </p>
                       </div>

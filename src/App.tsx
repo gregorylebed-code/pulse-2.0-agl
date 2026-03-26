@@ -315,7 +315,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 <div className="flex justify-end">
                   <button
                     onClick={() => setPulseView('summary')}
-                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 hover:text-sage transition-colors uppercase tracking-widest"
+                    className="flex items-center gap-1.5 text-[11px] font-black text-slate-400 hover:text-sage transition-colors uppercase tracking-widest"
                   >
                     <BarChart2 className="w-3.5 h-3.5" /> Class Summary
                   </button>
@@ -483,7 +483,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-800 text-white rounded-full text-[10px] font-bold shadow-lg flex items-center gap-2 z-50 pointer-events-none"
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-800 text-white rounded-full text-[11px] font-bold shadow-lg flex items-center gap-2 z-50 pointer-events-none"
         >
           <Sparkles className="w-3 h-3 text-sage" />
           Groq limit reached. Using Cerebras backup.

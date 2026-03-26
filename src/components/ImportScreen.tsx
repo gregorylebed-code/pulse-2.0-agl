@@ -389,7 +389,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                         </select>
                       )}
                       {b.matchedId && resolvedName && resolvedName !== b.studentName && (
-                        <p className="text-[10px] text-green-500 mt-0.5">→ {resolvedName}</p>
+                        <p className="text-[11px] text-green-500 mt-0.5">→ {resolvedName}</p>
                       )}
                     </div>
                   );
@@ -507,14 +507,14 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                     {gcStudents.map((s, i) => (
                       <div key={i} className="flex items-center justify-between px-4 py-2.5 bg-slate-50 rounded-xl">
                         <span className="text-sm font-medium text-slate-700">{s.name}</span>
-                        {s.email && <span className="text-[10px] text-slate-400 ml-2 truncate max-w-[140px]">{s.email}</span>}
+                        {s.email && <span className="text-[11px] text-slate-400 ml-2 truncate max-w-[140px]">{s.email}</span>}
                       </div>
                     ))}
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Assign to:</label>
+                      <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Assign to:</label>
                       <select
                         value={gcClassPeriod}
                         onChange={e => setGcClassPeriod(e.target.value)}
@@ -570,7 +570,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
 
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Assign to Class Period:</label>
+                <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">Assign to Class Period:</label>
                 <select
                   value={defaultClassPeriod}
                   onChange={(e) => setDefaultClassPeriod(e.target.value)}
@@ -612,11 +612,11 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                       <div className="flex flex-wrap gap-3 mt-1">
                         {m.imported.parent_emails && m.imported.parent_emails.map((email: any, idx: number) => {
                           const emailStr = typeof email === 'object' ? email.value : email;
-                          return emailStr ? <span key={`email-${idx}`} className="text-[9px] text-slate-500 flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> {emailStr}</span> : null;
+                          return emailStr ? <span key={`email-${idx}`} className="text-[11px] text-slate-500 flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> {emailStr}</span> : null;
                         })}
                         {m.imported.parent_phones && m.imported.parent_phones.map((phone: any, idx: number) => {
                           const phoneStr = typeof phone === 'object' ? phone.value : phone;
-                          return phoneStr ? <span key={`phone-${idx}`} className="text-[9px] text-slate-500 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {phoneStr}</span> : null;
+                          return phoneStr ? <span key={`phone-${idx}`} className="text-[11px] text-slate-500 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {phoneStr}</span> : null;
                         })}
                       </div>
                     </div>
@@ -639,11 +639,11 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                       <div className="flex flex-wrap gap-3 mt-1">
                         {s.parent_emails && s.parent_emails.map((email: any, idx: number) => {
                           const emailStr = typeof email === 'object' ? email.value : email;
-                          return emailStr ? <span key={`email-${idx}`} className="text-[9px] text-slate-400 flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> {emailStr}</span> : null;
+                          return emailStr ? <span key={`email-${idx}`} className="text-[11px] text-slate-400 flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> {emailStr}</span> : null;
                         })}
                         {s.parent_phones && s.parent_phones.map((phone: any, idx: number) => {
                           const phoneStr = typeof phone === 'object' ? phone.value : phone;
-                          return phoneStr ? <span key={`phone-${idx}`} className="text-[9px] text-slate-400 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {phoneStr}</span> : null;
+                          return phoneStr ? <span key={`phone-${idx}`} className="text-[11px] text-slate-400 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {phoneStr}</span> : null;
                         })}
                       </div>
                     </div>

@@ -299,7 +299,7 @@ export default function TaskDrawer({
                                             {task.text}
                                           </p>
                                           {!task.completed && (
-                                            <span className="text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">Click to edit</span>
+                                            <span className="text-[11px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">Click to edit</span>
                                           )}
                                         </div>
                                       )}

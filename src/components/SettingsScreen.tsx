@@ -59,7 +59,7 @@ const getIconForName = (name: string, type: string): React.ReactNode => {
     case 'Smile': return <Smile className="w-4 h-4 text-emerald-600" />;
     case 'Meh': return <Meh className="w-4 h-4 text-amber-500" />;
     case 'Frown': return <Frown className="w-4 h-4 text-red-500" />;
-    case 'ParentSquare': return <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[9px] font-black leading-none">PS</span>;
+    case 'ParentSquare': return <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[11px] font-black leading-none">PS</span>;
     case 'Users': return <Users className="w-4 h-4 text-blue-500" />;
     case 'MessageSquare': return <MessageSquare className="w-4 h-4 text-blue-500" />;
     case 'Mail': return <Mail className="w-4 h-4 text-blue-500" />;
@@ -706,7 +706,7 @@ export default function SettingsScreen({
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-black text-slate-800">{step.title}</span>
                               {step.badge && (
-                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${step.badge === 'Start here' ? 'bg-sage/10 text-sage' : 'bg-slate-100 text-slate-400'}`}>
+                                <span className={`text-[11px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${step.badge === 'Start here' ? 'bg-sage/10 text-sage' : 'bg-slate-100 text-slate-400'}`}>
                                   {step.badge}
                                 </span>
                               )}
@@ -767,7 +767,7 @@ export default function SettingsScreen({
                 <p className="text-[11px] text-violet-500 font-medium leading-relaxed">
                   As you build your documentation habit, advanced features unlock — including AI-generated reports, student goal tracking, behavior insights, and a full analytics dashboard.
                 </p>
-                <p className="text-[10px] text-violet-400 font-bold uppercase tracking-wide">Keep logging. Great things are coming.</p>
+                <p className="text-[11px] text-violet-400 font-bold uppercase tracking-wide">Keep logging. Great things are coming.</p>
               </div>
             )}
 
@@ -844,7 +844,7 @@ export default function SettingsScreen({
 
             <div className="flex flex-col items-center gap-2 mt-4 pb-4">
               <img src="/icon-192.png" alt="ShortHand" className="w-12 h-12 rounded-2xl shadow-sm" />
-              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">ShortHand v2.0.0</p>
+              <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">ShortHand v2.0.0</p>
               <a
                 href="https://www.getshorthand.app"
                 target="_blank"
@@ -876,7 +876,7 @@ export default function SettingsScreen({
               <div className="space-y-4">
                 {/* Filter by class */}
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1 mb-1 block">Filter by Class</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1 mb-1 block">Filter by Class</label>
                   <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => setRosterFilter('all')}
@@ -894,7 +894,7 @@ export default function SettingsScreen({
 
                 {/* Add new student */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Add Student</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Add Student</label>
                   <input
                     type="text"
                     value={newStudentName}
@@ -1169,12 +1169,12 @@ export default function SettingsScreen({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Quick Grader</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Automatic Grade Calculation</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-blue-600">Automatic Grade Calculation</p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Total Number of Questions</label>
+                <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Total Number of Questions</label>
                 <input
                   type="number"
                   value={totalQuestions}
@@ -1186,7 +1186,7 @@ export default function SettingsScreen({
 
               {totalQuestions !== '' && totalQuestions > 0 && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 px-6 py-3 bg-slate-50 rounded-xl text-[10px] font-bold uppercase tracking-widest text-blue-600">
+                  <div className="grid grid-cols-3 px-6 py-3 bg-slate-50 rounded-xl text-[11px] font-bold uppercase tracking-widest text-blue-600">
                     <span>Wrong</span>
                     <span className="text-center">Score</span>
                     <span className="text-right">Correct</span>
@@ -1239,7 +1239,7 @@ export default function SettingsScreen({
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Title</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Title</label>
                   <div className="flex gap-2 flex-wrap">
                     {(['Mr.', 'Mrs.', 'Ms.', 'Miss', 'Dr.'] as const).map(t => (
                       <button
@@ -1260,7 +1260,7 @@ export default function SettingsScreen({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">First Name</label>
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">First Name</label>
                     <input
                       type="text"
                       value={localTeacherFirstName}
@@ -1270,7 +1270,7 @@ export default function SettingsScreen({
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Last Name</label>
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Last Name</label>
                     <input
                       type="text"
                       value={localTeacherLastName}
@@ -1281,7 +1281,7 @@ export default function SettingsScreen({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Display Name (used in app header)</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Display Name (used in app header)</label>
                   <input
                     type="text"
                     value={localUserName}
@@ -1290,7 +1290,7 @@ export default function SettingsScreen({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Name</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Name</label>
                   <input
                     type="text"
                     value={localSchoolName}
@@ -1299,7 +1299,7 @@ export default function SettingsScreen({
                   />
                 </div>
                 {(localTeacherTitle || localTeacherLastName) && (
-                  <p className="text-[10px] text-slate-400 ml-1">
+                  <p className="text-[11px] text-slate-400 ml-1">
                     Quick notes will be signed: <span className="font-bold text-slate-600">{localTeacherTitle} {localTeacherLastName || '___'}</span>
                   </p>
                 )}
@@ -1317,7 +1317,7 @@ export default function SettingsScreen({
               <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">Dark Mode</h4>
-                  <p className="text-[10px] text-slate-400 font-medium">Switch between light and dark theme</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Switch between light and dark theme</p>
                 </div>
                 <button
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -1365,7 +1365,7 @@ export default function SettingsScreen({
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-bold text-slate-900 text-sm">Daily Logging Reminder</h4>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
                           Reminds you to log notes — skips if you already have
                         </p>
                       </div>
@@ -1410,7 +1410,7 @@ export default function SettingsScreen({
                   <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100">
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm">School Event Reminder</h4>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">
                         Morning alert on days with events from your calendar
                       </p>
                     </div>
@@ -1439,7 +1439,7 @@ export default function SettingsScreen({
                   </div>
 
                   {(notificationPrefs.dailyReminderEnabled || notificationPrefs.calendarEventReminderEnabled) && (
-                    <p className="text-[10px] text-slate-400 font-medium px-1">
+                    <p className="text-[11px] text-slate-400 font-medium px-1">
                       Notifications fire when the app is open or running in the background. For the most reliable delivery, add ShortHand to your home screen.
                     </p>
                   )}
@@ -1540,14 +1540,14 @@ export default function SettingsScreen({
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Calendar</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Calendar</h3>
                 {calendarEvents.length > 0 && (
                   <button
                     onClick={handleClearAllEvents}
                     className="flex items-center gap-1.5 text-terracotta hover:bg-terracotta/10 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <CalendarX className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-bold uppercase tracking-widest">Clear All</span>
+                    <span className="text-[11px] font-bold uppercase tracking-widest">Clear All</span>
                   </button>
                 )}
               </div>
@@ -1669,7 +1669,7 @@ export default function SettingsScreen({
                       setView('main');
                       setTimeout(() => setView('calendar'), 10);
                     }}
-                    className="w-full py-3 bg-terracotta/10 text-terracotta rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-terracotta/20 transition-colors"
+                    className="w-full py-3 bg-terracotta/10 text-terracotta rounded-2xl font-bold text-[11px] uppercase tracking-widest hover:bg-terracotta/20 transition-colors"
                   >
                     Remove Current Calendar
                   </button>
@@ -1685,13 +1685,13 @@ export default function SettingsScreen({
                       <div className="flex gap-2">
                         <button
                           onClick={() => setDraftEvents(draftEvents.map(e => ({ ...e, selected: true })))}
-                          className="px-3 py-1.5 bg-sage/10 text-sage hover:bg-sage/20 rounded-lg text-[10px] font-bold transition-colors flex-1"
+                          className="px-3 py-1.5 bg-sage/10 text-sage hover:bg-sage/20 rounded-lg text-[11px] font-bold transition-colors flex-1"
                         >
                           Select All
                         </button>
                         <button
                           onClick={() => setDraftEvents(draftEvents.map(e => ({ ...e, selected: false })))}
-                          className="px-3 py-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-[10px] font-bold transition-colors flex-1"
+                          className="px-3 py-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-[11px] font-bold transition-colors flex-1"
                         >
                           Deselect All
                         </button>
@@ -1714,7 +1714,7 @@ export default function SettingsScreen({
                             <div className="flex-1 min-w-0">
                               <p className={cn("text-xs font-bold truncate transition-colors", event.selected ? "text-slate-800" : "text-slate-400")}>{event.title}</p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className={cn("text-[10px] font-medium", event.selected ? "text-terracotta" : "text-slate-400")}>{event.date}</span>
+                                <span className={cn("text-[11px] font-medium", event.selected ? "text-terracotta" : "text-slate-400")}>{event.date}</span>
                                 <span className="text-[8px] uppercase tracking-tighter bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md">{event.type}</span>
                               </div>
                             </div>
@@ -1725,13 +1725,13 @@ export default function SettingsScreen({
                     <div className="flex gap-2 pt-2">
                       <button
                         onClick={saveDraftEvents}
-                        className="flex-1 py-3 bg-terracotta text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-terracotta-dark shadow-md shadow-terracotta/20 transition-all"
+                        className="flex-1 py-3 bg-terracotta text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-terracotta-dark shadow-md shadow-terracotta/20 transition-all"
                       >
                         Save Selected Dates
                       </button>
                       <button
                         onClick={() => setDraftEvents(null)}
-                        className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                        className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-colors"
                       >
                         Cancel
                       </button>
@@ -1744,13 +1744,13 @@ export default function SettingsScreen({
                   {!showAddEvent ? (
                     <button
                       onClick={() => setShowAddEvent(true)}
-                      className="w-full py-3 border-2 border-dashed border-sage/30 text-sage hover:border-sage/60 hover:bg-sage/5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3 border-2 border-dashed border-sage/30 text-sage hover:border-sage/60 hover:bg-sage/5 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
                     >
                       <span className="text-base leading-none">+</span> Add Event Manually
                     </button>
                   ) : (
                     <div className="bg-sage/5 rounded-2xl p-4 space-y-3 border border-sage/20">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-sage">New Event</p>
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-sage">New Event</p>
                       <input
                         type="text"
                         value={newEventTitle}
@@ -1796,13 +1796,13 @@ export default function SettingsScreen({
                             setShowAddEvent(false);
                             toast.success('Event added!');
                           }}
-                          className="flex-1 py-2 bg-sage text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-colors"
+                          className="flex-1 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-colors"
                         >
                           Save Event
                         </button>
                         <button
                           onClick={() => { setShowAddEvent(false); setNewEventTitle(''); setNewEventDate(''); setNewEventType('Other'); }}
-                          className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                          className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
                         >
                           Cancel
                         </button>
@@ -1820,7 +1820,7 @@ export default function SettingsScreen({
 
                 {calendarEvents.length > 0 && !draftEvents && (
                   <div className="pt-6 space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-600 ml-1">Your Calendar Events</h4>
+                    <h4 className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Your Calendar Events</h4>
                     <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                       {[...calendarEvents]
                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -1848,13 +1848,13 @@ export default function SettingsScreen({
                                   <div className="flex gap-2">
                                     <button
                                       onClick={handleUpdateEvent}
-                                      className="flex-1 py-2 bg-sage text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-colors"
+                                      className="flex-1 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-colors"
                                     >
                                       Save
                                     </button>
                                     <button
                                       onClick={() => setEditingEventId(null)}
-                                      className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                                      className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
                                     >
                                       Cancel
                                     </button>
@@ -1914,10 +1914,10 @@ export default function SettingsScreen({
                                             AI Classification
                                           </div>
                                           <div className="flex gap-2">
-                                            <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[10px] font-bold shadow-sm">
+                                            <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-bold shadow-sm">
                                               {event.type}
                                             </span>
-                                            <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[10px] font-bold shadow-sm">
+                                            <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-bold shadow-sm">
                                               Priority: High
                                             </span>
                                           </div>
@@ -1984,7 +1984,7 @@ export default function SettingsScreen({
                     )}
                   >
                     <p className={cn('text-xs font-bold', specialsMode === m.id ? 'text-sage-dark' : 'text-slate-700')}>{m.label}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{m.desc}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{m.desc}</p>
                   </button>
                 ))}
               </div>
@@ -2130,17 +2130,17 @@ export default function SettingsScreen({
                     <h4 className="text-[11px] font-bold text-slate-400">Rolling Cycle Setup</h4>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Start Date (Day A)</label>
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Start Date (Day A)</label>
                         <input
                           type="date"
                           value={rollingStartDate}
                           onChange={(e) => saveRollingConfig(e.target.value, rollingLetterCount)}
                           className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-sage w-full"
                         />
-                        <p className="text-[10px] text-slate-400 mt-1.5">Pick the first day of your school year, or any day you know was Day A.</p>
+                        <p className="text-[11px] text-slate-400 mt-1.5">Pick the first day of your school year, or any day you know was Day A.</p>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Number of Days in Cycle</label>
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Number of Days in Cycle</label>
                         <div className="flex gap-2 flex-wrap">
                           {[4, 5, 6, 7, 8].map(n => (
                             <button
@@ -2175,7 +2175,7 @@ export default function SettingsScreen({
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] text-slate-400">Snow day? Use the "Override Today" option in the header to correct the cycle for the day.</p>
+                    <p className="text-[11px] text-slate-400">Snow day? Use the "Override Today" option in the header to correct the cycle for the day.</p>
                   </div>
                 </div>
               )}
@@ -2309,7 +2309,7 @@ export default function SettingsScreen({
                       <span className="text-sm font-black text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 min-w-[48px] text-center">{abbr.abbreviation}</span>
                       <ArrowRight className="w-3 h-3 text-slate-300 flex-shrink-0" />
                       <span className="flex-1 text-sm text-slate-600 font-medium">{abbr.expansion}</span>
-                      {abbr.caseSensitive && <span className="text-[10px] font-black text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">Aa</span>}
+                      {abbr.caseSensitive && <span className="text-[11px] font-black text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">Aa</span>}
                       <button
                         onClick={() => { saveAbbreviations(abbreviations.filter(a => a.id !== abbr.id)); toast.success('Removed'); }}
                         className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"

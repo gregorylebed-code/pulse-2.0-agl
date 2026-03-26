@@ -31,7 +31,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
         })}
       </div>
       <span className={cn(
-        'text-[10px] font-bold tracking-wide transition-colors duration-200',
+        'text-[11px] font-bold tracking-wide transition-colors duration-200',
         active ? 'text-sage' : 'text-slate-400'
       )}>
         {label}

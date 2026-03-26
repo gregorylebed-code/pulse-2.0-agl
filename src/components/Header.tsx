@@ -69,7 +69,7 @@ export default function Header({
                   placeholder="e.g., Mr. Smith"
                   className="px-3 py-1.5 bg-white border border-slate-100 rounded-lg text-xs focus:outline-none focus:border-sage shadow-sm w-48"
                 />
-                <button onClick={saveName} className="p-1.5 bg-sage text-white rounded-lg hover:bg-sage-dark transition-all">
+                <button onClick={saveName} className="p-1.5 bg-sage text-white rounded-xl hover:bg-sage-dark transition-all">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -90,7 +90,7 @@ export default function Header({
               </div>
               <div className="flex items-center gap-1.5 mt-3">
                 <Sparkles className="w-2.5 h-2.5 text-terracotta flex-shrink-0" />
-                <p className="text-[9px] font-medium text-slate-400 italic leading-snug">"{quote}"</p>
+                <p className="text-[11px] font-medium text-slate-400 italic leading-snug">"{quote}"</p>
               </div>
             </div>
           )}
@@ -125,7 +125,7 @@ export default function Header({
                 <School className="w-4 h-4" />
               </div>
               <div className="text-left min-w-0">
-                <p className="text-[10px] font-bold text-slate-400 leading-none">Rotation</p>
+                <p className="text-[11px] font-bold text-slate-400 leading-none">Rotation</p>
                 <p className="text-[11px] font-bold text-sage-dark truncate">
                   {specialsConfig.mode === 'off'
                     ? 'Off'
@@ -163,18 +163,18 @@ export default function Header({
                       {forecast.map((day, idx) => (
                         <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100/50">
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-slate-400">
+                            <span className="text-[11px] font-bold text-slate-400">
                               {day.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                             </span>
                             <span className="text-xs font-bold text-slate-700">{day.special}</span>
                           </div>
-                          <div className="px-2 py-1 bg-sage/10 text-sage rounded-lg text-[10px] font-black underline decoration-2 underline-offset-2">
+                          <div className="px-2 py-1 bg-sage/10 text-sage rounded-lg text-[11px] font-black underline decoration-2 underline-offset-2">
                             Day {day.letter}
                           </div>
                         </div>
                       ))}
                       {forecast.length === 0 && specialsConfig.mode !== 'off' && (
-                        <div className="text-center py-4 text-[10px] font-medium text-slate-400 italic">
+                        <div className="text-center py-4 text-[11px] font-medium text-slate-400 italic">
                           {specialsConfig.mode === 'letter-day'
                             ? 'No rotation data found. Scan your calendar in Settings.'
                             : specialsConfig.mode === 'rolling'
@@ -183,7 +183,7 @@ export default function Header({
                         </div>
                       )}
                       {specialsConfig.mode === 'off' && (
-                        <div className="text-center py-4 text-[10px] font-medium text-slate-400 italic">
+                        <div className="text-center py-4 text-[11px] font-medium text-slate-400 italic">
                           Rotation is turned off. Enable it in Settings.
                         </div>
                       )}
@@ -193,18 +193,18 @@ export default function Header({
                     {canOverride && (
                       <div className="mt-4 pt-4 border-t border-slate-100">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-bold text-slate-400">Override Today</span>
+                          <span className="text-[11px] font-bold text-slate-400">Override Today</span>
                           {hasOverride && (
                             <button
                               onClick={() => { onSetTodayOverride(null); setShowOverridePicker(false); }}
-                              className="flex items-center gap-1 text-[9px] font-bold text-terracotta hover:underline"
+                              className="flex items-center gap-1 text-[11px] font-bold text-terracotta hover:underline"
                             >
                               <RotateCcw className="w-2.5 h-2.5" /> Clear
                             </button>
                           )}
                         </div>
                         {hasOverride ? (
-                          <p className="text-[10px] text-sage font-bold">
+                          <p className="text-[11px] text-sage font-bold">
                             Today set to Day {specialsConfig.todayOverride!.letter} ({specialsConfig.specialsNames[specialsConfig.todayOverride!.letter] || 'No Special'})
                           </p>
                         ) : showOverridePicker ? (
@@ -213,17 +213,17 @@ export default function Header({
                               <button
                                 key={l}
                                 onClick={() => { onSetTodayOverride(l); setShowOverridePicker(false); }}
-                                className="w-8 h-8 bg-sage/10 text-sage rounded-lg text-[10px] font-black hover:bg-sage/20 transition-colors"
+                                className="w-8 h-8 bg-sage/10 text-sage rounded-lg text-[11px] font-black hover:bg-sage/20 transition-colors"
                               >
                                 {l}
                               </button>
                             ))}
-                            <button onClick={() => setShowOverridePicker(false)} className="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg text-[10px] font-black hover:bg-slate-200 transition-colors">✕</button>
+                            <button onClick={() => setShowOverridePicker(false)} className="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg text-[11px] font-black hover:bg-slate-200 transition-colors">✕</button>
                           </div>
                         ) : (
                           <button
                             onClick={() => setShowOverridePicker(true)}
-                            className="text-[10px] font-bold text-slate-400 hover:text-sage transition-colors"
+                            className="text-[11px] font-bold text-slate-400 hover:text-sage transition-colors"
                           >
                             + Set today's day letter
                           </button>

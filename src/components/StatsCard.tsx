@@ -43,7 +43,7 @@ function MilestonePips({ value, milestones, color }: { value: number; milestones
         <span
           key={m}
           className={cn(
-            'px-2 py-0.5 rounded-full text-[9px] font-black border transition-all',
+            'px-2 py-0.5 rounded-full text-[11px] font-black border transition-all',
             value >= m
               ? `${color} border-transparent`
               : 'bg-slate-50 text-slate-300 border-slate-100'
@@ -111,44 +111,44 @@ export default function StatsCard({ notesCreated, reportsGenerated }: StatsCardP
         <div className="bg-orange-50 rounded-2xl p-4 space-y-1">
           <div className="flex items-center gap-1.5 text-orange-400">
             <BookOpen className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Notes</span>
+            <span className="text-[11px] font-black uppercase tracking-widest">Notes</span>
           </div>
           <p className="text-[32px] font-black text-orange-500 font-display">{animatedNotes}</p>
-          <p className="text-[9px] text-orange-300 font-bold">scribbled</p>
+          <p className="text-[11px] text-orange-300 font-bold">scribbled</p>
         </div>
 
         {/* Reports */}
         <div className="bg-sage/10 rounded-2xl p-4 space-y-1">
           <div className="flex items-center gap-1.5 text-sage">
             <FileText className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Reports</span>
+            <span className="text-[11px] font-black uppercase tracking-widest">Reports</span>
           </div>
           <p className="text-[32px] font-black text-sage-dark font-display">{animatedReports}</p>
-          <p className="text-[9px] text-sage/60 font-bold">generated</p>
+          <p className="text-[11px] text-sage/60 font-bold">generated</p>
         </div>
 
         {/* Hours saved */}
         <div className="bg-blue-50 rounded-2xl p-4 space-y-1">
           <div className="flex items-center gap-1.5 text-blue-400">
             <Clock className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Saved</span>
+            <span className="text-[11px] font-black uppercase tracking-widest">Saved</span>
           </div>
           <p className="text-[32px] font-black text-blue-500 font-display">{animatedHours}h</p>
-          <p className="text-[9px] text-blue-300 font-bold">estimated</p>
+          <p className="text-[11px] text-blue-300 font-bold">estimated</p>
         </div>
       </div>
 
       <div className="space-y-3 pt-2 border-t border-slate-50">
         <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes milestones</p>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Notes milestones</p>
           <MilestonePips value={notesCreated} milestones={NOTE_MILESTONES} color="bg-orange-100 text-orange-500" />
         </div>
         <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reports milestones</p>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Reports milestones</p>
           <MilestonePips value={reportsGenerated} milestones={REPORT_MILESTONES} color="bg-sage/15 text-sage-dark" />
         </div>
         <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hours saved milestones</p>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Hours saved milestones</p>
           <MilestonePips value={hoursSaved} milestones={HOUR_MILESTONES} color="bg-blue-100 text-blue-500" />
         </div>
       </div>

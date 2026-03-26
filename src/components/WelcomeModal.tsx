@@ -107,7 +107,7 @@ export default function WelcomeModal({
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-black text-slate-800">{step.title}</span>
                       {step.badge && (
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                        <span className={`text-[11px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
                           step.badge === 'Start here'
                             ? 'bg-sage/10 text-sage'
                             : 'bg-slate-100 text-slate-400'

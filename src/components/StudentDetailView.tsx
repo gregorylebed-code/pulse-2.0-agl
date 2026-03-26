@@ -33,7 +33,7 @@ const getIconForName = (name: string, type: string): React.ReactNode => {
     case 'Smile': return <Smile className="w-4 h-4 text-emerald-600" />;
     case 'Meh': return <Meh className="w-4 h-4 text-amber-500" />;
     case 'Frown': return <Frown className="w-4 h-4 text-red-500" />;
-    case 'ParentSquare': return <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[9px] font-black leading-none">PS</span>;
+    case 'ParentSquare': return <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[11px] font-black leading-none">PS</span>;
     case 'Users': return <Users className="w-4 h-4 text-blue-500" />;
     case 'MessageSquare': return <MessageSquare className="w-4 h-4 text-blue-500" />;
     case 'Mail': return <Mail className="w-4 h-4 text-blue-500" />;
@@ -168,19 +168,19 @@ function StudentMiniDashboard({ student, notes, indicators }: {
           ].map(({ val, label }) => (
             <div key={label} className="bg-slate-50 rounded-2xl p-3 text-center">
               <div className="text-lg font-black text-slate-800 leading-none">{val}</div>
-              <div className="text-[9px] font-bold text-slate-400 mt-1 leading-tight">{label}</div>
+              <div className="text-[11px] font-bold text-slate-400 mt-1 leading-tight">{label}</div>
             </div>
           ))}
         </div>
         <div className="bg-slate-50 rounded-2xl px-4 py-2.5 flex items-center justify-between">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Top tag</span>
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Top tag</span>
           <span className="text-sm font-black text-slate-700 text-right leading-tight">{topTag}</span>
         </div>
       </div>
 
       {/* 8-week activity + positive/growth trend */}
       <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2">8-week activity</p>
+        <p className="text-[11px] font-black uppercase tracking-widest text-slate-300 mb-2">8-week activity</p>
         <div className="flex items-end gap-1.5">
           {weeklyData.map((week, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -219,16 +219,16 @@ function StudentMiniDashboard({ student, notes, indicators }: {
           ))}
         </div>
         <div className="flex items-center gap-3 mt-2">
-          <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-sage inline-block" /> Positive</span>
-          <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-slate-300 inline-block" /> Neutral</span>
-          <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-terracotta/60 inline-block" /> Growth area</span>
+          <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-sage inline-block" /> Positive</span>
+          <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-slate-300 inline-block" /> Neutral</span>
+          <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400"><span className="w-2 h-2 rounded-sm bg-terracotta/60 inline-block" /> Growth area</span>
         </div>
       </div>
 
       {/* Tag breakdown */}
       {tagCounts.length > 0 && (
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-2">Behavior tags</p>
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-300 mb-2">Behavior tags</p>
           <div className="space-y-1.5">
             {tagCounts.map(([tag, count]) => {
               const type = indicatorTypeMap[tag] ?? 'neutral';
@@ -236,7 +236,7 @@ function StudentMiniDashboard({ student, notes, indicators }: {
               const textColor = type === 'positive' ? 'text-sage-dark' : type === 'growth' ? 'text-terracotta' : 'text-slate-500';
               return (
                 <div key={tag} className="flex items-center gap-2">
-                  <span className={`text-[10px] font-bold w-20 flex-shrink-0 truncate ${textColor}`}>{tag}</span>
+                  <span className={`text-[11px] font-bold w-20 flex-shrink-0 truncate ${textColor}`}>{tag}</span>
                   <div className="flex-1 h-3.5 bg-slate-100 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
@@ -245,7 +245,7 @@ function StudentMiniDashboard({ student, notes, indicators }: {
                       className={`h-full rounded-full ${barColor}`}
                     />
                   </div>
-                  <span className="text-[10px] font-black text-slate-400 w-4 text-right">{count}</span>
+                  <span className="text-[11px] font-black text-slate-400 w-4 text-right">{count}</span>
                 </div>
               );
             })}
@@ -1034,7 +1034,7 @@ export default function StudentDetailView({
             ].map(({ val, label }) => (
               <div key={label} className="bg-white/15 backdrop-blur-sm rounded-2xl px-3 py-2.5 text-center">
                 <div className="text-[22px] font-black text-white leading-none">{val}</div>
-                <div className="text-[9px] font-bold text-white/70 mt-0.5 uppercase tracking-wide">{label}</div>
+                <div className="text-[11px] font-bold text-white/70 mt-0.5 uppercase tracking-wide">{label}</div>
               </div>
             ))}
           </div>
@@ -1253,7 +1253,7 @@ export default function StudentDetailView({
                   <span className="uppercase tracking-widest text-[11px]">{cat.label}</span>
                   <div className="flex items-center gap-2">
                     {cat.selectedCount > 0 && (
-                      <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
+                      <span className={cn("text-[11px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
                         {cat.selectedCount}
                       </span>
                     )}
@@ -1322,7 +1322,7 @@ export default function StudentDetailView({
           <h3 className="text-sm font-bold text-terracotta flex items-center gap-2">
             <MessageSquare className="w-4 h-4" /> Quick Note to Parent
           </h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
             Choose which observations to include
           </p>
         </div>
@@ -1340,7 +1340,7 @@ export default function StudentDetailView({
               type="button"
               onClick={() => { setQuickNoteDays(opt.days); setQuickNote(null); }}
               className={cn(
-                "px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border-2 transition-all",
+                "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest border-2 transition-all",
                 quickNoteDays === opt.days
                   ? "bg-terracotta text-white border-terracotta shadow-md"
                   : "bg-white text-slate-400 border-slate-100 hover:border-terracotta/40"
@@ -1371,7 +1371,7 @@ export default function StudentDetailView({
               className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-terracotta">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-terracotta">
                   {quickNoteDays === 0 ? "Today's Note" : quickNoteDays === 1 ? "Yesterday's Note" : `Last ${quickNoteDays} Days`}
                 </span>
                 <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
@@ -1402,7 +1402,7 @@ export default function StudentDetailView({
                   type="button"
                   onClick={handleRefineQuickNote}
                   disabled={isRefiningQuickNote || !quickNoteRefineInstructions.trim()}
-                  className="px-4 py-2 bg-terracotta text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
+                  className="px-4 py-2 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
                 >
                   {isRefiningQuickNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                   {isRefiningQuickNote ? 'Refining...' : 'Refine'}
@@ -1413,21 +1413,21 @@ export default function StudentDetailView({
                 <button
                   type="button"
                   onClick={() => { navigator.clipboard.writeText(quickNote); toast.success('Copied!'); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
                 >
                   <Copy className="w-3.5 h-3.5" /> Copy
                 </button>
                 <button
                   type="button"
                   onClick={() => triggerEmail(quickNote, `Note about ${student.name}`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
                 >
                   <Mail className="w-3.5 h-3.5" /> Email Parent
                 </button>
                 <button
                   type="button"
                   onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
                 >
                   <MessageSquare className="w-3.5 h-3.5" /> Text
                 </button>
@@ -1439,7 +1439,7 @@ export default function StudentDetailView({
                     toast.success('Saved to history!');
                     onNoteUpdate();
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terracotta/10 text-terracotta rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-terracotta/20 transition-all"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terracotta/10 text-terracotta rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-terracotta/20 transition-all"
                 >
                   <Archive className="w-3.5 h-3.5" /> Save to History
                 </button>
@@ -1464,7 +1464,7 @@ export default function StudentDetailView({
                   <span className="text-[11px] font-bold text-slate-300">{new Date(note.created_at).toLocaleDateString()}</span>
                   <div className="flex items-center gap-2">
                     {note.is_parent_communication && (
-                      <span className="px-2 py-1 bg-terracotta/10 text-terracotta text-[10px] font-black rounded-md flex items-center gap-1">
+                      <span className="px-2 py-1 bg-terracotta/10 text-terracotta text-[11px] font-black rounded-md flex items-center gap-1">
                         <MessageSquare className="w-2.5 h-2.5" /> {note.parent_communication_type}
                       </span>
                     )}
@@ -1542,7 +1542,7 @@ export default function StudentDetailView({
                           key={ind.label}
                           onClick={() => toggleEditTag(ind.label)}
                           className={cn(
-                            "px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all border",
+                            "px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all border",
                             editTags.includes(ind.label)
                               ? "bg-sage text-white border-sage"
                               : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50"
@@ -1558,7 +1558,7 @@ export default function StudentDetailView({
                           key={comm.label}
                           onClick={() => toggleEditComm(comm.label)}
                           className={cn(
-                            "px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all border",
+                            "px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all border",
                             editComm.includes(comm.label)
                               ? "bg-blue-500 text-white border-blue-500"
                               : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50"
@@ -1632,7 +1632,7 @@ export default function StudentDetailView({
             <h3 className="text-sm font-bold text-violet-600 flex items-center gap-2">
               <Target className="w-4 h-4" /> Student Goals
             </h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
               {goals.length} active goal{goals.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -1732,7 +1732,7 @@ export default function StudentDetailView({
               <div key={goal.id} className="bg-white rounded-2xl p-4 border border-violet-100 shadow-sm space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-violet-400">
                       {GOAL_CATEGORY_LABELS[goal.category]}
                     </span>
                     <p className="text-sm font-medium text-slate-700 mt-0.5 leading-snug">{goal.goal_text}</p>
@@ -1759,7 +1759,7 @@ export default function StudentDetailView({
                 >
                   <span>{stage.emoji}</span>
                   <span>{stage.label}</span>
-                  <span className="text-[10px] opacity-50">tap to advance</span>
+                  <span className="text-[11px] opacity-50">tap to advance</span>
                 </button>
               </div>
             );
@@ -1800,7 +1800,7 @@ export default function StudentDetailView({
               {/* AI suggestions */}
               {goalSuggestions.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400">Tap a suggestion to add it</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-violet-400">Tap a suggestion to add it</p>
                   {goalSuggestions.map((s, i) => (
                     <button
                       key={i}
@@ -1815,7 +1815,7 @@ export default function StudentDetailView({
                       }}
                       className="w-full text-left p-3 bg-white rounded-xl border border-violet-100 hover:border-violet-300 transition-all"
                     >
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400 block">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-violet-400 block">
                         {GOAL_CATEGORY_LABELS[s.category]}
                       </span>
                       <span className="text-sm text-slate-700 font-medium">{s.goal_text}</span>
@@ -1826,7 +1826,7 @@ export default function StudentDetailView({
 
               {/* Manual entry */}
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400">Or write your own</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-violet-400">Or write your own</p>
                 <select
                   value={newGoalCategory}
                   onChange={e => setNewGoalCategory(e.target.value as GoalCategory)}
@@ -1889,13 +1889,13 @@ export default function StudentDetailView({
             >
               {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Compose with AI</>}
             </button>
-            {notes.length === 0 && <p className="text-[10px] text-center text-slate-400 italic">No notes available to compose a report.</p>}
+            {notes.length === 0 && <p className="text-[11px] text-center text-slate-400 italic">No notes available to compose a report.</p>}
 
             {/* Customize options — hidden by default */}
             <button
               type="button"
               onClick={() => setShowReportOptions(v => !v)}
-              className="flex items-center gap-1.5 mx-auto text-slate-400 hover:text-slate-600 transition-colors text-[10px] font-black uppercase tracking-widest"
+              className="flex items-center gap-1.5 mx-auto text-slate-400 hover:text-slate-600 transition-colors text-[11px] font-black uppercase tracking-widest"
             >
               <Settings2 className="w-3 h-3" />
               Customize ({timeRange}, {reportLength})
@@ -1906,10 +1906,10 @@ export default function StudentDetailView({
               {showReportOptions && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-6 overflow-hidden">
                   <div className="space-y-3">
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Timeframe</h3>
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1">Timeframe</h3>
                     <div className="grid grid-cols-3 gap-2">
                       {['Today', 'Last 7 Days', '15 Days', 'Last 30 Days', '60 Days', 'Whole Year', 'Custom Range'].map(range => (
-                        <button key={range} onClick={() => setTimeRange(range)} className={cn("py-2.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border-2", timeRange === range ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
+                        <button key={range} onClick={() => setTimeRange(range)} className={cn("py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border-2", timeRange === range ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
                           {range}
                         </button>
                       ))}
@@ -1918,20 +1918,20 @@ export default function StudentDetailView({
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-4 pt-2">
                         <div className="space-y-1">
                           <label htmlFor="custom_start_date" className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Start Date</label>
-                          <input id="custom_start_date" name="custom_start_date" type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[10px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
+                          <input id="custom_start_date" name="custom_start_date" type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
                         </div>
                         <div className="space-y-1">
                           <label htmlFor="custom_end_date" className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">End Date</label>
-                          <input id="custom_end_date" name="custom_end_date" type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[10px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
+                          <input id="custom_end_date" name="custom_end_date" type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
                         </div>
                       </motion.div>
                     )}
                   </div>
                   <div className="space-y-3">
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Report Type</h3>
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1">Report Type</h3>
                     <div className="grid grid-cols-3 gap-2">
                       {(['Quick Note', 'Standard', 'Detailed'] as const).map(len => (
-                        <button key={len} onClick={() => setReportLength(len)} className={cn("py-3 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all border-2", reportLength === len ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
+                        <button key={len} onClick={() => setReportLength(len)} className={cn("py-3 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border-2", reportLength === len ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
                           {len}
                         </button>
                       ))}
@@ -1948,7 +1948,7 @@ export default function StudentDetailView({
               {/* Document header */}
               <div className="border-b-4 border-sage/30 px-8 pt-7 pb-5 flex items-start justify-between">
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-sage/60 mb-1">Composed Report · {timeRange}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sage/60 mb-1">Composed Report · {timeRange}</p>
                   <p className="text-base font-black text-slate-800">{student.name}</p>
                 </div>
                 <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta mt-1"><X className="w-4 h-4" /></button>
@@ -1957,15 +1957,15 @@ export default function StudentDetailView({
               <div className="px-8 py-6 space-y-5">
                 <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.opening}</p>
                 <div className="border-l-4 border-emerald-400 pl-4 space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-600">Glow</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-600">Glow</p>
                   <p className="text-sm text-slate-700 leading-relaxed">{currentReport.glow}</p>
                 </div>
                 <div className="border-l-4 border-amber-400 pl-4 space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-600">Grow</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-600">Grow</p>
                   <p className="text-sm text-slate-700 leading-relaxed">{currentReport.grow}</p>
                 </div>
                 <div className="border-l-4 border-blue-400 pl-4 space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600">Goal</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">Goal</p>
                   <p className="text-sm text-slate-700 leading-relaxed">{currentReport.goal}</p>
                 </div>
                 <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.closing}</p>
@@ -1999,7 +1999,7 @@ export default function StudentDetailView({
                     type="button"
                     onClick={handleRefine}
                     disabled={isRefining || !refineInstructions.trim()}
-                    className="px-6 py-2 bg-sage text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50 flex items-center gap-2 min-w-[100px] justify-center shadow-md shadow-sage/10"
+                    className="px-6 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50 flex items-center gap-2 min-w-[100px] justify-center shadow-md shadow-sage/10"
                   >
                     {isRefining ? (
                       <>
@@ -2020,28 +2020,28 @@ export default function StudentDetailView({
                 <button
                   type="button"
                   onClick={handleCopyReport}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
                 >
                   <Copy className="w-3.5 h-3.5" /> Copy
                 </button>
                 <button
                   type="button"
                   onClick={handleEmailReport}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
                 >
                   <Mail className="w-3.5 h-3.5" /> Email Parent
                 </button>
                 <button
                   type="button"
                   onClick={handleTextReport}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
                 >
                   <MessageSquare className="w-3.5 h-3.5" /> Text
                 </button>
                 <button
                   type="button"
                   onClick={handleCopyParentSquare}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all"
                 >
                   <ClipboardList className="w-3.5 h-3.5" /> Copy for ParentSquare
                 </button>
@@ -2049,14 +2049,14 @@ export default function StudentDetailView({
                   <button
                     type="button"
                     onClick={archiveAndKeepNotes}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-600 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-700 transition-all"
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-700 transition-all"
                   >
                     <Archive className="w-3.5 h-3.5" /> Archive & Keep Notes
                   </button>
                   <button
                     type="button"
                     onClick={archiveAndClearNotes}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all"
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Archive & Clear Notes
                   </button>
@@ -2071,7 +2071,7 @@ export default function StudentDetailView({
                 <h3 className="text-sm font-bold text-sage-dark flex items-center gap-2">
                   <Archive className="w-4 h-4 text-sage" /> Report History & Export Station
                 </h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
                   {student.archivedSummaries?.length || 0} Saved {(student.archivedSummaries?.length || 0) === 1 ? 'Record' : 'Records'}
                 </p>
               </div>
@@ -2079,7 +2079,7 @@ export default function StudentDetailView({
               {student.archivedSummaries && student.archivedSummaries.length > 0 && (
                 <button
                   onClick={handleSelectAllArchives}
-                  className="px-3 py-1.5 bg-slate-50 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-colors"
+                  className="px-3 py-1.5 bg-slate-50 text-slate-500 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-colors"
                 >
                   {selectedArchiveIds.length === student.archivedSummaries.length ? 'Deselect All' : 'Select All'}
                 </button>
@@ -2096,19 +2096,19 @@ export default function StudentDetailView({
                 >
                   <button
                     onClick={handleCopySelected}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all shadow-sm"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all shadow-sm"
                   >
                     <Copy className="w-3.5 h-3.5" /> Copy Selected
                   </button>
                   <button
                     onClick={handleEmailSelected}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all shadow-sm shadow-blue-500/20"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all shadow-sm shadow-blue-500/20"
                   >
                     <Mail className="w-3.5 h-3.5" /> Email Parent
                   </button>
                   <button
                     onClick={handleDownloadPDF}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-terracotta text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-terracotta-dark transition-all shadow-sm shadow-terracotta/20"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-terracotta-dark transition-all shadow-sm shadow-terracotta/20"
                   >
                     <Download className="w-3.5 h-3.5" /> Download PDF
                   </button>
@@ -2151,7 +2151,7 @@ export default function StudentDetailView({
 
                         <div className="flex-1 min-w-0 space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</span>
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</span>
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleCopyText(s.content); }}
