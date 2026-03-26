@@ -76,7 +76,7 @@ function SettingsItem({ icon, label, onClick }: { icon: React.ReactNode, label: 
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between px-4 py-1.5 hover:bg-slate-50 rounded-2xl transition-all group"
+      className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 rounded-2xl transition-all group"
     >
       <div className="flex items-center gap-4">
         <div className="text-slate-400 group-hover:text-sage transition-colors">
@@ -737,7 +737,7 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[15px] font-black text-blue-600 ml-1">Account</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Preferences</h3>
               <div className="space-y-1">
                 <SettingsItem icon={<User />} label="Profile Settings" onClick={() => setView('profile')} />
                 <SettingsItem icon={<MessageCircle />} label="Notifications" onClick={() => setView('notifications')} />
