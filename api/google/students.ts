@@ -1,8 +1,17 @@
 import { getValidToken } from './_token';
+import { googleLimiter, getIp } from '../_ratelimit';
 
 export const config = { runtime: 'edge' };
 
 export default async function handler(req: Request): Promise<Response> {
+  const { success } = await googleLimiter.limit(getIp(req));
+  if (!success) {
+    return new Response(
+      JSON.stringify({ error: 'Too many requests. Please wait a moment.' }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   const url = new URL(req.url);
   const userId = url.searchParams.get('userId');
   const courseId = url.searchParams.get('courseId');

@@ -1,5 +1,7 @@
 export const config = { runtime: 'edge' };
 
+import { groqLimiter, getIp } from './_ratelimit';
+
 // Map Groq model names to Together AI equivalents
 const TOGETHER_MODEL_MAP: Record<string, string> = {
   'llama-3.3-70b-versatile': 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
@@ -9,6 +11,14 @@ const TOGETHER_MODEL_MAP: Record<string, string> = {
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
+  }
+
+  const { success } = await groqLimiter.limit(getIp(req));
+  if (!success) {
+    return new Response(
+      JSON.stringify({ error: { message: 'Too many requests. Please wait a moment.' } }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   const apiKey = process.env.GROQ_API_KEY;
