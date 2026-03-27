@@ -222,12 +222,12 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       const settingsMap: Record<string, any> = {};
       (settingsData || []).forEach((s: any) => { settingsMap[s.key] = s.value; });
 
-      const profile = settingsMap['profile']
-        ?? (localStorage.getItem('cp_profile') ? JSON.parse(localStorage.getItem('cp_profile')!) : DEFAULT_PROFILE);
-      const rotationMapping = settingsMap['rotation_mapping']
-        ?? (localStorage.getItem('rotationMapping') ? JSON.parse(localStorage.getItem('rotationMapping')!) : {});
-      const specialsNames = settingsMap['specials_names']
-        ?? (localStorage.getItem('specialsNames') ? JSON.parse(localStorage.getItem('specialsNames')!) : DEFAULT_SPECIALS);
+      const tryParseLocal = (key: string, fallback: any) => {
+        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+      };
+      const profile = settingsMap['profile'] ?? tryParseLocal('cp_profile', DEFAULT_PROFILE);
+      const rotationMapping = settingsMap['rotation_mapping'] ?? tryParseLocal('rotationMapping', {});
+      const specialsNames = settingsMap['specials_names'] ?? tryParseLocal('specialsNames', DEFAULT_SPECIALS);
       const abbreviations: Abbreviation[] = settingsMap['abbreviations'] ?? [];
       const stats: Stats = settingsMap['stats'] ?? { notes_created: 0, reports_generated: 0 };
       const lessonHistory: DeliveredLesson[] = settingsMap['lesson_history'] ?? [];

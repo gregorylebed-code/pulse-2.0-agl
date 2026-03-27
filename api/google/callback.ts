@@ -6,7 +6,10 @@ export default async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const userId = url.searchParams.get('state');
-  const appUrl = process.env.VITE_APP_URL || process.env.APP_URL || 'https://pulse-3.vercel.app';
+  const appUrl = process.env.VITE_APP_URL || process.env.APP_URL;
+  if (!appUrl) {
+    return new Response('Server misconfigured — missing APP_URL', { status: 500 });
+  }
 
   if (!code || !userId) {
     return Response.redirect(`${appUrl}/?google=error`);
