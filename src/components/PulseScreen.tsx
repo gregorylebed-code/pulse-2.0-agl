@@ -25,6 +25,7 @@ interface PulseScreenProps {
   deleteNote: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
   resetKey?: number;
+  onStudentClick?: (studentId: string) => void;
 }
 
 // ─── Today at a Glance ───────────────────────────────────────────────────────
@@ -109,7 +110,7 @@ function TodayAtAGlance({ notes, indicators }: { notes: Note[]; indicators: any[
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey }: PulseScreenProps) {
+function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick }: PulseScreenProps) {
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [studentInput, setStudentInput] = useState('');
   const [suggestions, setSuggestions] = useState<Student[]>([]);
@@ -955,7 +956,10 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                     <span className="text-[11px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">Class Note</span>
                   </div>
                 ) : (
-                  <h4 className="font-black text-slate-900 text-base truncate font-display">{note.student_name}</h4>
+                  <h4
+                    className={cn("font-black text-slate-900 text-base truncate font-display", onStudentClick && note.student_id && "cursor-pointer hover:underline")}
+                    onClick={onStudentClick && note.student_id ? (e) => { e.stopPropagation(); onStudentClick(note.student_id!); } : undefined}
+                  >{note.student_name}</h4>
                 )}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-slate-300 tracking-tight">{new Date(note.created_at).toLocaleDateString()}</span>

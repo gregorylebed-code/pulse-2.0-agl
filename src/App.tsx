@@ -336,6 +336,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   deleteNote={deleteNote}
                   abbreviations={abbreviations}
                   resetKey={pulseResetKey}
+                  onStudentClick={(studentId) => { setSelectedStudentId(studentId); setActiveTab('students'); }}
                 />
               ) : (
                 <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} summaries={classSummaries} setSummaries={setClassSummaries} />
