@@ -1,19 +1,31 @@
 import { createClient } from '@supabase/supabase-js';
+import { Redis } from '@upstash/redis';
 
 export const config = { runtime: 'edge' };
 
 export default async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
-  const userId = url.searchParams.get('state');
+  const stateToken = url.searchParams.get('state');
   const appUrl = process.env.VITE_APP_URL || process.env.APP_URL;
   if (!appUrl) {
     return new Response('Server misconfigured — missing APP_URL', { status: 500 });
   }
 
-  if (!code || !userId) {
+  if (!code || !stateToken) {
     return Response.redirect(`${appUrl}/?google=error`);
   }
+
+  // Look up userId from the random state token and delete it (one-time use)
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+  const userId = await redis.get<string>(`oauth:state:${stateToken}`);
+  if (!userId) {
+    return Response.redirect(`${appUrl}/?google=error`);
+  }
+  await redis.del(`oauth:state:${stateToken}`);
 
   // Exchange auth code for tokens
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {

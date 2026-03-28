@@ -1,9 +1,21 @@
+import { Redis } from '@upstash/redis';
+
 export const config = { runtime: 'edge' };
 
-export default function handler(req: Request): Response {
+export default async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const userId = url.searchParams.get('userId');
   if (!userId) return new Response('Missing userId', { status: 400 });
+
+  // Generate an unguessable random state token to prevent OAuth CSRF
+  const stateToken = crypto.randomUUID();
+
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+  // Store stateToken → userId for 5 minutes (TTL matches OAuth flow window)
+  await redis.set(`oauth:state:${stateToken}`, userId, { ex: 300 });
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
@@ -15,7 +27,7 @@ export default function handler(req: Request): Response {
     ].join(' '),
     access_type: 'offline',
     prompt: 'consent',
-    state: userId,
+    state: stateToken,
   });
 
   return Response.redirect(

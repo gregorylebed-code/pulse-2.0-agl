@@ -69,13 +69,17 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
   useEffect(() => {
     if (activeTab !== 'google' || !googleConnected) return;
     setGcLoadingCourses(true);
-    fetch(`/api/google/courses?userId=${userId}`)
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setGcCourses(data);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      fetch('/api/google/courses', {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       })
-      .catch(() => toast.error('Failed to load courses'))
-      .finally(() => setGcLoadingCourses(false));
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) setGcCourses(data);
+        })
+        .catch(() => toast.error('Failed to load courses'))
+        .finally(() => setGcLoadingCourses(false));
+    });
   }, [activeTab, googleConnected, userId]);
 
   const handleSelectCourse = async (course: any) => {
@@ -83,7 +87,10 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
     setGcStudents([]);
     setGcLoadingStudents(true);
     try {
-      const res = await fetch(`/api/google/students?userId=${userId}&courseId=${course.id}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/google/students?courseId=${course.id}`, {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
       const data = await res.json();
       if (Array.isArray(data)) setGcStudents(data);
     } catch {

@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { getValidToken } from './_token';
 import { googleLimiter, getIp } from '../_ratelimit';
 
@@ -12,12 +13,24 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 
+  const jwt = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
+  if (!jwt) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  const supabaseAdmin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(jwt);
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  const userId = user.id;
+
   const url = new URL(req.url);
-  const userId = url.searchParams.get('userId');
   const courseId = url.searchParams.get('courseId');
 
-  if (!userId || !courseId) {
-    return new Response(JSON.stringify({ error: 'Missing userId or courseId' }), { status: 400 });
+  if (!courseId) {
+    return new Response(JSON.stringify({ error: 'Missing courseId' }), { status: 400 });
   }
 
   const token = await getValidToken(userId);
