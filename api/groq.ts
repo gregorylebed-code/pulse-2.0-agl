@@ -1,5 +1,6 @@
 export const config = { runtime: 'edge' };
 
+import { createClient } from '@supabase/supabase-js';
 import { groqLimiter, getIp } from './_ratelimit';
 
 // Map Groq model names to Together AI equivalents
@@ -18,6 +19,22 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(
       JSON.stringify({ error: { message: 'Too many requests. Please wait a moment.' } }),
       { status: 429, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const jwt = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
+  if (!jwt) {
+    return new Response(
+      JSON.stringify({ error: { message: 'Unauthorized' } }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { error: authError } = await supabase.auth.getUser(jwt);
+  if (authError) {
+    return new Response(
+      JSON.stringify({ error: { message: 'Unauthorized' } }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
     );
   }
 

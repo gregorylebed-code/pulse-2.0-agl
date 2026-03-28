@@ -435,7 +435,15 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                 Connect your Google account to import students from any of your active classes.
               </div>
               <button
-                onClick={() => window.location.href = `/api/google/auth?userId=${userId}`}
+                onClick={async () => {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  const res = await fetch('/api/google/auth', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${session?.access_token}` },
+                  });
+                  const { url } = await res.json();
+                  if (url) window.location.href = url;
+                }}
                 className="w-full py-4 bg-blue-500 text-white rounded-[24px] font-bold text-sm hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
               >
                 <School className="w-4 h-4" /> Connect Google Classroom

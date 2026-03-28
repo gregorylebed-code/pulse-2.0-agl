@@ -38,12 +38,17 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
     ? AbortSignal.any([signal, timeoutController.signal])
     : timeoutController.signal;
 
+  const { data: { session } } = await supabase.auth.getSession();
+
   let response: Response;
   try {
     // All AI calls go through our server-side proxy — key never touches the browser
     response = await fetch('/api/groq', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
       body: JSON.stringify({
         model,
         messages,

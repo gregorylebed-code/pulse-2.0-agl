@@ -1,11 +1,25 @@
+import { createClient } from '@supabase/supabase-js';
 import { Redis } from '@upstash/redis';
 
 export const config = { runtime: 'edge' };
 
 export default async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
-  const userId = url.searchParams.get('userId');
-  if (!userId) return new Response('Missing userId', { status: 400 });
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  // Verify the caller is a real authenticated user
+  const jwt = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
+  if (!jwt) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  }
+  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  const userId = user.id;
 
   // Generate an unguessable random state token to prevent OAuth CSRF
   const stateToken = crypto.randomUUID();
@@ -30,7 +44,10 @@ export default async function handler(req: Request): Promise<Response> {
     state: stateToken,
   });
 
-  return Response.redirect(
-    `https://accounts.google.com/o/oauth2/v2/auth?${params}`
-  );
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+
+  // Return the URL as JSON — frontend will navigate to it
+  return new Response(JSON.stringify({ url }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
