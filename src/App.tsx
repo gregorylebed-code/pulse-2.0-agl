@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 import { useClassroomData } from './hooks/useClassroomData';
 import { useAuth, signOut } from './lib/auth';
+import { supabase } from './lib/supabase';
 import AuthScreen from './components/AuthScreen';
 import { migrateLocalDataToUser } from './utils/migrateLocalData';
 import PulseScreen from './components/PulseScreen';
@@ -63,6 +64,11 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('cp_theme', theme);
   }, [theme]);
+
+  // Heartbeat — update last_seen whenever the app loads
+  useEffect(() => {
+    supabase.from('user_presence').upsert({ user_id: userId, last_seen: new Date().toISOString() });
+  }, [userId]);
 
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'insights' | 'settings'>('pulse');
   const tabOrder = { pulse: 0, students: 1, insights: 2, settings: 3 } as const;
