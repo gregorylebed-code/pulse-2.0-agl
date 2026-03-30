@@ -1,6 +1,8 @@
 import { Note, SELTopic, SELLesson, GoalCategory } from "../types";
 import { supabase } from "./supabase";
 
+const stripEmDashes = (text: string) => text.replace(/\s*—\s*/g, ' - ');
+
 async function logTokenUsage(callType: string, usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
@@ -231,7 +233,13 @@ function parseReportJson(raw: string): ReportData | null {
     const parsed = JSON.parse(clean);
     const { opening, glow, grow, goal, closing } = parsed;
     if (!opening || !glow || !grow || !goal || !closing) { console.log('[parseReportJson] missing fields:', { opening: !!opening, glow: !!glow, grow: !!grow, goal: !!goal, closing: !!closing }); return null; }
-    return { opening, glow, grow, goal, closing };
+    return {
+      opening: stripEmDashes(opening),
+      glow: stripEmDashes(glow),
+      grow: stripEmDashes(grow),
+      goal: stripEmDashes(goal),
+      closing: stripEmDashes(closing),
+    };
   } catch (e) {
     console.error('[parseReportJson] parse error:', e);
     return null;
@@ -287,7 +295,7 @@ The teacher wants to refine it with this instruction: "${instructions}"
 
 Rewrite the note following the instruction. Keep it concise, warm, and appropriate for a parent message. Return only the revised note text — no labels, no quotes, no extra commentary.`;
 
-  return (await callGroq(prompt, false, undefined, 'refine_quick_note')).trim();
+  return stripEmDashes((await callGroq(prompt, false, undefined, 'refine_quick_note')).trim());
 }
 
 export async function refineReport(current: ReportData, instructions: string): Promise<ReportData | null> {
@@ -343,7 +351,7 @@ export async function draftParentSquareMessage(content: string, studentName: str
       Observation: ${content}
 
       The tone should be collaborative and focus on student growth.`;
-  return await callGroq(prompt, false, undefined, 'draft_parentsquare');
+  return stripEmDashes(await callGroq(prompt, false, undefined, 'draft_parentsquare'));
 }
 
 export async function parseVoiceLog(transcript: string, students: string[], indicators: string[]) {
@@ -407,12 +415,12 @@ ${notesText}
 Report what was actually observed: behavioral patterns, engagement levels, social dynamics, specific concerns, and anything noteworthy. Be direct — do not soften problems or lead with positives. If something is a concern, name it plainly. If the class was unremarkable, say so. 3-5 sentences max. No jargon. This is for the teacher only.`;
 
   const responseText = await callGroq(prompt, false, undefined, 'summarize_class_period');
-  return responseText.trim();
+  return stripEmDashes(responseText.trim());
 }
 
 export async function queryStudentInsights(prompt: string): Promise<string> {
   const result = await callGroq(prompt, false, undefined, 'query_student_insights');
-  return (result || '').trim();
+  return stripEmDashes((result || '').trim());
 }
 
 export async function suggestSELTopics(notes: Note[], deliveredTitles: string[]): Promise<SELTopic[]> {
@@ -472,7 +480,7 @@ RULES:
 - Do NOT include any labels like "Positive:" or "Note:" — just output the message directly
 - Do NOT add any extra commentary, headers, or explanation`;
 
-  return await callGroq(prompt, false, undefined, 'quick_parent_note');
+  return stripEmDashes(await callGroq(prompt, false, undefined, 'quick_parent_note'));
 }
 
 export async function suggestGoals(studentName: string, notes: Note[]): Promise<Array<{ category: GoalCategory; goal_text: string }>> {
