@@ -67,7 +67,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   // Heartbeat — update last_seen whenever the app loads
   useEffect(() => {
-    supabase.from('user_presence').upsert({ user_id: userId, last_seen: new Date().toISOString() });
+    supabase.from('user_presence')
+      .upsert({ user_id: userId, last_seen: new Date().toISOString() })
+      .then(({ error }) => {
+        if (error) console.error('presence error:', error);
+        else console.log('presence updated for', userId);
+      });
   }, [userId]);
 
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'insights' | 'settings'>('pulse');
