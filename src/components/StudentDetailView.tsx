@@ -857,7 +857,7 @@ export default function StudentDetailView({
       }
     });
     const rangeLabel = quickNoteDays === 0 ? 'today' : quickNoteDays === 1 ? 'yesterday' : `the past ${quickNoteDays} days`;
-    if (filtered.length === 0) {
+    if (filtered.length === 0 && shoutouts.length === 0) {
       toast.error(`No notes from ${rangeLabel} to base this on.`);
       return;
     }
@@ -1996,12 +1996,12 @@ export default function StudentDetailView({
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={isGenerating || notes.length === 0}
+              disabled={isGenerating || (notes.length === 0 && shoutouts.length === 0)}
               className="w-full py-5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-orange-200/50 flex items-center justify-center gap-3 disabled:opacity-50"
             >
               {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Compose with AI</>}
             </button>
-            {notes.length === 0 && <p className="text-[11px] text-center text-slate-400 italic">No notes available to compose a report.</p>}
+            {notes.length === 0 && shoutouts.length === 0 && <p className="text-[11px] text-center text-slate-400 italic">No notes available to compose a report.</p>}
 
             {/* Customize options — hidden by default */}
             <button
