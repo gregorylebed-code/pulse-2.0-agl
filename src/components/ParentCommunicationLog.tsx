@@ -18,6 +18,7 @@ interface ParentCommunicationLogProps {
   onAdd: (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
   onUpdate: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -592,6 +593,7 @@ export default function ParentCommunicationLog({
   onAdd,
   onUpdate,
   onDelete,
+  addTask,
 }: ParentCommunicationLogProps) {
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState<string | null>(null);
@@ -616,7 +618,23 @@ export default function ParentCommunicationLog({
     const result = await onAdd(data);
     if (result) {
       setShowForm(false);
-      toast.success('Communication logged');
+      if (data.is_urgent && addTask) {
+        const taskText = data.subject
+          ? `Follow up: ${data.subject} (${student.name.split(' ')[0]})`
+          : `Urgent parent comm — ${student.name.split(' ')[0]}`;
+        toast('⚠ Urgent logged — add to task list?', {
+          duration: 8000,
+          action: {
+            label: 'Add task',
+            onClick: () => {
+              addTask({ text: taskText, completed: false, color: 'urgent' });
+              toast.success('Added to task list');
+            },
+          },
+        });
+      } else {
+        toast.success('Communication logged');
+      }
     } else {
       toast.error('Failed to save — please try again.');
     }

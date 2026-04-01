@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(vercel --version)",
+      "Bash(cat -n \"/c/projects/pulse 2.0 website/classroom-pulse-landing \\(2\\).html\")"
+    ]
+  }
+}

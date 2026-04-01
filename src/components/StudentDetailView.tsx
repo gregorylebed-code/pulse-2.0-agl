@@ -89,6 +89,7 @@ interface StudentDetailViewProps {
   teacherTitle: string;
   teacherLastName: string;
   shoutouts: Shoutout[];
+  addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
 }
 
 // ─── Student Mini Dashboard ───────────────────────────────────────────────────
@@ -292,6 +293,7 @@ export default function StudentDetailView({
   teacherTitle,
   teacherLastName,
   shoutouts,
+  addTask,
 }: StudentDetailViewProps) {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, []);
 
@@ -1735,6 +1737,7 @@ export default function StudentDetailView({
           onAdd={addParentCommunication}
           onUpdate={updateParentCommunication}
           onDelete={deleteParentCommunication}
+          addTask={addTask}
         />
       </div>
 

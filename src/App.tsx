@@ -374,6 +374,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 teacherTitle={teacherTitle}
                 teacherLastName={teacherLastName}
                 shoutouts={shoutouts}
+                addTask={addTask}
               />
             </motion.div>
           )}

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -41,6 +41,93 @@ interface StudentsScreenProps {
   teacherTitle: string;
   teacherLastName: string;
   shoutouts: Shoutout[];
+  addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
+}
+
+// ─── Pending Follow-ups Banner ────────────────────────────────────────────────
+
+function PendingFollowUpsBanner({
+  parentCommunications,
+  students,
+  onStudentClick,
+}: {
+  parentCommunications: ParentCommunication[];
+  students: Student[];
+  onStudentClick: (id: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(true);
+
+  const pending = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return parentCommunications
+      .filter(c => c.follow_up_date && !c.follow_up_done)
+      .sort((a, b) => new Date(a.follow_up_date!).getTime() - new Date(b.follow_up_date!).getTime());
+  }, [parentCommunications]);
+
+  if (pending.length === 0) return null;
+
+  const overdue = pending.filter(c => {
+    const d = new Date(c.follow_up_date! + 'T00:00');
+    return d < new Date();
+  });
+
+  return (
+    <div className="px-2">
+      <div className={cn('rounded-2xl border overflow-hidden', overdue.length > 0 ? 'border-amber-200 bg-amber-50' : 'border-blue-100 bg-blue-50')}>
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          className="w-full flex items-center gap-2 px-4 py-2.5"
+        >
+          <Calendar className={cn('w-4 h-4 flex-shrink-0', overdue.length > 0 ? 'text-amber-500' : 'text-blue-400')} />
+          <span className={cn('text-[12px] font-black flex-1 text-left', overdue.length > 0 ? 'text-amber-700' : 'text-blue-600')}>
+            {pending.length} pending follow-up{pending.length > 1 ? 's' : ''}
+            {overdue.length > 0 && ` · ${overdue.length} overdue`}
+          </span>
+          {collapsed ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronUp className="w-3.5 h-3.5 text-slate-400" />}
+        </button>
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="px-4 pb-3 space-y-1.5">
+                {pending.map(c => {
+                  const student = students.find(s => s.id === c.student_id);
+                  const fuDate = new Date(c.follow_up_date! + 'T00:00');
+                  const isOverdue = fuDate < new Date();
+                  const dateStr = fuDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => { onStudentClick(c.student_id); setCollapsed(true); }}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all hover:opacity-80',
+                        isOverdue ? 'bg-red-50 border border-red-100' : 'bg-white border border-blue-100'
+                      )}
+                    >
+                      <span className={cn('text-[12px] font-black flex-1 truncate', isOverdue ? 'text-red-600' : 'text-slate-700')}>
+                        {student?.name ?? c.student_name}
+                      </span>
+                      {c.subject && (
+                        <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{c.subject}</span>
+                      )}
+                      <span className={cn('text-[11px] font-bold flex-shrink-0', isOverdue ? 'text-red-500' : 'text-blue-400')}>
+                        {isOverdue ? `Overdue · ${dateStr}` : dateStr}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
 }
 
 export default function StudentsScreen({
@@ -73,6 +160,7 @@ export default function StudentsScreen({
   teacherTitle,
   teacherLastName,
   shoutouts,
+  addTask,
 }: StudentsScreenProps) {
   const [filter, setFilter] = useState<string>('All');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
@@ -315,6 +403,7 @@ export default function StudentsScreen({
         teacherTitle={teacherTitle}
         teacherLastName={teacherLastName}
         shoutouts={shoutouts.filter(s => s.student_id === selectedStudent.id)}
+        addTask={addTask}
       />
     );
   }
@@ -446,6 +535,13 @@ export default function StudentsScreen({
           className="w-full p-4 bg-white border border-slate-100 rounded-full focus:outline-none focus:ring-2 focus:ring-sage/20 text-sm font-medium shadow-inner"
         />
       </div>
+
+      {/* Pending Follow-ups Banner */}
+      <PendingFollowUpsBanner
+        parentCommunications={parentCommunications}
+        students={students}
+        onStudentClick={setSelectedStudentId}
+      />
 
       {/* AI Ask Box */}
       {isFullMode && <div className="px-2">
