@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail, Phone, Users, MessageSquare, Plus, Trash2, Edit2,
   CheckCircle2, Circle, ChevronDown, ChevronUp, AlertTriangle,
   Calendar, ArrowUpRight, ArrowDownLeft, X, Save, Copy,
-  ClipboardList, BookOpen, Filter
+  ClipboardList, BookOpen, Filter, Mic, MicOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ParentCommunication, Student } from '../types';
@@ -54,7 +54,8 @@ const blankForm = (student: Student) => ({
   subject: '',
   notes: '',
   parent_name: student.parent_guardian_names?.[0] ?? '',
-  comm_date: new Date().toISOString().slice(0, 16),
+  comm_date_date: new Date().toISOString().slice(0, 10),
+  comm_date_time: '',
   follow_up_date: '',
   follow_up_done: false,
   is_iep_related: false,
@@ -76,18 +77,19 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState({ subject: comm.subject ?? '', notes: comm.notes });
+  const [draft, setDraft] = useState({ subject: comm.subject ?? '', notes: comm.notes, is_urgent: comm.is_urgent, is_iep_related: comm.is_iep_related });
 
   const meta = getCommMeta(comm.comm_type);
   const dateObj = new Date(comm.comm_date);
   const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  const timeStr = dateObj.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const hasTime = dateObj.getHours() !== 0 || dateObj.getMinutes() !== 0;
+  const timeStr = hasTime ? dateObj.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : null;
 
   const followUpDate = comm.follow_up_date ? new Date(comm.follow_up_date + 'T00:00') : null;
   const followUpOverdue = followUpDate && !comm.follow_up_done && followUpDate < new Date();
 
   const handleSaveEdit = () => {
-    onUpdate(comm.id, { subject: draft.subject || null, notes: draft.notes });
+    onUpdate(comm.id, { subject: draft.subject || null, notes: draft.notes, is_urgent: draft.is_urgent, is_iep_related: draft.is_iep_related });
     setEditing(false);
     toast.success('Updated');
   };
@@ -146,7 +148,7 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
             </span>
           )}
 
-          <span className="ml-auto text-[11px] text-slate-400 font-medium">{dateStr} · {timeStr}</span>
+          <span className="ml-auto text-[11px] text-slate-400 font-medium">{dateStr}{timeStr ? ` · ${timeStr}` : ''}</span>
         </div>
 
         {/* Row 2: subject + parent */}
@@ -191,6 +193,20 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
                       rows={4}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage resize-none leading-relaxed"
                     />
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => setDraft(d => ({ ...d, is_urgent: !d.is_urgent }))}
+                        className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all', draft.is_urgent ? 'bg-red-50 border-red-200 text-red-500' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100')}
+                      >
+                        {draft.is_urgent ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />} Urgent
+                      </button>
+                      <button
+                        onClick={() => setDraft(d => ({ ...d, is_iep_related: !d.is_iep_related }))}
+                        className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all', draft.is_iep_related ? 'bg-violet-50 border-violet-200 text-violet-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100')}
+                      >
+                        {draft.is_iep_related ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />} IEP Related
+                      </button>
+                    </div>
                     <div className="flex gap-2">
                       <button
                         onClick={handleSaveEdit}
@@ -199,7 +215,7 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
                         <Save className="w-3.5 h-3.5" /> Save
                       </button>
                       <button
-                        onClick={() => { setEditing(false); setDraft({ subject: comm.subject ?? '', notes: comm.notes }); }}
+                        onClick={() => { setEditing(false); setDraft({ subject: comm.subject ?? '', notes: comm.notes, is_urgent: comm.is_urgent, is_iep_related: comm.is_iep_related }); }}
                         className="px-3 py-1.5 bg-slate-100 text-slate-500 rounded-xl text-[12px] font-black hover:bg-slate-200 transition-colors"
                       >
                         Cancel
@@ -285,13 +301,34 @@ function AddCommForm({
 }) {
   const [form, setForm] = useState(blankForm(student));
   const [saving, setSaving] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   const set = <K extends keyof typeof form>(key: K, val: (typeof form)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
 
+  const handleVoice = () => {
+    if (isListening) { recognitionRef.current?.stop(); return; }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+    const r = new SR();
+    r.lang = 'en-US';
+    r.onstart = () => setIsListening(true);
+    r.onend = () => setIsListening(false);
+    r.onresult = (e: any) => {
+      const t = e.results[0][0].transcript;
+      setForm(f => ({ ...f, notes: f.notes ? f.notes + ' ' + t : t }));
+    };
+    recognitionRef.current = r;
+    r.start();
+  };
+
   const handleSubmit = async () => {
     if (!form.notes.trim()) { toast.error('Please add notes about the communication.'); return; }
     setSaving(true);
+    const commDate = form.comm_date_time
+      ? new Date(form.comm_date_date + 'T' + form.comm_date_time).toISOString()
+      : new Date(form.comm_date_date + 'T00:00').toISOString();
     try {
       await onSave({
         student_id: student.id,
@@ -301,7 +338,7 @@ function AddCommForm({
         subject: form.subject || null,
         notes: form.notes.trim(),
         parent_name: form.parent_name || null,
-        comm_date: new Date(form.comm_date).toISOString(),
+        comm_date: commDate,
         follow_up_date: form.follow_up_date || null,
         follow_up_done: form.follow_up_done,
         is_iep_related: form.is_iep_related,
@@ -384,34 +421,52 @@ function AddCommForm({
       </div>
 
       {/* Notes */}
-      <textarea
-        value={form.notes}
-        onChange={e => set('notes', e.target.value)}
-        placeholder="What was discussed? Key points, next steps, tone of the conversation..."
-        rows={4}
-        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage resize-none leading-relaxed"
-      />
+      <div className="relative">
+        <textarea
+          value={form.notes}
+          onChange={e => set('notes', e.target.value)}
+          placeholder="What was discussed? Key points, next steps, tone of the conversation..."
+          rows={4}
+          className="w-full px-3 py-2 pr-11 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage resize-none leading-relaxed"
+        />
+        <button
+          type="button"
+          onClick={handleVoice}
+          className={cn('absolute right-2 bottom-2 w-8 h-8 rounded-xl flex items-center justify-center transition-all', isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 text-slate-500 hover:bg-sage/20 hover:text-sage')}
+        >
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+        </button>
+      </div>
 
-      {/* Date + Follow-up */}
+      {/* Date + Time + Follow-up */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Date &amp; Time</label>
+          <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Date</label>
           <input
-            type="datetime-local"
-            value={form.comm_date}
-            onChange={e => set('comm_date', e.target.value)}
+            type="date"
+            value={form.comm_date_date}
+            onChange={e => set('comm_date_date', e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[12px] font-medium focus:outline-none focus:border-sage"
           />
         </div>
         <div>
-          <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Follow-up Date</label>
+          <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Time <span className="normal-case font-medium">(optional)</span></label>
           <input
-            type="date"
-            value={form.follow_up_date}
-            onChange={e => set('follow_up_date', e.target.value)}
+            type="time"
+            value={form.comm_date_time}
+            onChange={e => set('comm_date_time', e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[12px] font-medium focus:outline-none focus:border-sage"
           />
         </div>
+      </div>
+      <div>
+        <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Follow-up Date <span className="normal-case font-medium">(optional)</span></label>
+        <input
+          type="date"
+          value={form.follow_up_date}
+          onChange={e => set('follow_up_date', e.target.value)}
+          className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[12px] font-medium focus:outline-none focus:border-sage"
+        />
       </div>
 
       {/* Flags */}
@@ -467,7 +522,7 @@ function CommSummary({ communications }: { communications: ParentCommunication[]
       ? (() => {
           const d = new Date(lastComm.comm_date);
           const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
-          return diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : `${diff}d ago`;
+          return diff <= 0 ? 'Today' : diff === 1 ? 'Yesterday' : `${diff}d ago`;
         })()
       : 'Never';
 
@@ -508,7 +563,7 @@ function buildFullLog(student: Student, comms: ParentCommunication[]): string {
     '═'.repeat(60),
   ];
 
-  comms.forEach((c, i) => {
+  [...comms].reverse().forEach((c, i) => {
     const d = new Date(c.comm_date);
     lines.push('');
     lines.push(`[${i + 1}] ${c.comm_type.toUpperCase()} · ${c.direction.toUpperCase()} · ${d.toLocaleDateString()} ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`);
@@ -570,7 +625,7 @@ export default function ParentCommunicationLog({
   const handleCopyAll = () => {
     if (allComms.length === 0) return;
     navigator.clipboard.writeText(buildFullLog(student, allComms));
-    toast.success(`Copied full log (${allComms.length} entries) — ready to paste into IEP docs`);
+    toast.success(`Copied full log (${allComms.length} entries)`);
   };
 
   // Group by month for timeline rendering
@@ -599,14 +654,27 @@ export default function ParentCommunicationLog({
         </div>
         <div className="flex items-center gap-2">
           {allComms.length > 0 && (
-            <button
-              onClick={handleCopyAll}
-              title="Copy full log for IEP meetings"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 border border-violet-100 text-violet-600 rounded-xl text-[12px] font-black hover:bg-violet-100 transition-colors"
-            >
-              <ClipboardList className="w-3.5 h-3.5" />
-              IEP Copy
-            </button>
+            <>
+              <button
+                onClick={handleCopyAll}
+                title="Copy full communication log"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 border border-violet-100 text-violet-600 rounded-xl text-[12px] font-black hover:bg-violet-100 transition-colors"
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+                Copy
+              </button>
+              <button
+                onClick={() => {
+                  const body = buildFullLog(student, allComms);
+                  window.location.href = `mailto:?subject=${encodeURIComponent(`Parent Communication Log — ${student.name}`)}&body=${encodeURIComponent(body)}`;
+                }}
+                title="Email full communication log"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl text-[12px] font-black hover:bg-blue-100 transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                Email
+              </button>
+            </>
           )}
           <button
             onClick={() => setShowForm(f => !f)}
