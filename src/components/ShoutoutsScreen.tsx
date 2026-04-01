@@ -95,7 +95,7 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-[22px] font-black text-slate-800 dark:text-white">Shoutout Wall</h2>
+          <h2 className="text-[22px] font-black text-slate-800">Shoutout Wall</h2>
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{shoutouts.length} total shoutouts</p>
         </div>
         <motion.button
