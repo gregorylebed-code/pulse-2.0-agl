@@ -1489,10 +1489,6 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <div ref={progressRef} id="progress" className="scroll-mt-header">
-        <StudentProgressChart student={student} notes={notes} indicators={indicators} />
-      </div>
-
       <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex flex-col gap-1.5 no-print">
         {/* Row 1: student-focused */}
         <div className="flex items-center gap-1">
@@ -2505,6 +2501,10 @@ export default function StudentDetailView({
             </div>
             </>
           )}
+
+          <div ref={progressRef} id="progress" className="pt-6 mt-6 border-t border-slate-100 scroll-mt-header">
+            <StudentProgressChart student={student} notes={notes} indicators={indicators} />
+          </div>
 
           <div id="history" ref={historyRef} className="space-y-4 pt-6 mt-6 border-t border-slate-100 scroll-mt-header">
             <div className="flex items-center justify-between">
