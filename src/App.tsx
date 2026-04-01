@@ -12,6 +12,7 @@ import FeedbackModal from './components/FeedbackModal';
 import StudentsScreen from './components/StudentsScreen';
 import TaskDrawer from './components/TaskDrawer';
 import SettingsScreen from './components/SettingsScreen';
+import ShoutoutsScreen from './components/ShoutoutsScreen';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import { cn } from './utils/cn';
@@ -47,6 +48,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     addTask, updateTask, deleteTask,
     addReport, deleteReport,
     goals, addGoal, updateGoal, deleteGoal,
+    shoutouts, addShoutout, deleteShoutout,
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
     saveSpecialsMode, saveDayOfWeekSpecials, saveRollingConfig, saveTodayOverride,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
@@ -70,8 +72,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     supabase.from('user_presence').upsert({ user_id: userId, last_seen: new Date().toISOString() });
   }, [userId]);
 
-  const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'insights' | 'settings'>('pulse');
-  const tabOrder = { pulse: 0, students: 1, insights: 2, settings: 3 } as const;
+  const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings'>('pulse');
+  const tabOrder = { pulse: 0, students: 1, insights: 2, shoutouts: 3, settings: 4 } as const;
   const prevTabRef = useRef<typeof activeTab>('pulse');
   const tabDirection = tabOrder[activeTab] >= tabOrder[prevTabRef.current] ? 1 : -1;
   const [classSummaries, setClassSummaries] = useState<Record<string, string>>({});
@@ -235,7 +237,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   // Swipe to change tabs
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const tabs = (['pulse', 'students', isFullMode ? 'insights' : null, 'settings'] as const).filter(Boolean) as ('pulse' | 'students' | 'insights' | 'settings')[];
+  const tabs = (['pulse', 'students', isFullMode ? 'insights' : null, 'shoutouts', 'settings'] as const).filter(Boolean) as ('pulse' | 'students' | 'insights' | 'shoutouts' | 'settings')[];
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
     swipeStartRef.current = { x: t.clientX, y: t.clientY };
@@ -379,6 +381,16 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   setSelectedStudentId(studentId);
                   setActiveTab('students');
                 }}
+              />
+            </motion.div>
+          )}
+          {activeTab === 'shoutouts' && (
+            <motion.div key="shoutouts" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <ShoutoutsScreen
+                shoutouts={shoutouts}
+                students={students}
+                addShoutout={addShoutout}
+                deleteShoutout={deleteShoutout}
               />
             </motion.div>
           )}

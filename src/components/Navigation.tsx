@@ -1,12 +1,12 @@
 import React from 'react';
-import { Activity, Users, Settings, BarChart2 } from 'lucide-react';
+import { Activity, Users, Settings, BarChart2, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { isFullMode } from '../lib/mode';
 
 interface NavigationProps {
-  activeTab: 'pulse' | 'students' | 'insights' | 'settings';
-  setActiveTab: (tab: 'pulse' | 'students' | 'insights' | 'settings') => void;
+  activeTab: 'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings';
+  setActiveTab: (tab: 'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings') => void;
 }
 
 function NavButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
@@ -51,6 +51,7 @@ export default function Navigation({ activeTab, setActiveTab }: NavigationProps)
       <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Notes" />
       <NavButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users />} label="Students" />
       {isFullMode && <NavButton active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} icon={<BarChart2 />} label="Insights" />}
+      <NavButton active={activeTab === 'shoutouts'} onClick={() => setActiveTab('shoutouts')} icon={<Star />} label="Shoutouts" />
       <NavButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings />} label="Settings" />
     </nav>
   );

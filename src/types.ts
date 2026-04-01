@@ -105,6 +105,16 @@ export interface SELLesson {
   exitTicket: string;
 }
 
+export interface Shoutout {
+  id: string;
+  student_id: string | null;
+  student_name: string;
+  content: string;
+  category: string | null;
+  user_id: string;
+  created_at: string;
+}
+
 export interface DeliveredLesson {
   className: string;
   title: string;

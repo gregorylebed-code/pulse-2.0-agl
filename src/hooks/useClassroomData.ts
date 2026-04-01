@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus } from '../types';
+import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus, Shoutout } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { SpecialsMode } from '../utils/rotationHelpers';
 import { NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '../utils/notifications';
@@ -97,6 +97,7 @@ interface ClassroomDataState {
   notes: Note[];
   students: Student[];
   goals: StudentGoal[];
+  shoutouts: Shoutout[];
   indicators: Indicator[];
   commTypes: Indicator[];
   classes: string[];
@@ -125,6 +126,8 @@ interface ClassroomDataActions {
   addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
   updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  addShoutout: (shoutout: Omit<Shoutout, 'id' | 'created_at' | 'user_id'>) => Promise<Shoutout | null>;
+  deleteShoutout: (id: string) => Promise<void>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   addStudent: (student: Omit<Student, 'id' | 'created_at' | 'user_id'>) => Promise<Student | null>;
@@ -158,6 +161,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     notes: [],
     students: [],
     goals: [],
+    shoutouts: [],
     indicators: [],
     commTypes: [],
     classes: ['AM', 'PM'],
@@ -198,6 +202,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         { data: reportsData },
         { data: settingsData },
         { data: goalsData },
+        { data: shoutoutsData },
       ] = await Promise.all([
         supabase.from('notes').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('students').select('*').eq('user_id', userId),
@@ -209,6 +214,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         supabase.from('reports').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('settings').select('*').eq('user_id', userId),
         supabase.from('student_goals').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+        supabase.from('shoutouts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       ]);
 
       if (notesError) throw new Error(`Notes: ${notesError.message}`);
@@ -264,6 +270,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         notes: notesWithNames as Note[],
         students: studentsWithCamel as Student[],
         goals: (goalsData || []) as StudentGoal[],
+        shoutouts: (shoutoutsData || []) as Shoutout[],
         // Use DB indicators directly; seed defaults for new accounts
         indicators: (indicatorsData && indicatorsData.length > 0)
           ? (indicatorsData as Indicator[])
@@ -782,6 +789,34 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, []);
 
+  // ─── Shoutouts ──────────────────────────────────────────────────────────────
+
+  const addShoutout = useCallback(async (shoutout: Omit<Shoutout, 'id' | 'created_at' | 'user_id'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('shoutouts')
+        .insert([{ ...shoutout, user_id: userId, created_at: new Date().toISOString() }])
+        .select()
+        .single();
+      if (error) throw error;
+      setState(prev => ({ ...prev, shoutouts: [data as Shoutout, ...prev.shoutouts] }));
+      return data as Shoutout;
+    } catch (error) {
+      console.error('Error adding shoutout:', error);
+      return null;
+    }
+  }, [userId]);
+
+  const deleteShoutout = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase.from('shoutouts').delete().eq('id', id);
+      if (error) throw error;
+      setState(prev => ({ ...prev, shoutouts: prev.shoutouts.filter(s => s.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting shoutout:', error);
+    }
+  }, []);
+
   return {
     ...state,
     addNote,
@@ -814,5 +849,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     addGoal,
     updateGoal,
     deleteGoal,
+    addShoutout,
+    deleteShoutout,
   };
 }
