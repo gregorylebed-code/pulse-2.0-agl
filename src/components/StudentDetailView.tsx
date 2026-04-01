@@ -356,6 +356,15 @@ export default function StudentDetailView({
   const aiReportRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
 
+  const handleDeleteGoal = (id: string) => {
+    let cancelled = false;
+    const timer = setTimeout(() => { if (!cancelled) deleteGoal(id); }, 3000);
+    toast('Goal deleted', {
+      duration: 3000,
+      action: { label: 'Undo', onClick: () => { cancelled = true; clearTimeout(timer); toast.dismiss(); } },
+    });
+  };
+
   const handleClearNote = () => {
     setNoteContent('');
     setSelectedTags([]);
@@ -1854,7 +1863,7 @@ export default function StudentDetailView({
                   </div>
                   <button
                     type="button"
-                    onClick={() => deleteGoal(goal.id)}
+                    onClick={() => handleDeleteGoal(goal.id)}
                     className="p-1 text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
                   >
                     <X className="w-3.5 h-3.5" />
