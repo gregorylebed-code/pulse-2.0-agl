@@ -304,7 +304,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         setShowTasks={setShowTasks}
       />
 
-      <main ref={mainRef} className="flex-1 px-6 pb-24 overflow-y-auto" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <main ref={mainRef} className="flex-1 px-6 overflow-y-auto" style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <AnimatePresence mode="wait" custom={tabDirection}>
           {activeTab === 'pulse' && (
             <motion.div key="pulse" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit" className="space-y-4">
