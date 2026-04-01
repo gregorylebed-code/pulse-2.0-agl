@@ -2033,7 +2033,7 @@ export default function StudentDetailView({
                     <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1">Timeframe</h3>
                     <div className="grid grid-cols-3 gap-2">
                       {['Today', 'Last 7 Days', '15 Days', 'Last 30 Days', '60 Days', 'Whole Year', 'Custom Range'].map(range => (
-                        <button key={range} onClick={() => setTimeRange(range)} className={cn("py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border-2", timeRange === range ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
+                        <button key={range} onClick={() => setTimeRange(range)} className={cn("py-2 rounded-xl text-[10px] font-black uppercase tracking-wide border-2 transition-all leading-tight px-1", timeRange === range ? "bg-orange-400 text-white border-orange-400 shadow-md" : "bg-white text-slate-400 border-slate-100 hover:border-orange-300")}>
                           {range}
                         </button>
                       ))}
@@ -2055,7 +2055,7 @@ export default function StudentDetailView({
                     <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1">Report Type</h3>
                     <div className="grid grid-cols-3 gap-2">
                       {(['Quick Note', 'Standard', 'Detailed'] as const).map(len => (
-                        <button key={len} onClick={() => setReportLength(len)} className={cn("py-3 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border-2", reportLength === len ? "bg-sage/15 border-sage text-sage-dark shadow-md" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>
+                        <button key={len} onClick={() => setReportLength(len)} className={cn("py-2 rounded-xl text-[10px] font-black uppercase tracking-wide border-2 transition-all leading-tight px-1", reportLength === len ? "bg-orange-400 text-white border-orange-400 shadow-md" : "bg-white text-slate-400 border-slate-100 hover:border-orange-300")}>
                           {len}
                         </button>
                       ))}
