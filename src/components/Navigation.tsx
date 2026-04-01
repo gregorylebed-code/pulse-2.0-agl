@@ -15,18 +15,18 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
       onClick={onClick}
       whileTap={{ scale: 0.88 }}
       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-      className="flex flex-col items-center gap-1.5 transition-all duration-200 relative px-5 py-1"
+      className="flex flex-col items-center gap-1 transition-all duration-200 relative px-3 py-1"
     >
       <div className="relative flex items-center justify-center">
         {active && (
           <motion.div
             layoutId="nav-pill"
-            className="absolute inset-0 -mx-3 -my-1 bg-sage/10 rounded-2xl"
+            className="absolute inset-0 -mx-2 -my-1 bg-sage/10 rounded-2xl"
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           />
         )}
         {React.cloneElement(icon as React.ReactElement, {
-          className: cn('w-6 h-6 relative z-10 transition-colors duration-200', active ? 'text-sage' : 'text-slate-400'),
+          className: cn('w-5 h-5 relative z-10 transition-colors duration-200', active ? 'text-sage' : 'text-slate-400'),
           strokeWidth: active ? 2.5 : 1.8,
         })}
       </div>
