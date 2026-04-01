@@ -804,6 +804,65 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4 mt-6">
+              <h3 className="text-[15px] font-black text-slate-700 ml-1">Your Data</h3>
+              <p className="text-[11px] text-slate-400 ml-1">Download a copy of everything ShortHand has stored for you.</p>
+              <button
+                onClick={async () => {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) { toast.error('Not signed in.'); return; }
+                  const userId = session.user.id;
+                  const loadingToast = toast.loading('Gathering your data...');
+                  try {
+                    const [notes, students, classes, indicators, commTypes, calendarEvents, reports, settings, tasks, studentGoals] = await Promise.all([
+                      supabase.from('notes').select('*').eq('user_id', userId),
+                      supabase.from('students').select('*').eq('user_id', userId),
+                      supabase.from('classes').select('*').eq('user_id', userId),
+                      supabase.from('indicators').select('*').eq('user_id', userId),
+                      supabase.from('comm_types').select('*').eq('user_id', userId),
+                      supabase.from('calendar_events').select('*').eq('user_id', userId),
+                      supabase.from('reports').select('*').eq('user_id', userId),
+                      supabase.from('settings').select('*').eq('user_id', userId),
+                      supabase.from('tasks').select('*').eq('user_id', userId),
+                      supabase.from('student_goals').select('*').eq('user_id', userId),
+                    ]);
+                    const exportData = {
+                      exported_at: new Date().toISOString(),
+                      user_id: userId,
+                      email: session.user.email,
+                      data: {
+                        classes: classes.data ?? [],
+                        students: students.data ?? [],
+                        notes: notes.data ?? [],
+                        indicators: indicators.data ?? [],
+                        comm_types: commTypes.data ?? [],
+                        calendar_events: calendarEvents.data ?? [],
+                        reports: reports.data ?? [],
+                        settings: settings.data ?? [],
+                        tasks: tasks.data ?? [],
+                        student_goals: studentGoals.data ?? [],
+                      },
+                    };
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `shorthand-data-${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.dismiss(loadingToast);
+                    toast.success('Data exported!');
+                  } catch (err: any) {
+                    toast.dismiss(loadingToast);
+                    toast.error(`Export failed: ${err.message}`);
+                  }
+                }}
+                className="flex items-center gap-2 text-[11px] font-bold text-sage hover:text-sage-dark transition-colors px-3 py-1.5 rounded-xl hover:bg-sage/10"
+              >
+                <Database className="w-3.5 h-3.5" /> Export My Data
+              </button>
+            </div>
+
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4 mt-6">
               <h3 className="text-[15px] font-black text-terracotta ml-1">Danger Zone</h3>
               <p className="text-[11px] text-slate-400 ml-1">These actions are permanent and cannot be undone.</p>
 
