@@ -984,25 +984,6 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
           </div>
         </div>
 
-        {/* Class Trend Grid */}
-        {studentTrends.length > 0 && (
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
-            <CardHeader title="Student behavior trends · 4 weeks" onExpand={() => setExpandedCard('trendGrid')} />
-            <ClassTrendGridContent
-              studentTrends={studentTrends.slice(0, 6)}
-              onStudentClick={onStudentClick}
-            />
-            {studentTrends.length > 6 && (
-              <button
-                onClick={() => setExpandedCard('trendGrid')}
-                className="w-full mt-3 text-[11px] font-black text-sage hover:text-sage-dark transition-colors text-center"
-              >
-                See all {studentTrends.length} students →
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Class Comparison */}
         <ClassComparisonCard
           notes={filteredNotes}
@@ -1063,6 +1044,25 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
+        )}
+
+        {/* Class Trend Grid */}
+        {studentTrends.length > 0 && (
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
+            <CardHeader title="Student behavior trends · 4 weeks" onExpand={() => setExpandedCard('trendGrid')} />
+            <ClassTrendGridContent
+              studentTrends={studentTrends.slice(0, 6)}
+              onStudentClick={onStudentClick}
+            />
+            {studentTrends.length > 6 && (
+              <button
+                onClick={() => setExpandedCard('trendGrid')}
+                className="w-full mt-3 text-[11px] font-black text-sage hover:text-sage-dark transition-colors text-center"
+              >
+                See all {studentTrends.length} students →
+              </button>
+            )}
           </div>
         )}
       </div>
