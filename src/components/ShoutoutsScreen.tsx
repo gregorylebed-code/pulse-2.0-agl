@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Plus, Trash2, X, AlertCircle } from 'lucide-react';
+import { Star, Plus, Trash2, X, AlertCircle, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Student, Shoutout } from '../types';
 import { cn } from '../utils/cn';
@@ -26,6 +26,8 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
   const [category, setCategory] = useState<string | null>(null);
   const [filterStudent, setFilterStudent] = useState<string>('all');
   const [saving, setSaving] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   // Students who haven't received a shoutout in the last 14 days
   const overlookedStudents = useMemo(() => {
@@ -44,9 +46,28 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
     return shoutouts.filter(s => s.student_id === filterStudent);
   }, [shoutouts, filterStudent]);
 
+  const handleVoice = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) { toast.error('Voice not supported on this browser.'); return; }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setContent(prev => prev ? prev + ' ' + transcript : transcript);
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
   const handleSubmit = async () => {
-    if (!selectedStudent || !content.trim()) {
-      toast.error('Pick a student and write something.');
+    if (!selectedStudent || (!content.trim() && !category)) {
+      toast.error('Pick a student and add a category or write something.');
       return;
     }
     setSaving(true);
@@ -193,7 +214,7 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
               exit={{ y: 60, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-slate-800 rounded-t-[32px] w-full max-w-lg p-6 pb-10 space-y-5"
+              className="bg-white dark:bg-slate-800 rounded-t-[32px] w-full max-w-lg p-6 pb-10 space-y-5 mb-16"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-[16px] font-black text-slate-800 dark:text-white flex items-center gap-2">
@@ -238,14 +259,26 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
 
               {/* Content */}
               <div>
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 block">What did they do?</label>
-                <textarea
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  placeholder="e.g. Helped a classmate without being asked"
-                  rows={3}
-                  className="w-full text-[13px] bg-slate-50 dark:bg-slate-700 rounded-2xl px-4 py-3 resize-none outline-none border border-slate-200 dark:border-slate-600 focus:border-amber-400 transition-colors text-slate-800 dark:text-white placeholder:text-slate-400"
-                />
+                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 block">What did they do? <span className="normal-case font-medium text-slate-400">(optional if category selected)</span></label>
+                <div className="relative">
+                  <textarea
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    placeholder="e.g. Helped a classmate without being asked"
+                    rows={3}
+                    className="w-full text-[13px] bg-slate-50 dark:bg-slate-700 rounded-2xl px-4 py-3 pr-12 resize-none outline-none border border-slate-200 dark:border-slate-600 focus:border-amber-400 transition-colors text-slate-800 dark:text-white placeholder:text-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVoice}
+                    className={cn(
+                      'absolute right-3 bottom-3 w-8 h-8 rounded-xl flex items-center justify-center transition-all',
+                      isListening ? 'bg-terracotta text-white animate-pulse' : 'bg-slate-200 text-slate-500 hover:bg-amber-100 hover:text-amber-600'
+                    )}
+                  >
+                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <motion.button
