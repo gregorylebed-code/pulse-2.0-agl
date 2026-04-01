@@ -642,6 +642,7 @@ export default function StudentDetailView({
   const quickNoteRef = useRef<HTMLDivElement>(null);
   const goalsRef = useRef<HTMLDivElement>(null);
   const parentCommRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
   const [newGoalCategory, setNewGoalCategory] = useState<GoalCategory>('academic');
@@ -876,7 +877,7 @@ export default function StudentDetailView({
     return () => observer.disconnect();
   }, [activeSection]);
 
-  const scrollToSection = (sectionId: 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note' | 'parents') => {
+  const scrollToSection = (sectionId: 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note' | 'parents' | 'progress') => {
     const refs = {
       'timeline': timelineRef,
       'goals': goalsRef,
@@ -884,6 +885,7 @@ export default function StudentDetailView({
       'history': historyRef,
       'quick-note': quickNoteRef,
       'parents': parentCommRef,
+      'progress': progressRef,
     };
     const targetRef = refs[sectionId];
     if (targetRef?.current) {
@@ -1411,8 +1413,6 @@ export default function StudentDetailView({
 
       <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
 
-      <StudentProgressChart student={student} notes={notes} indicators={indicators} />
-
       <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Parent Contact</h3>
@@ -1489,6 +1489,10 @@ export default function StudentDetailView({
         </div>
       </div>
 
+      <div ref={progressRef} id="progress" className="scroll-mt-header">
+        <StudentProgressChart student={student} notes={notes} indicators={indicators} />
+      </div>
+
       <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex flex-col gap-1.5 no-print">
         {/* Row 1: student-focused */}
         <div className="flex items-center gap-1">
@@ -1524,6 +1528,15 @@ export default function StudentDetailView({
         </div>
         {/* Row 2: communication-focused */}
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => scrollToSection('progress')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Trends
+          </button>
           <button
             onClick={() => scrollToSection('parents')}
             className={cn(
