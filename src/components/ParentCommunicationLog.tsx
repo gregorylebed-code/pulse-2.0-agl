@@ -710,9 +710,9 @@ export default function ParentCommunicationLog({
           )}
           <button
             onClick={() => setShowForm(f => !f)}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-sage text-white rounded-xl text-[11px] font-black hover:bg-sage-dark transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-sage text-white rounded-xl text-[13px] font-black hover:bg-sage-dark transition-colors shadow-sm"
           >
-            {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
             {showForm ? 'Cancel' : 'Log'}
           </button>
         </div>
