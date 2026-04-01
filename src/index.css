@@ -30,6 +30,7 @@
 @layer base {
   body {
     @apply bg-cream text-slate-900;
+    overflow-x: hidden;
   }
   h1, h2, h3 {
     font-family: "Boogaloo", ui-sans-serif, system-ui, sans-serif;

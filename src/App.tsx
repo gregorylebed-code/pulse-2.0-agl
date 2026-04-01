@@ -287,7 +287,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   }, [loading, stats.notes_created, stats.reports_generated]);
 
   return (
-    <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20 overflow-x-hidden">
+    <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20">
       <Header
         userName={userName}
         quote={quote}
