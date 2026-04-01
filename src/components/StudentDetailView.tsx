@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
-import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus, ParentCommunication } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus, ParentCommunication, Shoutout } from '../types';
 import ParentCommunicationLog from './ParentCommunicationLog';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
@@ -88,6 +88,7 @@ interface StudentDetailViewProps {
   abbreviations: Abbreviation[];
   teacherTitle: string;
   teacherLastName: string;
+  shoutouts: Shoutout[];
 }
 
 // ─── Student Mini Dashboard ───────────────────────────────────────────────────
@@ -290,6 +291,7 @@ export default function StudentDetailView({
   abbreviations,
   teacherTitle,
   teacherLastName,
+  shoutouts,
 }: StudentDetailViewProps) {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, []);
 
@@ -1481,6 +1483,23 @@ export default function StudentDetailView({
           <h3 className="text-[15px] font-black text-slate-400 ml-1">Observation Timeline</h3>
         </div>
         <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+          {/* Shoutout entries */}
+          {shoutouts.map((shoutout) => (
+            <div key={`shoutout-${shoutout.id}`} className="relative">
+              <div className="absolute -left-[29px] top-1 w-6 h-6 bg-amber-50 border-2 border-amber-400 rounded-full flex items-center justify-center z-10 shadow-sm">
+                <span className="text-[10px]">⭐</span>
+              </div>
+              <div className="bg-amber-50 p-6 rounded-[32px] border border-amber-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-amber-400">{new Date(shoutout.created_at).toLocaleDateString()}</span>
+                  {shoutout.category && (
+                    <span className="px-2 py-1 bg-amber-100 text-amber-600 text-[11px] font-black rounded-md">{shoutout.category}</span>
+                  )}
+                </div>
+                <p className="text-sm text-slate-700 leading-relaxed">{shoutout.content}</p>
+              </div>
+            </div>
+          ))}
           {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).map((note) => (
             <div key={note.id} className="relative">
               <div className="absolute -left-[29px] top-1 w-6 h-6 bg-white border-2 border-sage rounded-full flex items-center justify-center z-10 shadow-sm">

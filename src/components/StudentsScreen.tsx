@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin } from 'lucide-react';
 import { toast } from 'sonner';
-import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
@@ -40,6 +40,7 @@ interface StudentsScreenProps {
   setSelectedStudentId: (id: string | null) => void;
   teacherTitle: string;
   teacherLastName: string;
+  shoutouts: Shoutout[];
 }
 
 export default function StudentsScreen({
@@ -71,6 +72,7 @@ export default function StudentsScreen({
   setSelectedStudentId,
   teacherTitle,
   teacherLastName,
+  shoutouts,
 }: StudentsScreenProps) {
   const [filter, setFilter] = useState<string>('All');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
@@ -311,6 +313,7 @@ export default function StudentsScreen({
         abbreviations={abbreviations}
         teacherTitle={teacherTitle}
         teacherLastName={teacherLastName}
+        shoutouts={shoutouts.filter(s => s.student_id === selectedStudent.id)}
       />
     );
   }
