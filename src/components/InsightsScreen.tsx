@@ -5,7 +5,7 @@ import { Note, Student } from '../types';
 import { cn } from '../utils/cn';
 
 type Period = 'week' | 'lastWeek' | 'month';
-type ExpandedCard = 'indicators' | 'streak' | 'perStudent' | 'classBreakdown' | 'heatmap' | null;
+type ExpandedCard = 'indicators' | 'streak' | 'perStudent' | 'classBreakdown' | 'heatmap' | 'trendGrid' | null;
 
 interface InsightsScreenProps {
   notes: Note[];
@@ -345,6 +345,155 @@ function LoggingHeatmap({ notes, onExpand }: { notes: Note[]; onExpand: () => vo
   );
 }
 
+// ─── Class Trend Grid ────────────────────────────────────────────────────────
+
+function useStudentTrends(
+  students: Student[],
+  notes: Note[],
+  indicatorTypeMap: Record<string, 'positive' | 'neutral' | 'growth'>
+) {
+  return useMemo(() => {
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    return students.map(student => {
+      const sNotes = notes.filter(n => n.student_name === student.name);
+
+      // 4 weekly buckets for sparkline + trend
+      const weeks = Array.from({ length: 4 }, (_, i) => {
+        const weekEnd = new Date(startOfToday);
+        weekEnd.setDate(startOfToday.getDate() - i * 7);
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekEnd.getDate() - 6);
+        const wNotes = sNotes.filter(n => {
+          const d = new Date(n.created_at);
+          return d >= weekStart && d <= weekEnd;
+        });
+        const positive = wNotes.filter(n =>
+          (n.tags || []).some(t => indicatorTypeMap[t] === 'positive')
+        ).length;
+        return { total: wNotes.length, positive, pct: wNotes.length > 0 ? Math.round((positive / wNotes.length) * 100) : null };
+      }).reverse(); // oldest → newest
+
+      const thisWeek = weeks[3];
+      const lastWeek = weeks[2];
+      const delta = thisWeek.pct !== null && lastWeek.pct !== null ? thisWeek.pct - lastWeek.pct : null;
+
+      // Trend based on 4-week shape
+      const withData = weeks.filter(w => w.pct !== null) as { pct: number }[];
+      let trend: 'up' | 'stable' | 'down' = 'stable';
+      if (withData.length >= 2) {
+        const first = withData.slice(0, Math.floor(withData.length / 2));
+        const second = withData.slice(Math.floor(withData.length / 2));
+        const avg = (arr: { pct: number }[]) => arr.reduce((s, d) => s + d.pct, 0) / arr.length;
+        const diff = avg(second) - avg(first);
+        if (diff > 5) trend = 'up';
+        else if (diff < -5) trend = 'down';
+      }
+
+      return { student, weeks, thisWeek, lastWeek, delta, trend, totalNotes: sNotes.length };
+    }).sort((a, b) => {
+      // Needs attention first, then stable, then up
+      const order = { down: 0, stable: 1, up: 2 };
+      return order[a.trend] - order[b.trend];
+    });
+  }, [students, notes, indicatorTypeMap]);
+}
+
+const TREND_CONFIG = {
+  up:     { label: 'Trending Up',      bg: 'bg-emerald-50',  text: 'text-emerald-700', dot: 'bg-emerald-500', icon: TrendingUp   },
+  stable: { label: 'Stable',           bg: 'bg-slate-100',   text: 'text-slate-500',   dot: 'bg-slate-400',   icon: Minus        },
+  down:   { label: 'Needs Attention',  bg: 'bg-red-50',      text: 'text-red-600',     dot: 'bg-red-500',     icon: TrendingDown },
+};
+
+function StudentTrendCard({ data, onClick }: {
+  key?: React.Key;
+  data: ReturnType<typeof useStudentTrends>[0];
+  onClick: () => void;
+}) {
+  const { student, weeks, thisWeek, delta, trend } = data;
+  const cfg = TREND_CONFIG[trend];
+  const Icon = cfg.icon;
+
+  // Mini sparkline (SVG)
+  const sparkW = 44, sparkH = 20;
+  const validWeeks = weeks.map((w, i) => ({ ...w, i })).filter(w => w.pct !== null) as { pct: number; i: number; total: number }[];
+  const sparkPoints = validWeeks.map(w => `${(w.i / 3) * sparkW},${sparkH - (w.pct / 100) * sparkH}`).join(' ');
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left bg-white rounded-2xl border border-slate-100 shadow-sm p-3 flex items-center gap-3 hover:border-slate-200 hover:shadow-md transition-all active:scale-[0.98]"
+    >
+      <StudentAvatar student={student} size={32} />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-black text-slate-700 truncate leading-tight">{student.name.split(' ')[0]} {student.name.split(' ').slice(-1)[0]?.[0]}.</p>
+        <div className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-full ${cfg.bg}`}>
+          <Icon className={`w-2.5 h-2.5 ${cfg.text}`} />
+          <span className={`text-[9px] font-black ${cfg.text}`}>{cfg.label}</span>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        {thisWeek.pct !== null ? (
+          <span className="text-sm font-black text-slate-700 leading-none">{thisWeek.pct}%</span>
+        ) : (
+          <span className="text-[10px] font-bold text-slate-300 leading-none">—</span>
+        )}
+        {delta !== null && (
+          <span className={`text-[9px] font-black leading-none ${delta > 0 ? 'text-emerald-500' : delta < 0 ? 'text-red-400' : 'text-slate-300'}`}>
+            {delta > 0 ? '+' : ''}{delta}%
+          </span>
+        )}
+        {validWeeks.length >= 2 && (
+          <svg width={sparkW} height={sparkH} className="mt-0.5">
+            <polyline
+              points={sparkPoints}
+              fill="none"
+              stroke={trend === 'up' ? '#10b981' : trend === 'down' ? '#f87171' : '#94a3b8'}
+              strokeWidth={1.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+      </div>
+    </button>
+  );
+}
+
+function ClassTrendGridContent({ studentTrends, onStudentClick }: {
+  studentTrends: ReturnType<typeof useStudentTrends>;
+  onStudentClick: (id: string) => void;
+}) {
+  const downCount = studentTrends.filter(d => d.trend === 'down').length;
+  const upCount = studentTrends.filter(d => d.trend === 'up').length;
+
+  return (
+    <>
+      {/* Summary pills */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {[
+          { label: `${downCount} Need Attention`, color: 'bg-red-50 text-red-600', show: downCount > 0 },
+          { label: `${studentTrends.length - downCount - upCount} Stable`, color: 'bg-slate-100 text-slate-500', show: true },
+          { label: `${upCount} Trending Up`, color: 'bg-emerald-50 text-emerald-700', show: upCount > 0 },
+        ].filter(p => p.show).map(p => (
+          <span key={p.label} className={`text-[11px] font-black px-2.5 py-1 rounded-full ${p.color}`}>{p.label}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {studentTrends.map(data => (
+          <StudentTrendCard
+            key={data.student.id}
+            data={data}
+            onClick={() => onStudentClick(data.student.id)}
+          />
+        ))}
+      </div>
+      <p className="text-[10px] text-slate-300 font-bold text-center mt-3">% positive · this week vs prior weeks · tap to open student</p>
+    </>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function InsightsScreen({ notes, students, indicators, onStudentClick }: InsightsScreenProps) {
@@ -438,6 +587,8 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
       .sort((a, b) => b.daysSince - a.daysSince);
   }, [notes, students]);
 
+  const studentTrends = useStudentTrends(students, notes, indicatorTypeMap);
+
   const topIndicators = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredNotes.forEach(n => {
@@ -516,6 +667,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
     perStudent: `Notes per student · ${bounds.label}`,
     classBreakdown: `Class breakdown · ${bounds.label}`,
     heatmap: 'Logging activity · 6 months',
+    trendGrid: 'Student behavior trends · 4 weeks',
   };
 
   return (
@@ -634,6 +786,10 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
 
             {expandedCard === 'heatmap' && (
               <LoggingHeatmapContent notes={notes} />
+            )}
+
+            {expandedCard === 'trendGrid' && (
+              <ClassTrendGridContent studentTrends={studentTrends} onStudentClick={(id) => { setExpandedCard(null); onStudentClick(id); }} />
             )}
           </FullScreenCard>
         )}
@@ -827,6 +983,25 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
             </span>
           </div>
         </div>
+
+        {/* Class Trend Grid */}
+        {studentTrends.length > 0 && (
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
+            <CardHeader title="Student behavior trends · 4 weeks" onExpand={() => setExpandedCard('trendGrid')} />
+            <ClassTrendGridContent
+              studentTrends={studentTrends.slice(0, 6)}
+              onStudentClick={onStudentClick}
+            />
+            {studentTrends.length > 6 && (
+              <button
+                onClick={() => setExpandedCard('trendGrid')}
+                className="w-full mt-3 text-[11px] font-black text-sage hover:text-sage-dark transition-colors text-center"
+              >
+                See all {studentTrends.length} students →
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Class Comparison */}
         <ClassComparisonCard
