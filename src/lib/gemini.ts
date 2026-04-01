@@ -247,7 +247,8 @@ function parseReportJson(raw: string): ReportData | null {
 }
 
 export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard'): Promise<ReportData | null> {
-  const notesText = notes.map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name}: ${n.content}`).join('\n');
+  const firstNameOnly = (name: string) => name?.split(' ')[0] || name;
+  const notesText = notes.map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${firstNameOnly(n.student_name)}: ${n.content}`).join('\n');
   const studentFirstName = notes[0]?.student_name?.split(' ')[0] || 'your child';
 
   let lengthInstruction = "Keep each section to 2-3 sentences.";
@@ -346,8 +347,9 @@ export async function magicImport(rosterText: string) {
 }
 
 export async function draftParentSquareMessage(content: string, studentName: string) {
+  const firstName = studentName.split(' ')[0];
   const prompt = `Draft a professional and supportive ParentSquare message based on this observation:
-      Student: ${studentName}
+      Student: ${firstName}
       Observation: ${content}
 
       The tone should be collaborative and focus on student growth.`;
@@ -355,9 +357,10 @@ export async function draftParentSquareMessage(content: string, studentName: str
 }
 
 export async function parseVoiceLog(transcript: string, students: string[], indicators: string[]) {
+  const firstNames = students.map(s => s.split(' ')[0]);
   const prompt = `Parse this teacher's voice note: "${transcript}".
 
-      Available Students: ${students.join(', ')}
+      Available Students: ${firstNames.join(', ')}
       Available Indicators: ${indicators.join(', ')}
 
       Extract:
@@ -403,8 +406,9 @@ Example: { "abbreviations": [{ "abbreviation": "ss", "expansion": "Social Studie
 }
 
 export async function summarizeClassPeriod(notes: Note[], className: string): Promise<string> {
+  const firstNameOnly = (name: string) => name?.split(' ')[0] || name;
   const notesText = notes
-    .map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name || n.class_name || 'Class'}: ${n.content}`)
+    .map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${firstNameOnly(n.student_name || n.class_name || 'Class')}: ${n.content}`)
     .join('\n');
 
   const prompt = `You are writing a blunt, factual observation summary for a teacher's internal record about class "${className}".
@@ -476,7 +480,7 @@ RULES:
 - If the overall tone of the observations is POSITIVE: end with exactly this line on a new line: "I am very proud and thought you would be too! — ${signOff}"
 - If the overall tone is NEGATIVE or CONCERNING: end with exactly this line on a new line: "I am disappointed in what happened today, but I thought you should know. — ${signOff}"
 - If the tone is MIXED: use your judgment on which sign-off fits better
-- IMPORTANT: If any other student's name appears in the observations (any name that is NOT "${studentName}"), replace it with "another student" in the note — EXCEPT names preceded by a title like Mr., Mrs., Miss, Ms., Dr., Coach, etc., which are teachers or staff and should be kept as-is
+- IMPORTANT: If any other student's name appears in the observations (any name that is NOT "${firstName}"), replace it with "another student" in the note — EXCEPT names preceded by a title like Mr., Mrs., Miss, Ms., Dr., Coach, etc., which are teachers or staff and should be kept as-is
 - Do NOT include any labels like "Positive:" or "Note:" — just output the message directly
 - Do NOT add any extra commentary, headers, or explanation`;
 
@@ -486,12 +490,13 @@ RULES:
 export async function suggestGoals(studentName: string, notes: Note[]): Promise<Array<{ category: GoalCategory; goal_text: string }>> {
   if (notes.length === 0) return [];
 
+  const firstName = studentName.split(' ')[0];
   const noteSummary = notes
     .slice(0, 20)
     .map(n => `- ${n.content}`)
     .join('\n');
 
-  const prompt = `You are helping a 3rd grade teacher set SMART goals for a student named ${studentName}.
+  const prompt = `You are helping a 3rd grade teacher set SMART goals for a student named ${firstName}.
 
 Here are the teacher's recent observation notes about this student:
 ${noteSummary}
