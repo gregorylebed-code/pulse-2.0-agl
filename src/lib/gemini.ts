@@ -266,7 +266,8 @@ export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Stan
 
 TONE RULES:
 - 8th Grade Reading Level: Use simple, direct language. No academic jargon like 'demonstrates,' 'interpersonal skills,' or 'prosocial.'
-- South Jersey Teacher Vibe: Write like you're talking to a parent over coffee. Use phrases like "He's been doing great with..." or "We're working on...".
+- South Jersey Teacher Vibe: Write like you're talking to a parent over coffee. Use phrases like "They've been doing great with..." or "We're working on...".
+- IMPORTANT: Never use he/him/his or she/her/hers — always use they/them/their.
 - Trend Analysis: Look at the notes as a whole and identify any patterns or improvements over time.
 - ${lengthInstruction}
 
@@ -485,6 +486,7 @@ RULES:
 - Write 1–3 sentences starting with "Dear Family,"
 - State only the facts from the observations — no Glow/Grow/Goal, no goals, no framework
 - Be warm but direct
+- IMPORTANT: Never use he/him/his or she/her/hers — always use they/them/their
 - If the overall tone of the observations is POSITIVE: end with exactly this line on a new line: "I am very proud and thought you would be too! — ${signOff}"
 - If the overall tone is NEGATIVE or CONCERNING: end with exactly this line on a new line: "I am disappointed in what happened today, but I thought you should know. — ${signOff}"
 - If the tone is MIXED: use your judgment on which sign-off fits better
