@@ -136,7 +136,8 @@ export default function StudentsScreen({
 
   const handleGenerateReport = async (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]): Promise<ReportData | undefined> => {
     if (!selectedStudent) return;
-    const report = await summarizeNotes(filteredNotes, length);
+    const studentShoutouts = shoutouts.filter(s => s.student_id === selectedStudent.id);
+    const report = await summarizeNotes(filteredNotes, length, studentShoutouts);
     await addReport({
       student_name: selectedStudent.name,
       content: report ? reportToText(report) : '',

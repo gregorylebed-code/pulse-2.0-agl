@@ -1,4 +1,4 @@
-import { Note, SELTopic, SELLesson, GoalCategory } from "../types";
+import { Note, Shoutout, SELTopic, SELLesson, GoalCategory } from "../types";
 import { supabase } from "./supabase";
 
 const stripEmDashes = (text: string) => text.replace(/\s*—\s*/g, ' - ');
@@ -246,10 +246,14 @@ function parseReportJson(raw: string): ReportData | null {
   }
 }
 
-export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard'): Promise<ReportData | null> {
+export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard', shoutouts: Shoutout[] = []): Promise<ReportData | null> {
   const firstNameOnly = (name: string) => name?.split(' ')[0] || name;
   const notesText = notes.map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${firstNameOnly(n.student_name)}: ${n.content}`).join('\n');
   const studentFirstName = notes[0]?.student_name?.split(' ')[0] || 'your child';
+  const shoutoutsText = shoutouts.length > 0
+    ? '\n\nShoutouts (positive moments worth highlighting):\n' +
+      shoutouts.map(s => `- ${s.category ? `[${s.category}] ` : ''}${s.content} (${new Date(s.created_at).toLocaleDateString()})`).join('\n')
+    : '';
 
   let lengthInstruction = "Keep each section to 2-3 sentences.";
   if (length === 'Quick Note') {
@@ -281,7 +285,7 @@ Return ONLY valid JSON — no markdown, no extra commentary:
 }
 
 Notes:
-${notesText}`;
+${notesText}${shoutoutsText}`;
 
   const raw = await callGroq(prompt, true, undefined, 'summarize_notes');
   return parseReportJson(raw);
@@ -461,9 +465,13 @@ Return JSON:
   }
 }
 
-export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string, studentName: string): Promise<string> {
+export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string, studentName: string, shoutouts: Shoutout[] = []): Promise<string> {
   const firstName = studentName.split(' ')[0];
   const notesText = notes.map(n => n.content).join('\n- ');
+  const shoutoutsText = shoutouts.length > 0
+    ? '\n\nPositive shoutouts for this student:\n- ' +
+      shoutouts.map(s => `${s.category ? `[${s.category}] ` : ''}${s.content}`).join('\n- ')
+    : '';
   const signOff = teacherLastName.trim()
     ? `${teacherTitle} ${teacherLastName}`
     : 'Your Child\'s Teacher';
@@ -471,7 +479,7 @@ export async function quickParentNote(notes: Note[], teacherTitle: string, teach
   const prompt = `You are a teacher writing a short, direct parent note about a student named ${firstName}.
 
 Observations:
-- ${notesText}
+- ${notesText}${shoutoutsText}
 
 RULES:
 - Write 1–3 sentences starting with "Dear Family,"

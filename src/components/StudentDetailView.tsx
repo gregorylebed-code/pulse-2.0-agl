@@ -863,7 +863,7 @@ export default function StudentDetailView({
     }
     setIsGeneratingQuickNote(true);
     try {
-      const result = await quickParentNote(filtered, teacherTitle, teacherLastName, student.name);
+      const result = await quickParentNote(filtered, teacherTitle, teacherLastName, student.name, shoutouts);
       setQuickNote(result.trim());
     } catch {
       toast.error('Failed to generate quick note.');
