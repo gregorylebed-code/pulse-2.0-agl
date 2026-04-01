@@ -120,3 +120,22 @@ export interface DeliveredLesson {
   title: string;
   date: string;
 }
+
+export interface ParentCommunication {
+  id: string;
+  user_id: string;
+  student_id: string;
+  student_name: string;
+  comm_type: string;          // 'Email' | 'Phone' | 'Meeting' | 'ParentSquare' | custom
+  direction: 'outbound' | 'inbound';
+  subject?: string | null;
+  notes: string;
+  parent_name?: string | null;
+  comm_date: string;
+  follow_up_date?: string | null;
+  follow_up_done: boolean;
+  is_iep_related: boolean;
+  is_urgent: boolean;
+  created_at: string;
+  updated_at: string;
+}

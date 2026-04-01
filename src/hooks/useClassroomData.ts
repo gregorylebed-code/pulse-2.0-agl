@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus, Shoutout } from '../types';
+import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus, Shoutout, ParentCommunication } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { SpecialsMode } from '../utils/rotationHelpers';
 import { NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '../utils/notifications';
@@ -98,6 +98,7 @@ interface ClassroomDataState {
   students: Student[];
   goals: StudentGoal[];
   shoutouts: Shoutout[];
+  parentCommunications: ParentCommunication[];
   indicators: Indicator[];
   commTypes: Indicator[];
   classes: string[];
@@ -126,6 +127,9 @@ interface ClassroomDataActions {
   addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
   updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  addParentCommunication: (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
+  updateParentCommunication: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
+  deleteParentCommunication: (id: string) => Promise<void>;
   addShoutout: (shoutout: Omit<Shoutout, 'id' | 'created_at' | 'user_id'>) => Promise<Shoutout | null>;
   deleteShoutout: (id: string) => Promise<void>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
@@ -162,6 +166,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     students: [],
     goals: [],
     shoutouts: [],
+    parentCommunications: [],
     indicators: [],
     commTypes: [],
     classes: ['AM', 'PM'],
@@ -203,6 +208,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         { data: settingsData },
         { data: goalsData },
         { data: shoutoutsData },
+        { data: parentCommsData },
       ] = await Promise.all([
         supabase.from('notes').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('students').select('*').eq('user_id', userId),
@@ -215,6 +221,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         supabase.from('settings').select('*').eq('user_id', userId),
         supabase.from('student_goals').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('shoutouts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('parent_communications').select('*').eq('user_id', userId).order('comm_date', { ascending: false }),
       ]);
 
       if (notesError) throw new Error(`Notes: ${notesError.message}`);
@@ -271,6 +278,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         students: studentsWithCamel as Student[],
         goals: (goalsData || []) as StudentGoal[],
         shoutouts: (shoutoutsData || []) as Shoutout[],
+        parentCommunications: (parentCommsData || []) as ParentCommunication[],
         // Use DB indicators directly; seed defaults for new accounts
         indicators: (indicatorsData && indicatorsData.length > 0)
           ? (indicatorsData as Indicator[])
@@ -789,6 +797,51 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, []);
 
+  // ─── Parent Communications ──────────────────────────────────────────────────
+
+  const addParentCommunication = useCallback(async (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('parent_communications')
+        .insert([{ ...comm, user_id: userId, created_at: now, updated_at: now }])
+        .select()
+        .single();
+      if (error) throw error;
+      setState(prev => ({ ...prev, parentCommunications: [data as ParentCommunication, ...prev.parentCommunications] }));
+      return data as ParentCommunication;
+    } catch (error) {
+      console.error('Error adding parent communication:', error);
+      return null;
+    }
+  }, [userId]);
+
+  const updateParentCommunication = useCallback(async (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
+    try {
+      const { error } = await supabase
+        .from('parent_communications')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      setState(prev => ({
+        ...prev,
+        parentCommunications: prev.parentCommunications.map(c => c.id === id ? { ...c, ...updates } : c),
+      }));
+    } catch (error) {
+      console.error('Error updating parent communication:', error);
+    }
+  }, []);
+
+  const deleteParentCommunication = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase.from('parent_communications').delete().eq('id', id);
+      if (error) throw error;
+      setState(prev => ({ ...prev, parentCommunications: prev.parentCommunications.filter(c => c.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting parent communication:', error);
+    }
+  }, []);
+
   // ─── Shoutouts ──────────────────────────────────────────────────────────────
 
   const addShoutout = useCallback(async (shoutout: Omit<Shoutout, 'id' | 'created_at' | 'user_id'>) => {
@@ -849,6 +902,9 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     addGoal,
     updateGoal,
     deleteGoal,
+    addParentCommunication,
+    updateParentCommunication,
+    deleteParentCommunication,
     addShoutout,
     deleteShoutout,
   };

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin } from 'lucide-react';
 import { toast } from 'sonner';
-import { Note, Student, Report, CalendarEvent, StudentGoal } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
@@ -19,6 +19,7 @@ interface StudentsScreenProps {
   indicators: any[];
   commTypes: any[];
   calendarEvents: CalendarEvent[];
+  parentCommunications: ParentCommunication[];
   classes: string[];
   onUpdate: () => void;
   deleteStudent: (id: string) => Promise<void>;
@@ -31,6 +32,9 @@ interface StudentsScreenProps {
   addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
   updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  addParentCommunication: (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
+  updateParentCommunication: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
+  deleteParentCommunication: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
   selectedStudentId: string | null;
   setSelectedStudentId: (id: string | null) => void;
@@ -46,6 +50,7 @@ export default function StudentsScreen({
   indicators,
   commTypes,
   calendarEvents,
+  parentCommunications,
   classes,
   onUpdate,
   deleteStudent,
@@ -58,6 +63,9 @@ export default function StudentsScreen({
   addGoal,
   updateGoal,
   deleteGoal,
+  addParentCommunication,
+  updateParentCommunication,
+  deleteParentCommunication,
   abbreviations,
   selectedStudentId,
   setSelectedStudentId,
@@ -285,6 +293,7 @@ export default function StudentsScreen({
         indicators={indicators}
         commTypes={commTypes}
         calendarEvents={calendarEvents}
+        parentCommunications={parentCommunications}
         onBack={() => { setSelectedStudentId(null); }}
         onGenerateReport={handleGenerateReport}
         onNoteUpdate={onUpdate}
@@ -296,6 +305,9 @@ export default function StudentsScreen({
         addGoal={addGoal}
         updateGoal={updateGoal}
         deleteGoal={deleteGoal}
+        addParentCommunication={addParentCommunication}
+        updateParentCommunication={updateParentCommunication}
+        deleteParentCommunication={deleteParentCommunication}
         abbreviations={abbreviations}
         teacherTitle={teacherTitle}
         teacherLastName={teacherLastName}

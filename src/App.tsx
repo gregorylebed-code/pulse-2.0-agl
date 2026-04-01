@@ -48,6 +48,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     addTask, updateTask, deleteTask,
     addReport, deleteReport,
     goals, addGoal, updateGoal, deleteGoal,
+    parentCommunications, addParentCommunication, updateParentCommunication, deleteParentCommunication,
     shoutouts, addShoutout, deleteShoutout,
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
     saveSpecialsMode, saveDayOfWeekSpecials, saveRollingConfig, saveTodayOverride,
@@ -358,11 +359,15 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 goals={goals}
                 indicators={indicators} commTypes={commTypes}
                 calendarEvents={calendarEvents} classes={classes}
+                parentCommunications={parentCommunications}
                 onUpdate={refreshData} deleteStudent={deleteStudent}
                 deleteNote={deleteNote} addNote={addNote} updateNote={updateNote}
                 updateStudent={updateStudent} addReport={addReport}
                 deleteReport={deleteReport}
                 addGoal={addGoal} updateGoal={updateGoal} deleteGoal={deleteGoal}
+                addParentCommunication={addParentCommunication}
+                updateParentCommunication={updateParentCommunication}
+                deleteParentCommunication={deleteParentCommunication}
                 abbreviations={abbreviations}
                 selectedStudentId={selectedStudentId}
                 setSelectedStudentId={setSelectedStudentId}

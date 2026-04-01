@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
-import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus, ParentCommunication } from '../types';
+import ParentCommunicationLog from './ParentCommunicationLog';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
 import { categorizeNote, refineReport, refineQuickNote, parseVoiceLog, quickParentNote, suggestGoals, ReportData } from '../lib/gemini';
@@ -69,6 +70,7 @@ interface StudentDetailViewProps {
   indicators: any[];
   commTypes: any[];
   calendarEvents: CalendarEvent[];
+  parentCommunications: ParentCommunication[];
   onBack: () => void;
   onGenerateReport: (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<ReportData | undefined>;
   onNoteUpdate: () => void;
@@ -80,6 +82,9 @@ interface StudentDetailViewProps {
   addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
   updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  addParentCommunication: (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
+  updateParentCommunication: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
+  deleteParentCommunication: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
   teacherTitle: string;
   teacherLastName: string;
@@ -267,6 +272,7 @@ export default function StudentDetailView({
   indicators,
   commTypes,
   calendarEvents,
+  parentCommunications,
   onBack,
   onGenerateReport,
   onNoteUpdate,
@@ -278,6 +284,9 @@ export default function StudentDetailView({
   addGoal,
   updateGoal,
   deleteGoal,
+  addParentCommunication,
+  updateParentCommunication,
+  deleteParentCommunication,
   abbreviations,
   teacherTitle,
   teacherLastName,
@@ -318,7 +327,7 @@ export default function StudentDetailView({
 
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
   const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]);
-  const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note'>('timeline');
+  const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note' | 'parents'>('timeline');
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
   const [quickNoteDays, setQuickNoteDays] = useState<0 | 1 | 3 | 5 | 7>(0);
@@ -326,6 +335,7 @@ export default function StudentDetailView({
   const [isRefiningQuickNote, setIsRefiningQuickNote] = useState(false);
   const quickNoteRef = useRef<HTMLDivElement>(null);
   const goalsRef = useRef<HTMLDivElement>(null);
+  const parentCommRef = useRef<HTMLDivElement>(null);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
   const [newGoalCategory, setNewGoalCategory] = useState<GoalCategory>('academic');
@@ -526,7 +536,7 @@ export default function StudentDetailView({
       entries.forEach(entry => {
         if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
           maxRatio = entry.intersectionRatio;
-          visibleSection = entry.target.id as 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note';
+          visibleSection = entry.target.id as 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note' | 'parents';
         }
       });
 
@@ -546,17 +556,19 @@ export default function StudentDetailView({
     if (aiReportRef.current) observer.observe(aiReportRef.current);
     if (historyRef.current) observer.observe(historyRef.current);
     if (quickNoteRef.current) observer.observe(quickNoteRef.current);
+    if (parentCommRef.current) observer.observe(parentCommRef.current);
 
     return () => observer.disconnect();
   }, [activeSection]);
 
-  const scrollToSection = (sectionId: 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note') => {
+  const scrollToSection = (sectionId: 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note' | 'parents') => {
     const refs = {
       'timeline': timelineRef,
       'goals': goalsRef,
       'ai-report': aiReportRef,
       'history': historyRef,
       'quick-note': quickNoteRef,
+      'parents': parentCommRef,
     };
     const targetRef = refs[sectionId];
     if (targetRef?.current) {
@@ -1150,6 +1162,15 @@ export default function StudentDetailView({
           </button>
         )}
         <button
+          onClick={() => scrollToSection('parents')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
+            activeSection === 'parents' ? "bg-blue-500 text-white shadow-md shadow-blue-500/20" : "text-slate-500 hover:bg-white/60"
+          )}
+        >
+          Parents
+        </button>
+        <button
           onClick={() => scrollToSection('ai-report')}
           className={cn(
             "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
@@ -1626,6 +1647,17 @@ export default function StudentDetailView({
       <div className="pt-6 border-t border-slate-100" />
 
       {/* ─── Goals ─────────────────────────────────────────────── */}
+      {/* ─── Parent Communication Log ─────────────────────────────────── */}
+      <div id="parents" ref={parentCommRef} className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-4 scroll-mt-header no-print">
+        <ParentCommunicationLog
+          student={student}
+          communications={parentCommunications}
+          onAdd={addParentCommunication}
+          onUpdate={updateParentCommunication}
+          onDelete={deleteParentCommunication}
+        />
+      </div>
+
       <div id="goals" ref={goalsRef} className={cn("space-y-4 scroll-mt-header", !isFullMode && "hidden")}>
         <div className="flex items-center justify-between">
           <div>
