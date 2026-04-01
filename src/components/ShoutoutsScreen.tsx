@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Plus, Trash2, X, AlertCircle, Mic, MicOff } from 'lucide-react';
+import { Star, Plus, Trash2, X, AlertCircle, Mic, MicOff, Copy, Mail, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
 import { Student, Shoutout } from '../types';
 import { cn } from '../utils/cn';
 
@@ -28,6 +29,64 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
   const [saving, setSaving] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const [exportRange, setExportRange] = useState<'day' | 'week' | 'month'>('week');
+
+  const exportRangeShoutouts = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (exportRange === 'week') start.setDate(start.getDate() - 6);
+    else if (exportRange === 'month') start.setDate(start.getDate() - 29);
+    return shoutouts.filter(s => new Date(s.created_at) >= start);
+  }, [shoutouts, exportRange]);
+
+  const exportRangeLabel = exportRange === 'day' ? 'Today' : exportRange === 'week' ? 'This Week' : 'This Month';
+
+  const formatExportText = (list: Shoutout[]) =>
+    `⭐ Shoutouts — ${exportRangeLabel}\n\n` +
+    (list.length === 0
+      ? 'No shoutouts for this period.'
+      : list.map(s => `${new Date(s.created_at).toLocaleDateString()} · ${s.student_name}${s.category ? ` · ${s.category}` : ''}\n${s.content || '(no note)'}`).join('\n\n'));
+
+  const handleExportCopy = () => {
+    navigator.clipboard.writeText(formatExportText(exportRangeShoutouts));
+    toast.success('Copied!');
+  };
+
+  const handleExportEmail = () => {
+    const body = formatExportText(exportRangeShoutouts);
+    window.location.href = `mailto:?subject=${encodeURIComponent(`⭐ Shoutouts — ${exportRangeLabel}`)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Shoutouts — ${exportRangeLabel}`, 20, 20);
+    let y = 35;
+    if (exportRangeShoutouts.length === 0) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text('No shoutouts for this period.', 20, y);
+    } else {
+      exportRangeShoutouts.forEach(s => {
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${new Date(s.created_at).toLocaleDateString()} · ${s.student_name}${s.category ? ` · ${s.category}` : ''}`, 20, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        if (s.content) {
+          const lines = doc.splitTextToSize(s.content, 170);
+          doc.text(lines, 20, y);
+          y += lines.length * 5 + 8;
+        } else {
+          y += 8;
+        }
+      });
+    }
+    doc.save(`Shoutouts_${exportRange}.pdf`);
+    toast.success('PDF downloaded!');
+  };
 
   // Students who haven't received a shoutout in the last 14 days
   const overlookedStudents = useMemo(() => {
@@ -152,6 +211,39 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
           ))}
         </div>
       )}
+
+      {/* Export section */}
+      <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-4 space-y-3">
+        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Export Shoutouts</p>
+        <div className="flex gap-2">
+          {(['day', 'week', 'month'] as const).map(r => (
+            <button
+              key={r}
+              onClick={() => setExportRange(r)}
+              className={cn(
+                'flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border-2 transition-all',
+                exportRange === r ? 'bg-violet-500 text-white border-violet-500 shadow-md' : 'bg-white text-slate-400 border-slate-100 hover:border-violet-300'
+              )}
+            >
+              {r === 'day' ? 'Today' : r === 'week' ? 'This Week' : 'This Month'}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          <span className="text-[11px] text-slate-400 font-bold flex-1">
+            {exportRangeShoutouts.length} shoutout{exportRangeShoutouts.length !== 1 ? 's' : ''}
+          </span>
+          <button onClick={handleExportCopy} title="Copy" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black transition-all">
+            <Copy className="w-3.5 h-3.5" /> Copy
+          </button>
+          <button onClick={handleExportEmail} title="Email" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 text-[11px] font-black transition-all">
+            <Mail className="w-3.5 h-3.5" /> Email
+          </button>
+          <button onClick={handleExportPDF} title="PDF" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-600 text-[11px] font-black transition-all">
+            <Download className="w-3.5 h-3.5" /> PDF
+          </button>
+        </div>
+      </div>
 
       {/* Shoutout feed */}
       {filtered.length === 0 ? (
