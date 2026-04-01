@@ -134,7 +134,7 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
 
       {/* Filter by student */}
       {students.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
           <button
             onClick={() => setFilterStudent('all')}
             className={cn('text-[11px] font-black px-3 py-1.5 rounded-xl whitespace-nowrap transition-colors', filterStudent === 'all' ? 'bg-amber-400 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}
