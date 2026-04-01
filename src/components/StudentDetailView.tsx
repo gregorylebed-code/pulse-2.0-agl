@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
+import { toPng } from 'html-to-image';
 import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus, ParentCommunication, Shoutout } from '../types';
 import ParentCommunicationLog from './ParentCommunicationLog';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -259,6 +260,307 @@ function StudentMiniDashboard({ student, notes, indicators }: {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Student Progress Chart ───────────────────────────────────────────────────
+
+type ProgressTimeFrame = '4w' | '8w' | '12w' | 'semester' | 'year';
+
+const PROGRESS_FRAMES: { key: ProgressTimeFrame; label: string }[] = [
+  { key: '4w',       label: '4 Weeks'  },
+  { key: '8w',       label: '8 Weeks'  },
+  { key: '12w',      label: '12 Weeks' },
+  { key: 'semester', label: 'Semester' },
+  { key: 'year',     label: 'Full Year' },
+];
+
+function StudentProgressChart({ student, notes, indicators }: {
+  student: { id: string; name: string };
+  notes: Note[];
+  indicators: any[];
+}) {
+  const [timeFrame, setTimeFrame] = useState<ProgressTimeFrame>('8w');
+  const [exporting, setExporting] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const indicatorTypeMap = useMemo(() => {
+    const map: Record<string, 'positive' | 'neutral' | 'growth'> = {};
+    indicators.forEach((ind: any) => { if (ind.label) map[ind.label] = ind.type; });
+    return map;
+  }, [indicators]);
+
+  const studentNotes = useMemo(() =>
+    notes.filter(n => n.student_name === student.name),
+    [notes, student.name]
+  );
+
+  // Build weekly buckets (for 4w/8w/12w/semester) or monthly buckets (year)
+  const chartData = useMemo(() => {
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    if (timeFrame === 'year') {
+      // School year: Sep of current or prior year → current month
+      const schoolYearStart = today.getMonth() >= 8
+        ? new Date(today.getFullYear(), 8, 1)       // Sep this year
+        : new Date(today.getFullYear() - 1, 8, 1);  // Sep last year
+      return Array.from({ length: 10 }, (_, i) => {
+        const monthStart = new Date(schoolYearStart);
+        monthStart.setMonth(schoolYearStart.getMonth() + i);
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthStart.getMonth() + 1);
+        const monthNotes = studentNotes.filter(n => {
+          const d = new Date(n.created_at);
+          return d >= monthStart && d < monthEnd;
+        });
+        const positive = monthNotes.filter(n =>
+          (n.tags || []).some(t => indicatorTypeMap[t] === 'positive')
+        ).length;
+        const pct = monthNotes.length > 0 ? Math.round((positive / monthNotes.length) * 100) : null;
+        const label = monthStart.toLocaleString('default', { month: 'short' });
+        return { label, total: monthNotes.length, positive, pct };
+      });
+    }
+
+    const weeks = timeFrame === '4w' ? 4 : timeFrame === '8w' ? 8 : timeFrame === '12w' ? 12 : 18;
+    return Array.from({ length: weeks }, (_, i) => {
+      const weekEnd = new Date(startOfToday);
+      weekEnd.setDate(startOfToday.getDate() - i * 7);
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekEnd.getDate() - 6);
+      const weekNotes = studentNotes.filter(n => {
+        const d = new Date(n.created_at);
+        return d >= weekStart && d <= weekEnd;
+      });
+      const positive = weekNotes.filter(n =>
+        (n.tags || []).some(t => indicatorTypeMap[t] === 'positive')
+      ).length;
+      const pct = weekNotes.length > 0 ? Math.round((positive / weekNotes.length) * 100) : null;
+      const label = i === 0 ? 'Now' : `${i}w`;
+      return { label, total: weekNotes.length, positive, pct };
+    }).reverse();
+  }, [studentNotes, indicatorTypeMap, timeFrame]);
+
+  // Trend: compare avg % of first half vs second half (ignore null weeks)
+  const trend = useMemo(() => {
+    const withData = chartData.filter(d => d.pct !== null) as { pct: number }[];
+    if (withData.length < 4) return 'stable';
+    const mid = Math.floor(withData.length / 2);
+    const firstHalf = withData.slice(0, mid);
+    const secondHalf = withData.slice(mid);
+    const avg = (arr: { pct: number }[]) => arr.reduce((s, d) => s + d.pct, 0) / arr.length;
+    const diff = avg(secondHalf) - avg(firstHalf);
+    if (diff > 5) return 'up';
+    if (diff < -5) return 'down';
+    return 'stable';
+  }, [chartData]);
+
+  const trendConfig = {
+    up:     { label: 'Trending Up',   bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    stable: { label: 'Stable',        bg: 'bg-slate-100',  text: 'text-slate-500',   dot: 'bg-slate-400'   },
+    down:   { label: 'Needs Attention', bg: 'bg-red-50',   text: 'text-red-600',     dot: 'bg-red-500'     },
+  }[trend];
+
+  // SVG line chart dimensions
+  const W = 400, H = 120, PAD_L = 28, PAD_R = 8, PAD_T = 10, PAD_B = 24;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+  const n = chartData.length;
+
+  const points = chartData.map((d, i) => ({
+    x: PAD_L + (i / Math.max(n - 1, 1)) * plotW,
+    y: d.pct !== null ? PAD_T + (1 - d.pct / 100) * plotH : null,
+    ...d,
+  }));
+
+  const linePoints = points
+    .filter(p => p.y !== null)
+    .map(p => `${p.x},${p.y}`)
+    .join(' ');
+
+  // Area fill path
+  const areaPoints = points.filter(p => p.y !== null);
+  const areaPath = areaPoints.length > 1
+    ? `M${areaPoints[0].x},${PAD_T + plotH} ` +
+      areaPoints.map(p => `L${p.x},${p.y}`).join(' ') +
+      ` L${areaPoints[areaPoints.length - 1].x},${PAD_T + plotH} Z`
+    : '';
+
+  const handleCopyImage = async () => {
+    if (!chartRef.current) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(chartRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast.success('Chart copied to clipboard');
+    } catch {
+      toast.error('Copy failed — try Export PDF instead');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!chartRef.current) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(chartRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' });
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${student.name} — Behavior Progress`, 14, 18);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated ${new Date().toLocaleDateString()} · ${PROGRESS_FRAMES.find(f => f.key === timeFrame)?.label}`, 14, 26);
+      doc.addImage(dataUrl, 'PNG', 14, 32, 268, 90);
+      doc.save(`${student.name.replace(/\s+/g, '_')}_behavior_trend.pdf`);
+      toast.success('PDF saved');
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (studentNotes.length === 0) return null;
+
+  const hasAnyData = chartData.some(d => d.total > 0);
+  if (!hasAnyData) return null;
+
+  return (
+    <div className="bg-white rounded-[24px] card-shadow border border-slate-100 p-5 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Progress Over Time</p>
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${trendConfig.bg}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${trendConfig.dot}`} />
+          <span className={`text-[11px] font-black ${trendConfig.text}`}>{trendConfig.label}</span>
+        </div>
+      </div>
+
+      {/* Time frame selector */}
+      <div className="flex gap-1.5 flex-wrap">
+        {PROGRESS_FRAMES.map(f => (
+          <button
+            key={f.key}
+            onClick={() => setTimeFrame(f.key)}
+            className={`text-[11px] font-black px-3 py-1.5 rounded-full transition-all ${
+              timeFrame === f.key
+                ? 'bg-slate-800 text-white'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Chart */}
+      <div ref={chartRef} className="rounded-2xl overflow-hidden bg-white p-1">
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="overflow-visible">
+          {/* Y-axis grid lines + labels */}
+          {[0, 50, 100].map(pct => {
+            const y = PAD_T + (1 - pct / 100) * plotH;
+            return (
+              <g key={pct}>
+                <line x1={PAD_L} x2={W - PAD_R} y1={y} y2={y} stroke="#f1f5f9" strokeWidth={1} />
+                <text x={PAD_L - 4} y={y + 3.5} textAnchor="end" fontSize={7} fill="#94a3b8" fontWeight="700">
+                  {pct}%
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Area fill */}
+          {areaPath && (
+            <path d={areaPath} fill="#10b981" fillOpacity={0.08} />
+          )}
+
+          {/* Volume bars (behind line) */}
+          {(() => {
+            const maxTotal = Math.max(...chartData.map(d => d.total), 1);
+            return points.map((p, i) => {
+              if (p.total === 0) return null;
+              const barW = Math.max((plotW / n) * 0.5, 6);
+              const barH = (p.total / maxTotal) * (plotH * 0.35);
+              return (
+                <rect
+                  key={i}
+                  x={p.x - barW / 2}
+                  y={PAD_T + plotH - barH}
+                  width={barW}
+                  height={barH}
+                  rx={2}
+                  fill="#e2e8f0"
+                  fillOpacity={0.7}
+                />
+              );
+            });
+          })()}
+
+          {/* Line */}
+          {linePoints && (
+            <polyline
+              points={linePoints}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          )}
+
+          {/* Data points */}
+          {points.map((p, i) =>
+            p.y !== null ? (
+              <circle key={i} cx={p.x} cy={p.y} r={3} fill="white" stroke="#10b981" strokeWidth={2} />
+            ) : null
+          )}
+
+          {/* X-axis labels */}
+          {points.map((p, i) => {
+            const skip = n > 12 ? i % 3 !== 0 : n > 8 ? i % 2 !== 0 : false;
+            if (skip && i !== n - 1) return null;
+            return (
+              <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize={7} fill="#94a3b8" fontWeight="700">
+                {p.label}
+              </text>
+            );
+          })}
+        </svg>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 px-1 pb-1">
+          <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+            <span className="w-3 h-0.5 bg-emerald-500 inline-block rounded-full" /> % Positive
+          </span>
+          <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+            <span className="w-3 h-2.5 bg-slate-200 inline-block rounded-sm" /> Volume
+          </span>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleCopyImage}
+          disabled={exporting}
+          className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-2xl py-2.5 transition-colors disabled:opacity-50"
+        >
+          <Copy className="w-3.5 h-3.5" /> Copy Image
+        </button>
+        <button
+          onClick={handleExportPDF}
+          disabled={exporting}
+          className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-2xl py-2.5 transition-colors disabled:opacity-50"
+        >
+          <Download className="w-3.5 h-3.5" /> Export PDF
+        </button>
+      </div>
     </div>
   );
 }
@@ -1108,6 +1410,8 @@ export default function StudentDetailView({
       </div>
 
       <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
+
+      <StudentProgressChart student={student} notes={notes} indicators={indicators} />
 
       <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100">
         <div className="flex items-center justify-between mb-3">
