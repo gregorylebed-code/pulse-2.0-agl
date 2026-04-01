@@ -264,7 +264,7 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
                       <Copy className="w-3.5 h-3.5" /> Copy
                     </button>
                     <button
-                      onClick={() => { if (window.confirm('Delete this communication log entry?')) onDelete(comm.id); }}
+                      onClick={() => onDelete(comm.id)}
                       className="flex items-center gap-1 text-[11px] font-black text-slate-400 hover:text-red-500 transition-colors ml-auto"
                     >
                       <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -640,6 +640,20 @@ export default function ParentCommunicationLog({
     }
   };
 
+  const handleDelete = (id: string) => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) onDelete(id);
+    }, 3000);
+    toast('Entry deleted', {
+      duration: 3000,
+      action: {
+        label: 'Undo',
+        onClick: () => { cancelled = true; clearTimeout(timer); toast.dismiss(); },
+      },
+    });
+  };
+
   const handleCopyAll = () => {
     if (allComms.length === 0) return;
     navigator.clipboard.writeText(buildFullLog(student, allComms));
@@ -665,18 +679,18 @@ export default function ParentCommunicationLog({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div className="min-w-0">
           <h3 className="text-[15px] font-black text-slate-700">Parent Communication Log</h3>
           <p className="text-[11px] text-slate-400 mt-0.5">Every contact, automatically timestamped</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {allComms.length > 0 && (
             <>
               <button
                 onClick={handleCopyAll}
                 title="Copy full communication log"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 border border-violet-100 text-violet-600 rounded-xl text-[12px] font-black hover:bg-violet-100 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-violet-50 border border-violet-100 text-violet-600 rounded-xl text-[11px] font-black hover:bg-violet-100 transition-colors"
               >
                 <ClipboardList className="w-3.5 h-3.5" />
                 Copy
@@ -687,7 +701,7 @@ export default function ParentCommunicationLog({
                   window.location.href = `mailto:?subject=${encodeURIComponent(`Parent Communication Log — ${student.name}`)}&body=${encodeURIComponent(body)}`;
                 }}
                 title="Email full communication log"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl text-[12px] font-black hover:bg-blue-100 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl text-[11px] font-black hover:bg-blue-100 transition-colors"
               >
                 <Mail className="w-3.5 h-3.5" />
                 Email
@@ -696,7 +710,7 @@ export default function ParentCommunicationLog({
           )}
           <button
             onClick={() => setShowForm(f => !f)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-sage text-white rounded-xl text-[12px] font-black hover:bg-sage-dark transition-colors shadow-sm"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-sage text-white rounded-xl text-[11px] font-black hover:bg-sage-dark transition-colors shadow-sm"
           >
             {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
             {showForm ? 'Cancel' : 'Log'}
@@ -776,7 +790,7 @@ export default function ParentCommunicationLog({
                     <TimelineEntry
                       key={comm.id}
                       comm={comm}
-                      onDelete={onDelete}
+                      onDelete={handleDelete}
                       onUpdate={onUpdate}
                     />
                   ))}
