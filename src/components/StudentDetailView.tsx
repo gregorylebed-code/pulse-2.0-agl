@@ -1131,63 +1131,69 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex items-center justify-between gap-1 no-print">
-        <button
-          onClick={() => scrollToSection('quick-note')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-            activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "text-slate-500 hover:bg-white/60"
-          )}
-        >
-          Note
-        </button>
-        <button
-          onClick={() => scrollToSection('timeline')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-            activeSection === 'timeline' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
-          )}
-        >
-          Timeline
-        </button>
-        {isFullMode && (
+      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex flex-col gap-1.5 no-print">
+        {/* Row 1: student-focused */}
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => scrollToSection('goals')}
+            onClick={() => scrollToSection('quick-note')}
             className={cn(
-              "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-              activeSection === 'goals' ? "bg-violet-500 text-white shadow-md shadow-violet-500/20" : "text-slate-500 hover:bg-white/60"
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
             )}
           >
-            Goals
+            Note
           </button>
-        )}
-        <button
-          onClick={() => scrollToSection('parents')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-            activeSection === 'parents' ? "bg-blue-500 text-white shadow-md shadow-blue-500/20" : "text-slate-500 hover:bg-white/60"
+          <button
+            onClick={() => scrollToSection('timeline')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'timeline' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Timeline
+          </button>
+          {isFullMode && (
+            <button
+              onClick={() => scrollToSection('goals')}
+              className={cn(
+                "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+                activeSection === 'goals' ? "bg-violet-500 text-white shadow-md shadow-violet-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+              )}
+            >
+              Goals
+            </button>
           )}
-        >
-          Parents
-        </button>
-        <button
-          onClick={() => scrollToSection('ai-report')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-            activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
-          )}
-        >
-          Compose
-        </button>
-        <button
-          onClick={() => scrollToSection('history')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
-            activeSection === 'history' ? "bg-sage text-white shadow-md shadow-sage/20" : "text-slate-500 hover:bg-white/60"
-          )}
-        >
-          History
-        </button>
+        </div>
+        {/* Row 2: communication-focused */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => scrollToSection('parents')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'parents' ? "bg-blue-500 text-white shadow-md shadow-blue-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Parents
+          </button>
+          <button
+            onClick={() => scrollToSection('ai-report')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Compose
+          </button>
+          <button
+            onClick={() => scrollToSection('history')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'history' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            History
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6 no-print">
