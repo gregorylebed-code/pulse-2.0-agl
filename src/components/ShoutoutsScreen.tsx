@@ -29,39 +29,81 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
   const [saving, setSaving] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const [exportRange, setExportRange] = useState<'day' | 'week' | 'month'>('week');
+  const [exportRange, setExportRange] = useState<'day' | 'week' | 'lastweek' | 'month' | 'lastmonth' | 'year'>('week');
+
+  // Helper: Monday of a given date's week
+  const getMondayOf = (d: Date) => {
+    const day = d.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    const m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    m.setDate(m.getDate() - diff);
+    return m;
+  };
 
   const exportRangeShoutouts = useMemo(() => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    let start = todayStart;
+    let start: Date = todayStart;
+    let end: Date | null = null;
     if (exportRange === 'week') {
-      // Monday of the current week
-      const day = todayStart.getDay(); // 0=Sun,1=Mon,...
-      const diff = day === 0 ? 6 : day - 1;
-      start = new Date(todayStart);
-      start.setDate(todayStart.getDate() - diff);
+      start = getMondayOf(todayStart);
+    } else if (exportRange === 'lastweek') {
+      const thisMonday = getMondayOf(todayStart);
+      end = new Date(thisMonday); // exclusive end = this Monday
+      start = new Date(thisMonday);
+      start.setDate(thisMonday.getDate() - 7);
     } else if (exportRange === 'month') {
       start = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (exportRange === 'lastmonth') {
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      end = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (exportRange === 'year') {
+      // School year starts Aug 1
+      const aug1ThisYear = new Date(now.getFullYear(), 7, 1);
+      start = now >= aug1ThisYear ? aug1ThisYear : new Date(now.getFullYear() - 1, 7, 1);
     }
-    return shoutouts.filter(s => new Date(s.created_at) >= start);
+    return shoutouts.filter(s => {
+      const d = new Date(s.created_at);
+      return d >= start && (end === null || d < end);
+    });
   }, [shoutouts, exportRange]);
+
+  const exportRangeLabel = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+    const fmtMonth = (d: Date) => d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    if (exportRange === 'day') return 'Today';
+    if (exportRange === 'week') return `Week of ${fmt(getMondayOf(todayStart))}`;
+    if (exportRange === 'lastweek') {
+      const thisMonday = getMondayOf(todayStart);
+      const lastMonday = new Date(thisMonday); lastMonday.setDate(thisMonday.getDate() - 7);
+      return `Week of ${fmt(lastMonday)}`;
+    }
+    if (exportRange === 'month') return fmtMonth(now);
+    if (exportRange === 'lastmonth') return fmtMonth(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    if (exportRange === 'year') {
+      const aug1ThisYear = new Date(now.getFullYear(), 7, 1);
+      const syStart = now >= aug1ThisYear ? aug1ThisYear : new Date(now.getFullYear() - 1, 7, 1);
+      return `School Year ${syStart.getFullYear()}–${(syStart.getFullYear() + 1).toString().slice(2)}`;
+    }
+    return '';
+  }, [exportRange]);
 
   const weekMondayLabel = useMemo(() => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const day = todayStart.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    const monday = new Date(todayStart);
-    monday.setDate(todayStart.getDate() - diff);
+    const monday = getMondayOf(todayStart);
     return monday.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
   }, []);
 
-  const exportRangeLabel = exportRange === 'day'
-    ? 'Today'
-    : exportRange === 'week'
-    ? `Week of ${weekMondayLabel}`
-    : `${new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+  const lastWeekMondayLabel = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const thisMonday = getMondayOf(todayStart);
+    const lastMonday = new Date(thisMonday); lastMonday.setDate(thisMonday.getDate() - 7);
+    return lastMonday.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+  }, []);
 
   const formatExportText = (list: Shoutout[]) =>
     `⭐ Shoutouts — ${exportRangeLabel}\n\n` +
@@ -240,17 +282,24 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
       {/* Export section */}
       <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-4 space-y-3">
         <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Export Shoutouts</p>
-        <div className="flex gap-2">
-          {(['day', 'week', 'month'] as const).map(r => (
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            { r: 'day',       label: 'Today' },
+            { r: 'week',      label: `Wk of ${weekMondayLabel}` },
+            { r: 'month',     label: 'This Month' },
+            { r: 'lastweek',  label: `Wk of ${lastWeekMondayLabel}` },
+            { r: 'lastmonth', label: 'Last Month' },
+            { r: 'year',      label: 'School Year' },
+          ] as const).map(({ r, label }) => (
             <button
               key={r}
               onClick={() => setExportRange(r)}
               className={cn(
-                'flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border-2 transition-all',
+                'py-2 rounded-xl text-[10px] font-black uppercase tracking-wide border-2 transition-all leading-tight px-1',
                 exportRange === r ? 'bg-violet-500 text-white border-violet-500 shadow-md' : 'bg-white text-slate-400 border-slate-100 hover:border-violet-300'
               )}
             >
-              {r === 'day' ? 'Today' : r === 'week' ? `Wk of ${weekMondayLabel}` : 'This Month'}
+              {label}
             </button>
           ))}
         </div>
