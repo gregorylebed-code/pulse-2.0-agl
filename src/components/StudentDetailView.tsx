@@ -785,6 +785,47 @@ export default function StudentDetailView({
     triggerEmail(text);
   };
 
+  const handleCopyShoutouts = () => {
+    if (shoutouts.length === 0) return;
+    const text = `⭐ Shoutouts for ${student.name}\n\n` +
+      shoutouts.map(s =>
+        `${new Date(s.created_at).toLocaleDateString()}${s.category ? ` · ${s.category}` : ''}\n${s.content}`
+      ).join('\n\n');
+    navigator.clipboard.writeText(text);
+    toast.success('Shoutouts copied!');
+  };
+
+  const handleEmailShoutouts = () => {
+    if (shoutouts.length === 0) return;
+    const body = shoutouts.map(s =>
+      `${new Date(s.created_at).toLocaleDateString()}${s.category ? ` · ${s.category}` : ''}\n${s.content}`
+    ).join('\n\n');
+    window.location.href = `mailto:?subject=${encodeURIComponent(`⭐ Shoutouts for ${student.name}`)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleDownloadShoutoutsPDF = () => {
+    if (shoutouts.length === 0) return;
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`⭐ Shoutouts — ${student.name}`, 20, 20);
+    let yPos = 35;
+    shoutouts.forEach(s => {
+      if (yPos > 260) { doc.addPage(); yPos = 20; }
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      const header = `${new Date(s.created_at).toLocaleDateString()}${s.category ? `  ·  ${s.category}` : ''}`;
+      doc.text(header, 20, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(s.content, 170);
+      doc.text(lines, 20, yPos);
+      yPos += (lines.length * 5) + 10;
+    });
+    doc.save(`${student.name.replace(/\s+/g, '_')}_Shoutouts.pdf`);
+    toast.success('PDF downloaded!');
+  };
+
   const handleTextReport = () => {
     if (!currentReport) return;
     window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(reportToText(currentReport))}`;
@@ -1481,6 +1522,20 @@ export default function StudentDetailView({
       <div id="timeline" ref={timelineRef} className="space-y-6 pt-4 scroll-mt-header">
         <div className="flex items-center justify-between">
           <h3 className="text-[15px] font-black text-slate-400 ml-1">Observation Timeline</h3>
+          {shoutouts.length > 0 && (
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-bold text-amber-400 mr-1">⭐ {shoutouts.length}</span>
+              <button onClick={handleCopyShoutouts} title="Copy shoutouts" className="p-1.5 text-slate-300 hover:text-slate-600 transition-all">
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={handleEmailShoutouts} title="Email shoutouts" className="p-1.5 text-slate-300 hover:text-blue-500 transition-all">
+                <Mail className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={handleDownloadShoutoutsPDF} title="Download PDF" className="p-1.5 text-slate-300 hover:text-terracotta transition-all">
+                <Download className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
         <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
           {/* Shoutout entries */}
