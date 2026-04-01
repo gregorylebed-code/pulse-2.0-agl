@@ -33,13 +33,35 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
 
   const exportRangeShoutouts = useMemo(() => {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (exportRange === 'week') start.setDate(start.getDate() - 6);
-    else if (exportRange === 'month') start.setDate(start.getDate() - 29);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let start = todayStart;
+    if (exportRange === 'week') {
+      // Monday of the current week
+      const day = todayStart.getDay(); // 0=Sun,1=Mon,...
+      const diff = day === 0 ? 6 : day - 1;
+      start = new Date(todayStart);
+      start.setDate(todayStart.getDate() - diff);
+    } else if (exportRange === 'month') {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
     return shoutouts.filter(s => new Date(s.created_at) >= start);
   }, [shoutouts, exportRange]);
 
-  const exportRangeLabel = exportRange === 'day' ? 'Today' : exportRange === 'week' ? 'This Week' : 'This Month';
+  const weekMondayLabel = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const day = todayStart.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    const monday = new Date(todayStart);
+    monday.setDate(todayStart.getDate() - diff);
+    return monday.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+  }, []);
+
+  const exportRangeLabel = exportRange === 'day'
+    ? 'Today'
+    : exportRange === 'week'
+    ? `Week of ${weekMondayLabel}`
+    : `${new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
 
   const formatExportText = (list: Shoutout[]) =>
     `⭐ Shoutouts — ${exportRangeLabel}\n\n` +
@@ -228,7 +250,7 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
                 exportRange === r ? 'bg-violet-500 text-white border-violet-500 shadow-md' : 'bg-white text-slate-400 border-slate-100 hover:border-violet-300'
               )}
             >
-              {r === 'day' ? 'Today' : r === 'week' ? 'This Week' : 'This Month'}
+              {r === 'day' ? 'Today' : r === 'week' ? `Wk of ${weekMondayLabel}` : 'This Month'}
             </button>
           ))}
         </div>
