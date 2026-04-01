@@ -842,6 +842,36 @@ export default function SettingsScreen({
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Complete Factory Wipe
                 </button>
+
+                <button
+                  onClick={async () => {
+                    const confirmed = window.confirm('⚠️ PERMANENT: This will delete your account and ALL your data forever. You cannot undo this. Continue?');
+                    if (!confirmed) return;
+                    const doubleConfirmed = window.confirm('Last chance — are you absolutely sure you want to delete your account?');
+                    if (!doubleConfirmed) return;
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) { toast.error('Not signed in.'); return; }
+                    const loadingToast = toast.loading('Deleting your account...');
+                    try {
+                      const res = await fetch('https://muywwvbmpjotcffocyjb.supabase.co/functions/v1/delete-account', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${session.access_token}` },
+                      });
+                      const json = await res.json();
+                      toast.dismiss(loadingToast);
+                      if (!res.ok) { toast.error(`Error: ${json.error}`); return; }
+                      localStorage.clear();
+                      toast.success('Account deleted. Goodbye!');
+                      setTimeout(() => window.location.reload(), 1500);
+                    } catch (err: any) {
+                      toast.dismiss(loadingToast);
+                      toast.error(`Error: ${err.message}`);
+                    }
+                  }}
+                  className="flex items-center gap-2 text-[11px] font-bold text-red-500/70 hover:text-red-600 transition-colors px-3 py-1.5 rounded-xl hover:bg-red-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete My Account
+                </button>
               </div>
             </div>
 
