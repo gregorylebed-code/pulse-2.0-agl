@@ -45,7 +45,10 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
     `⭐ Shoutouts — ${exportRangeLabel}\n\n` +
     (list.length === 0
       ? 'No shoutouts for this period.'
-      : list.map(s => `${new Date(s.created_at).toLocaleDateString()} · ${s.student_name}${s.category ? ` · ${s.category}` : ''}\n${s.content || '(no note)'}`).join('\n\n'));
+      : list.map(s => {
+          const header = `${new Date(s.created_at).toLocaleDateString()} · ${s.student_name}${s.category ? ` · ${s.category}` : ''}`;
+          return s.content ? `${header}\n${s.content}` : header;
+        }).join('\n\n'));
 
   const handleExportCopy = () => {
     navigator.clipboard.writeText(formatExportText(exportRangeShoutouts));
@@ -74,8 +77,8 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
         doc.setFont('helvetica', 'bold');
         doc.text(`${new Date(s.created_at).toLocaleDateString()} · ${s.student_name}${s.category ? ` · ${s.category}` : ''}`, 20, y);
         y += 6;
-        doc.setFont('helvetica', 'normal');
         if (s.content) {
+          doc.setFont('helvetica', 'normal');
           const lines = doc.splitTextToSize(s.content, 170);
           doc.text(lines, 20, y);
           y += lines.length * 5 + 8;
