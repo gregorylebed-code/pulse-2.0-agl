@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus, Shoutout, ParentCommunication } from '../types';
+import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus, Shoutout, ParentCommunication, Accommodation } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { SpecialsMode } from '../utils/rotationHelpers';
 import { NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '../utils/notifications';
@@ -97,6 +97,7 @@ interface ClassroomDataState {
   notes: Note[];
   students: Student[];
   goals: StudentGoal[];
+  accommodations: Accommodation[];
   shoutouts: Shoutout[];
   parentCommunications: ParentCommunication[];
   indicators: Indicator[];
@@ -127,6 +128,9 @@ interface ClassroomDataActions {
   addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
   updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  addAccommodation: (acc: Omit<Accommodation, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<Accommodation | null>;
+  updateAccommodation: (id: string, updates: Partial<Omit<Accommodation, 'id' | 'user_id' | 'student_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
+  deleteAccommodation: (id: string) => Promise<void>;
   addParentCommunication: (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
   updateParentCommunication: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
   deleteParentCommunication: (id: string) => Promise<void>;
@@ -165,6 +169,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     notes: [],
     students: [],
     goals: [],
+    accommodations: [],
     shoutouts: [],
     parentCommunications: [],
     indicators: [],
@@ -209,6 +214,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         { data: goalsData },
         { data: shoutoutsData },
         { data: parentCommsData },
+        { data: accommodationsData },
       ] = await Promise.all([
         supabase.from('notes').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('students').select('*').eq('user_id', userId),
@@ -222,6 +228,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         supabase.from('student_goals').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('shoutouts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('parent_communications').select('*').eq('user_id', userId).order('comm_date', { ascending: false }),
+        supabase.from('student_accommodations').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       ]);
 
       if (notesError) throw new Error(`Notes: ${notesError.message}`);
@@ -277,6 +284,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         notes: notesWithNames as Note[],
         students: studentsWithCamel as Student[],
         goals: (goalsData || []) as StudentGoal[],
+        accommodations: (accommodationsData || []) as Accommodation[],
         shoutouts: (shoutoutsData || []) as Shoutout[],
         parentCommunications: (parentCommsData || []) as ParentCommunication[],
         // Use DB indicators directly; seed defaults for new accounts
@@ -797,6 +805,51 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, []);
 
+  // ─── Accommodations ────────────────────────────────────────────────────────
+
+  const addAccommodation = useCallback(async (acc: Omit<Accommodation, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('student_accommodations')
+        .insert([{ ...acc, user_id: userId, created_at: now, updated_at: now }])
+        .select()
+        .single();
+      if (error) throw error;
+      setState(prev => ({ ...prev, accommodations: [...prev.accommodations, data as Accommodation] }));
+      return data as Accommodation;
+    } catch (error) {
+      console.error('Error adding accommodation:', error);
+      return null;
+    }
+  }, [userId]);
+
+  const updateAccommodation = useCallback(async (id: string, updates: Partial<Omit<Accommodation, 'id' | 'user_id' | 'student_id' | 'created_at' | 'updated_at'>>) => {
+    try {
+      const { error } = await supabase
+        .from('student_accommodations')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      setState(prev => ({
+        ...prev,
+        accommodations: prev.accommodations.map(a => a.id === id ? { ...a, ...updates } : a),
+      }));
+    } catch (error) {
+      console.error('Error updating accommodation:', error);
+    }
+  }, []);
+
+  const deleteAccommodation = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase.from('student_accommodations').delete().eq('id', id);
+      if (error) throw error;
+      setState(prev => ({ ...prev, accommodations: prev.accommodations.filter(a => a.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting accommodation:', error);
+    }
+  }, []);
+
   // ─── Parent Communications ──────────────────────────────────────────────────
 
   const addParentCommunication = useCallback(async (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
@@ -902,6 +955,9 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     addGoal,
     updateGoal,
     deleteGoal,
+    addAccommodation,
+    updateAccommodation,
+    deleteAccommodation,
     addParentCommunication,
     updateParentCommunication,
     deleteParentCommunication,

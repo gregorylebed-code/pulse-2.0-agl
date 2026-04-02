@@ -39,6 +39,7 @@ export interface Student {
   birth_month?: number | null;
   birth_day?: number | null;
   photo_url?: string | null;
+  pronouns?: string | null;
 }
 
 export interface Note {
@@ -88,6 +89,23 @@ export interface StudentGoal {
   goal_text: string;
   status: GoalStatus;
   teacher_note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AccommodationPlanType = 'IEP' | '504' | 'RTI' | 'Other';
+export type AccommodationCategory = 'extended_time' | 'seating' | 'testing' | 'materials' | 'behavioral' | 'presentation' | 'response' | 'other';
+
+export interface Accommodation {
+  id: string;
+  student_id: string;
+  user_id: string;
+  plan_type: AccommodationPlanType;
+  category: AccommodationCategory;
+  accommodation_text: string;
+  is_active: boolean;
+  review_date?: string | null;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
 }

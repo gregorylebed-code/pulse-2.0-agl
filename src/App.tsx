@@ -48,6 +48,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     addTask, updateTask, deleteTask,
     addReport, deleteReport,
     goals, addGoal, updateGoal, deleteGoal,
+    accommodations, addAccommodation, updateAccommodation, deleteAccommodation,
     parentCommunications, addParentCommunication, updateParentCommunication, deleteParentCommunication,
     shoutouts, addShoutout, deleteShoutout,
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
@@ -70,7 +71,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   // Heartbeat — update last_seen whenever the app loads
   useEffect(() => {
-    supabase.from('user_presence').upsert({ user_id: userId, last_seen: new Date().toISOString() });
+    supabase.from('user_presence')
+      .upsert({ user_id: userId, last_seen: new Date().toISOString() }, { onConflict: 'user_id' })
+      .then(({ error }) => { if (error) console.error('user_presence upsert failed:', error); });
   }, [userId]);
 
   const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings'>('pulse');
@@ -365,6 +368,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 updateStudent={updateStudent} addReport={addReport}
                 deleteReport={deleteReport}
                 addGoal={addGoal} updateGoal={updateGoal} deleteGoal={deleteGoal}
+                accommodations={accommodations}
+                addAccommodation={addAccommodation} updateAccommodation={updateAccommodation} deleteAccommodation={deleteAccommodation}
                 addParentCommunication={addParentCommunication}
                 updateParentCommunication={updateParentCommunication}
                 deleteParentCommunication={deleteParentCommunication}
@@ -398,6 +403,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 students={students}
                 addShoutout={addShoutout}
                 deleteShoutout={deleteShoutout}
+                onCelebrate={() => confettiRef.current?.fire()}
               />
             </motion.div>
           )}

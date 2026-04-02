@@ -11,11 +11,11 @@ import {
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
-import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus, ParentCommunication, Shoutout } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus, ParentCommunication, Shoutout, Accommodation, AccommodationCategory, AccommodationPlanType } from '../types';
 import ParentCommunicationLog from './ParentCommunicationLog';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
-import { categorizeNote, refineReport, refineQuickNote, parseVoiceLog, quickParentNote, suggestGoals, ReportData } from '../lib/gemini';
+import { categorizeNote, refineReport, refineQuickNote, parseVoiceLog, quickParentNote, suggestGoals, ReportData, PronounInfo } from '../lib/gemini';
 import { isFullMode } from '../lib/mode';
 import { cn } from '../utils/cn';
 
@@ -83,6 +83,10 @@ interface StudentDetailViewProps {
   addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
   updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  accommodations: Accommodation[];
+  addAccommodation: (acc: Omit<Accommodation, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<Accommodation | null>;
+  updateAccommodation: (id: string, updates: Partial<Omit<Accommodation, 'id' | 'user_id' | 'student_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
+  deleteAccommodation: (id: string) => Promise<void>;
   addParentCommunication: (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
   updateParentCommunication: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
   deleteParentCommunication: (id: string) => Promise<void>;
@@ -588,6 +592,10 @@ export default function StudentDetailView({
   addGoal,
   updateGoal,
   deleteGoal,
+  accommodations,
+  addAccommodation,
+  updateAccommodation,
+  deleteAccommodation,
   addParentCommunication,
   updateParentCommunication,
   deleteParentCommunication,
@@ -633,7 +641,7 @@ export default function StudentDetailView({
 
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
   const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]);
-  const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note' | 'parents'>('timeline');
+  const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'accommodations' | 'ai-report' | 'history' | 'quick-note' | 'parents'>('timeline');
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
   const [quickNoteDays, setQuickNoteDays] = useState<0 | 1 | 3 | 5 | 7>(0);
@@ -641,6 +649,7 @@ export default function StudentDetailView({
   const [isRefiningQuickNote, setIsRefiningQuickNote] = useState(false);
   const quickNoteRef = useRef<HTMLDivElement>(null);
   const goalsRef = useRef<HTMLDivElement>(null);
+  const accommodationsRef = useRef<HTMLDivElement>(null);
   const parentCommRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -649,6 +658,13 @@ export default function StudentDetailView({
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isSuggestingGoals, setIsSuggestingGoals] = useState(false);
   const [goalSuggestions, setGoalSuggestions] = useState<Array<{ category: GoalCategory; goal_text: string }>>([]);
+  const [showAccomForm, setShowAccomForm] = useState(false);
+  const [newAccomText, setNewAccomText] = useState('');
+  const [newAccomPlan, setNewAccomPlan] = useState<AccommodationPlanType>('IEP');
+  const [newAccomCategory, setNewAccomCategory] = useState<AccommodationCategory>('extended_time');
+  const [newAccomReviewDate, setNewAccomReviewDate] = useState('');
+  const [newAccomNotes, setNewAccomNotes] = useState('');
+  const [isSavingAccom, setIsSavingAccom] = useState(false);
   const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingDeleteNoteIds, setPendingDeleteNoteIds] = useState<Set<string>>(new Set());
@@ -773,7 +789,7 @@ export default function StudentDetailView({
   };
 
   const handleSaveNote = async () => {
-    if (!noteContent.trim() && !image && selectedTags.length === 0 && selectedComm.length === 0) return;
+    if (!noteContent.trim() && !image && selectedTags.length === 0) return;
     setIsSavingNote(true);
     const expandedContent = expandAbbreviations(noteContent, abbreviations);
     try {
@@ -788,8 +804,8 @@ export default function StudentDetailView({
       }
 
       let finalTags = [...selectedTags];
-      let isParentComm = selectedComm.length > 0;
-      let commType = selectedComm.join(', ');
+      let isParentComm = false;
+      let commType = '';
 
       if (finalTags.length === 0) {
         try {
@@ -852,7 +868,7 @@ export default function StudentDetailView({
       entries.forEach(entry => {
         if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
           maxRatio = entry.intersectionRatio;
-          visibleSection = entry.target.id as 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note' | 'parents';
+          visibleSection = entry.target.id as 'timeline' | 'goals' | 'accommodations' | 'ai-report' | 'history' | 'quick-note' | 'parents';
         }
       });
 
@@ -869,6 +885,7 @@ export default function StudentDetailView({
 
     if (timelineRef.current) observer.observe(timelineRef.current);
     if (goalsRef.current) observer.observe(goalsRef.current);
+    if (accommodationsRef.current) observer.observe(accommodationsRef.current);
     if (aiReportRef.current) observer.observe(aiReportRef.current);
     if (historyRef.current) observer.observe(historyRef.current);
     if (quickNoteRef.current) observer.observe(quickNoteRef.current);
@@ -877,10 +894,11 @@ export default function StudentDetailView({
     return () => observer.disconnect();
   }, [activeSection]);
 
-  const scrollToSection = (sectionId: 'timeline' | 'goals' | 'ai-report' | 'history' | 'quick-note' | 'parents' | 'progress') => {
+  const scrollToSection = (sectionId: 'timeline' | 'goals' | 'accommodations' | 'ai-report' | 'history' | 'quick-note' | 'parents' | 'progress') => {
     const refs = {
       'timeline': timelineRef,
       'goals': goalsRef,
+      'accommodations': accommodationsRef,
       'ai-report': aiReportRef,
       'history': historyRef,
       'quick-note': quickNoteRef,
@@ -987,6 +1005,9 @@ export default function StudentDetailView({
     toast.success('PDF downloaded successfully');
   };
 
+  const [pronouns, setPronouns] = useState(student.pronouns || '');
+  const [quickNotePronounInfo, setQuickNotePronounInfo] = useState<PronounInfo | null>(null);
+  useEffect(() => { setPronouns(student.pronouns || ''); }, [student.pronouns]);
   const [parentName, setParentName] = useState(student.parent_guardian_names?.[0] || '');
   const extractContact = (val: any): string => {
     if (!val) return '';
@@ -1013,6 +1034,7 @@ export default function StudentDetailView({
         parent_phones: parentPhone ? [parentPhone] : [],
         birth_month: !isNaN(bm) && bm >= 1 && bm <= 12 ? bm : null,
         birth_day: !isNaN(bd) && bd >= 1 && bd <= 31 ? bd : null,
+        pronouns: pronouns.trim() || null,
       });
       toast.success('Contact info updated!');
       onNoteUpdate();
@@ -1178,8 +1200,9 @@ export default function StudentDetailView({
     }
     setIsGeneratingQuickNote(true);
     try {
-      const result = await quickParentNote(filtered, teacherTitle, teacherLastName, student.name, shoutouts);
-      setQuickNote(result.trim());
+      const { note, pronounInfo } = await quickParentNote(filtered, teacherTitle, teacherLastName, student.name, shoutouts, student.pronouns);
+      setQuickNote(note.trim());
+      setQuickNotePronounInfo(pronounInfo);
     } catch {
       toast.error('Failed to generate quick note.');
     } finally {
@@ -1207,7 +1230,7 @@ export default function StudentDetailView({
     if (!currentReport || !refineInstructions.trim()) return;
     setIsRefining(true);
     try {
-      const refined = await refineReport(currentReport, refineInstructions);
+      const refined = await refineReport(currentReport, refineInstructions, student.pronouns, student.name.split(' ')[0]);
       if (refined) {
         setCurrentReport(refined);
         setRefineInstructions('');
@@ -1464,6 +1487,20 @@ export default function StudentDetailView({
           />
         </div>
         <div className="flex items-center gap-2 mt-2">
+          <span className="text-slate-300 flex-shrink-0 text-xs w-3.5 text-center">P</span>
+          <span className="text-[11px] text-slate-400 font-medium w-16">Pronouns</span>
+          <select
+            value={pronouns}
+            onChange={(e) => setPronouns(e.target.value)}
+            className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          >
+            <option value="">Auto-detect from name</option>
+            <option value="he/him">he/him</option>
+            <option value="she/her">she/her</option>
+            <option value="they/them">they/them</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2 mt-2">
           <Cake className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
           <span className="text-[11px] text-slate-400 font-medium w-16">Birthday</span>
           <select
@@ -1521,6 +1558,15 @@ export default function StudentDetailView({
               Goals
             </button>
           )}
+          <button
+            onClick={() => scrollToSection('accommodations')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'accommodations' ? "bg-sky-500 text-white shadow-md shadow-sky-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            IEP/504
+          </button>
         </div>
         {/* Row 2: communication-focused */}
         <div className="flex items-center gap-1">
@@ -1607,7 +1653,6 @@ export default function StudentDetailView({
             { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive'), selectedCount: indicators.filter(b => b.type === 'positive' && selectedTags.includes(b.label)).length },
             { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral'), selectedCount: indicators.filter(b => b.type === 'neutral' && selectedTags.includes(b.label)).length },
             { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicators.filter(b => b.type === 'growth'), selectedCount: indicators.filter(b => b.type === 'growth' && selectedTags.includes(b.label)).length },
-            { key: 'comm' as const, label: 'Family Comm', color: 'sky', items: commTypes, selectedCount: selectedComm.length },
           ].map(cat => {
             const isOpen = expandedCategory === cat.key;
             const headerColors: Record<string, string> = {
@@ -1690,7 +1735,7 @@ export default function StudentDetailView({
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">
-          {(noteContent || image || selectedTags.length > 0 || selectedComm.length > 0) && (
+          {(noteContent || image || selectedTags.length > 0) && (
             <button
               type="button"
               onClick={handleClearNote}
@@ -1702,7 +1747,7 @@ export default function StudentDetailView({
           <button
             type="button"
             onClick={handleSaveNote}
-            disabled={isSavingNote || (!noteContent.trim() && !image && selectedTags.length === 0 && selectedComm.length === 0)}
+            disabled={isSavingNote || (!noteContent.trim() && !image && selectedTags.length === 0)}
             className="py-1.5 px-8 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-xl hover:brightness-110 transition-all shadow-md shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isSavingNote ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Save Note</>}
@@ -1765,9 +1810,19 @@ export default function StudentDetailView({
               className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-terracotta">
-                  {quickNoteDays === 0 ? "Today's Note" : quickNoteDays === 1 ? "Yesterday's Note" : `Last ${quickNoteDays} Days`}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-terracotta">
+                    {quickNoteDays === 0 ? "Today's Note" : quickNoteDays === 1 ? "Yesterday's Note" : `Last ${quickNoteDays} Days`}
+                  </span>
+                  {quickNotePronounInfo && (
+                    <span
+                      title={quickNotePronounInfo.source === 'set' ? 'Pronouns set by you' : quickNotePronounInfo.source === 'guessed' ? 'Pronouns guessed from name — check the student profile if incorrect' : 'Ambiguous name — used they/them'}
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${quickNotePronounInfo.source === 'set' ? 'bg-sage/15 text-sage' : quickNotePronounInfo.source === 'guessed' ? 'bg-slate-100 text-slate-400' : 'bg-amber-50 text-amber-500'}`}
+                    >
+                      {quickNotePronounInfo.pronouns} {quickNotePronounInfo.source === 'set' ? '' : quickNotePronounInfo.source === 'ambiguous' ? '?' : '~'}
+                    </span>
+                  )}
+                </div>
                 <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
               </div>
               <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
@@ -2306,6 +2361,204 @@ export default function StudentDetailView({
                     Cancel
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="pt-6 border-t border-slate-100" />
+
+      {/* ─── Accommodations ─────────────────────────────────────────── */}
+      <div id="accommodations" ref={accommodationsRef} className="space-y-4 scroll-mt-header">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-sky-600 flex items-center gap-2">
+              <FileText className="w-4 h-4" /> IEP / 504 Accommodations
+            </h3>
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+              {accommodations.filter(a => a.is_active).length} active accommodation{accommodations.filter(a => a.is_active).length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAccomForm(f => !f)}
+            className="p-2 rounded-xl text-sky-500 hover:bg-sky-50 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+
+        {accommodations.length === 0 && !showAccomForm && (
+          <p className="text-xs text-slate-400 text-center py-6">No accommodations yet — tap + to add one.</p>
+        )}
+
+        <div className="space-y-3">
+          {accommodations.map(acc => {
+            const planColors: Record<AccommodationPlanType, string> = {
+              'IEP':   'bg-violet-100 text-violet-700',
+              '504':   'bg-sky-100 text-sky-700',
+              'RTI':   'bg-amber-100 text-amber-700',
+              'Other': 'bg-slate-100 text-slate-600',
+            };
+            const categoryLabels: Record<AccommodationCategory, string> = {
+              extended_time:  'Extended Time',
+              seating:        'Preferential Seating',
+              testing:        'Testing Accommodations',
+              materials:      'Modified Materials',
+              behavioral:     'Behavioral Supports',
+              presentation:   'Presentation',
+              response:       'Response',
+              other:          'Other',
+            };
+            return (
+              <div key={acc.id} className={cn("bg-white rounded-2xl p-4 border shadow-sm space-y-2", acc.is_active ? "border-sky-100" : "border-slate-100 opacity-60")}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={cn("text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", planColors[acc.plan_type])}>
+                      {acc.plan_type}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      {categoryLabels[acc.category]}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => updateAccommodation(acc.id, { is_active: !acc.is_active })}
+                      className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors", acc.is_active ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "bg-slate-50 text-slate-400 hover:bg-slate-100")}
+                    >
+                      {acc.is_active ? 'Active' : 'Inactive'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => { await deleteAccommodation(acc.id); toast.success('Accommodation removed'); }}
+                      className="p-1 text-slate-300 hover:text-red-400 transition-colors rounded-lg"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-700 font-medium leading-snug">{acc.accommodation_text}</p>
+                {(acc.review_date || acc.notes) && (
+                  <div className="pt-1 space-y-0.5">
+                    {acc.review_date && (
+                      <p className="text-[11px] text-slate-400">Review: {new Date(acc.review_date + 'T00:00:00').toLocaleDateString()}</p>
+                    )}
+                    {acc.notes && (
+                      <p className="text-[11px] text-slate-400 italic">{acc.notes}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <AnimatePresence>
+          {showAccomForm && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="bg-sky-50/60 rounded-2xl p-4 border border-sky-100 space-y-3"
+            >
+              <p className="text-[11px] font-bold uppercase tracking-widest text-sky-500">New Accommodation</p>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Plan</label>
+                  <select
+                    value={newAccomPlan}
+                    onChange={e => setNewAccomPlan(e.target.value as AccommodationPlanType)}
+                    className="w-full px-3 py-2 bg-white border border-sky-100 rounded-xl text-xs font-medium focus:outline-none focus:border-sky-400"
+                  >
+                    {(['IEP', '504', 'RTI', 'Other'] as AccommodationPlanType[]).map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Category</label>
+                  <select
+                    value={newAccomCategory}
+                    onChange={e => setNewAccomCategory(e.target.value as AccommodationCategory)}
+                    className="w-full px-3 py-2 bg-white border border-sky-100 rounded-xl text-xs font-medium focus:outline-none focus:border-sky-400"
+                  >
+                    {([
+                      ['extended_time', 'Extended Time'],
+                      ['seating', 'Preferential Seating'],
+                      ['testing', 'Testing Accommodations'],
+                      ['materials', 'Modified Materials'],
+                      ['behavioral', 'Behavioral Supports'],
+                      ['presentation', 'Presentation'],
+                      ['response', 'Response'],
+                      ['other', 'Other'],
+                    ] as [AccommodationCategory, string][]).map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <textarea
+                value={newAccomText}
+                onChange={e => setNewAccomText(e.target.value)}
+                placeholder="Describe the accommodation…"
+                rows={2}
+                className="w-full px-3 py-2 bg-white border border-sky-100 rounded-xl text-sm font-medium resize-none focus:outline-none focus:border-sky-400 placeholder:text-slate-300"
+              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Review Date (optional)</label>
+                  <input
+                    type="date"
+                    value={newAccomReviewDate}
+                    onChange={e => setNewAccomReviewDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-sky-100 rounded-xl text-xs font-medium focus:outline-none focus:border-sky-400"
+                  />
+                </div>
+              </div>
+              <input
+                type="text"
+                value={newAccomNotes}
+                onChange={e => setNewAccomNotes(e.target.value)}
+                placeholder="Internal notes (optional)"
+                className="w-full px-3 py-2 bg-white border border-sky-100 rounded-xl text-sm font-medium focus:outline-none focus:border-sky-400 placeholder:text-slate-300"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={!newAccomText.trim() || isSavingAccom}
+                  onClick={async () => {
+                    if (!newAccomText.trim()) return;
+                    setIsSavingAccom(true);
+                    await addAccommodation({
+                      student_id: student.id,
+                      plan_type: newAccomPlan,
+                      category: newAccomCategory,
+                      accommodation_text: newAccomText.trim(),
+                      is_active: true,
+                      review_date: newAccomReviewDate || null,
+                      notes: newAccomNotes.trim() || null,
+                    });
+                    setNewAccomText('');
+                    setNewAccomReviewDate('');
+                    setNewAccomNotes('');
+                    setIsSavingAccom(false);
+                    setShowAccomForm(false);
+                    toast.success('Accommodation added');
+                  }}
+                  className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-bold text-sm hover:brightness-110 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {isSavingAccom ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAccomForm(false); setNewAccomText(''); setNewAccomReviewDate(''); setNewAccomNotes(''); }}
+                  className="px-4 py-2.5 bg-white text-slate-400 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all border border-slate-100"
+                >
+                  Cancel
+                </button>
               </div>
             </motion.div>
           )}

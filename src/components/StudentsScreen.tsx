@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
-import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout, Accommodation } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
@@ -32,6 +32,10 @@ interface StudentsScreenProps {
   addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
   updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  accommodations: Accommodation[];
+  addAccommodation: (acc: Omit<Accommodation, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<Accommodation | null>;
+  updateAccommodation: (id: string, updates: Partial<Omit<Accommodation, 'id' | 'user_id' | 'student_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
+  deleteAccommodation: (id: string) => Promise<void>;
   addParentCommunication: (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
   updateParentCommunication: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
   deleteParentCommunication: (id: string) => Promise<void>;
@@ -151,6 +155,10 @@ export default function StudentsScreen({
   addGoal,
   updateGoal,
   deleteGoal,
+  accommodations,
+  addAccommodation,
+  updateAccommodation,
+  deleteAccommodation,
   addParentCommunication,
   updateParentCommunication,
   deleteParentCommunication,
@@ -217,6 +225,7 @@ export default function StudentsScreen({
   const studentNotes = notes.filter(n => n.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const studentReports = reports.filter(r => r.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const studentGoals = goals.filter(g => g.student_id === selectedStudent?.id);
+  const studentAccommodations = accommodations.filter(a => a.student_id === selectedStudent?.id);
 
 
   const reportToText = (report: ReportData): string =>
@@ -225,7 +234,7 @@ export default function StudentsScreen({
   const handleGenerateReport = async (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]): Promise<ReportData | undefined> => {
     if (!selectedStudent) return;
     const studentShoutouts = shoutouts.filter(s => s.student_id === selectedStudent.id);
-    const report = await summarizeNotes(filteredNotes, length, studentShoutouts);
+    const { report } = await summarizeNotes(filteredNotes, length, studentShoutouts, selectedStudent.pronouns);
     await addReport({
       student_name: selectedStudent.name,
       content: report ? reportToText(report) : '',
@@ -396,6 +405,10 @@ export default function StudentsScreen({
         addGoal={addGoal}
         updateGoal={updateGoal}
         deleteGoal={deleteGoal}
+        accommodations={studentAccommodations}
+        addAccommodation={addAccommodation}
+        updateAccommodation={updateAccommodation}
+        deleteAccommodation={deleteAccommodation}
         addParentCommunication={addParentCommunication}
         updateParentCommunication={updateParentCommunication}
         deleteParentCommunication={deleteParentCommunication}
