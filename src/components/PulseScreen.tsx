@@ -838,7 +838,7 @@ const handleVoiceLog = async () => {
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
             onFocus={() => setTimeout(() => noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-            placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : "Add a note... (optional)"}
+            placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : "Add a note... (tip: use initials or seat numbers instead of full names)"}
             className="w-full min-h-[80px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
           <div className="absolute right-3 bottom-3 flex gap-2">
