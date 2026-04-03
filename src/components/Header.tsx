@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, PenLine, RotateCcw } from 'lucide-react';
+import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, PenLine, RotateCcw, EyeOff, Eye } from 'lucide-react';
+import { useAliasMode } from '../context/AliasModeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { getForecast, SpecialsConfig } from '../utils/rotationHelpers';
@@ -48,6 +49,7 @@ export default function Header({
 }: HeaderProps) {
   const forecast = getForecast(specialsConfig);
   const [showOverridePicker, setShowOverridePicker] = useState(false);
+  const { aliasMode, toggleAliasMode } = useAliasMode();
   const letters = Array.from({ length: specialsConfig.rollingLetterCount || 5 }, (_, i) => String.fromCharCode(65 + i));
   const canOverride = specialsConfig.mode === 'letter-day' || specialsConfig.mode === 'rolling';
   const hasOverride = !!specialsConfig.todayOverride;
@@ -111,6 +113,19 @@ export default function Header({
           })}
         </span>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Alias Mode Toggle */}
+          <button
+            onClick={toggleAliasMode}
+            title={aliasMode ? 'Alias Mode ON — tap to show real names' : 'Alias Mode OFF — tap to hide names'}
+            className={cn(
+              'p-1.5 rounded-xl border transition-all',
+              aliasMode
+                ? 'bg-amber-50 border-amber-200 text-amber-500'
+                : 'bg-white border-slate-100 text-slate-300 hover:text-slate-400'
+            )}
+          >
+            {aliasMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
           {/* Rotation Dashboard Badge */}
           {isFullMode && <div className="relative">
             <button

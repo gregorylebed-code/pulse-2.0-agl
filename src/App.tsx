@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { AliasModeProvider } from './context/AliasModeContext';
 
 import { useClassroomData } from './hooks/useClassroomData';
 import { useAuth, signOut } from './lib/auth';
@@ -519,6 +520,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         onGoToPulse={() => { setWelcomeHidden(true); setActiveTab('pulse'); }}
         onGoToCalendar={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('calendar'); }}
         onDismiss={markOnboardingComplete}
+        onAddStudents={async (names: string[]) => {
+          for (const name of names) {
+            await addStudent({ name, class_id: null });
+          }
+          markOnboardingComplete();
+        }}
       />
 
       <Confetti ref={confettiRef} />
@@ -552,5 +559,9 @@ export default function App() {
   }
 
   if (!user) return <AuthScreen />;
-  return <AuthenticatedApp userId={user.id} userEmail={user.email ?? ''} />;
+  return (
+    <AliasModeProvider>
+      <AuthenticatedApp userId={user.id} userEmail={user.email ?? ''} />
+    </AliasModeProvider>
+  );
 }

@@ -10,6 +10,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
+import { useAliasMode } from '../context/AliasModeContext';
+import { getDisplayName, getDisplayFirst } from '../utils/getDisplayName';
 
 
 interface PulseScreenProps {
@@ -111,6 +113,7 @@ function TodayAtAGlance({ notes, indicators }: { notes: Note[]; indicators: any[
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick }: PulseScreenProps) {
+  const { aliasMode } = useAliasMode();
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [studentInput, setStudentInput] = useState('');
   const [suggestions, setSuggestions] = useState<Student[]>([]);
@@ -590,7 +593,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                   {upcomingBirthdays.map(({ student, when }) => (
                     <p key={student.id} className="text-xs font-bold text-slate-700">
-                      {student.name} <span className="text-pink-400 font-medium">({when})</span>
+                      {getDisplayName(student, aliasMode)} <span className="text-pink-400 font-medium">({when})</span>
                     </p>
                   ))}
                 </div>
@@ -726,7 +729,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                           onClick={() => selectStudent(s.name)}
                           className="w-full text-left px-6 py-4 hover:bg-sage/5 transition-colors text-base font-bold border-b border-slate-50 last:border-0"
                         >
-                          {s.name}
+                          {getDisplayName(s, aliasMode)}
                         </button>
                       ))}
                     </motion.div>
@@ -744,7 +747,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 >
                   <div className="bg-sage/10 border border-sage/20 rounded-2xl px-4 py-3 flex items-center gap-3">
                     <div className="w-2 h-2 bg-sage rounded-full animate-pulse" />
-                    <span className="text-[13px] font-bold text-sage-dark">Selected: <span className="text-slate-900">{selectedStudent}</span></span>
+                    <span className="text-[13px] font-bold text-sage-dark">Selected: <span className="text-slate-900">{(() => { const s = students.find(st => st.name === selectedStudent); return s ? getDisplayName(s, aliasMode) : selectedStudent; })()}</span></span>
                   </div>
                 </motion.div>
               )}
@@ -959,7 +962,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   <h4
                     className={cn("font-black text-slate-900 text-base truncate font-display", onStudentClick && note.student_id && "cursor-pointer hover:underline")}
                     onClick={onStudentClick && note.student_id ? (e) => { e.stopPropagation(); onStudentClick(note.student_id!); } : undefined}
-                  >{note.student_name}</h4>
+                  >{(() => { const s = students.find(st => st.name === note.student_name); return s ? getDisplayName(s, aliasMode) : note.student_name; })()}</h4>
                 )}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-slate-300 tracking-tight">{new Date(note.created_at).toLocaleDateString()}</span>

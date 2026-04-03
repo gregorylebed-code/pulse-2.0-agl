@@ -671,6 +671,8 @@ export default function StudentDetailView({
   const [pendingDeleteArchiveIds, setPendingDeleteArchiveIds] = useState<Set<string>>(new Set());
   const [editingStudentName, setEditingStudentName] = useState(false);
   const [studentNameDraft, setStudentNameDraft] = useState(student.name);
+  const [editingAlias, setEditingAlias] = useState(false);
+  const [aliasDraft, setAliasDraft] = useState(student.alias ?? '');
   const timelineRef = useRef<HTMLDivElement>(null);
   const aiReportRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
@@ -732,6 +734,14 @@ export default function StudentDetailView({
     await updateStudent(student.id, { name: studentNameDraft.trim() });
     toast.success('Student name updated!');
     setEditingStudentName(false);
+    onNoteUpdate();
+  };
+
+  const handleSaveAlias = async () => {
+    const trimmed = aliasDraft.trim();
+    await updateStudent(student.id, { alias: trimmed || null });
+    toast.success(trimmed ? `Alias set to "${trimmed}"` : 'Alias cleared');
+    setEditingAlias(false);
     onNoteUpdate();
   };
 
@@ -1415,6 +1425,32 @@ export default function StudentDetailView({
               <span className="inline-block mt-1.5 px-3 py-1 bg-white/20 text-white text-[11px] font-bold rounded-full backdrop-blur-sm">
                 Period {student.class_period || '—'}
               </span>
+              {/* Alias field */}
+              <div className="mt-2 flex items-center gap-2">
+                {editingAlias ? (
+                  <>
+                    <input
+                      type="text"
+                      value={aliasDraft}
+                      onChange={e => setAliasDraft(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleSaveAlias(); if (e.key === 'Escape') setEditingAlias(false); }}
+                      autoFocus
+                      placeholder="e.g. Star, JD, Buddy…"
+                      className="text-[11px] font-bold text-white bg-white/20 border border-white/40 rounded-xl px-3 py-1 w-36 focus:outline-none focus:ring-2 focus:ring-white/40 placeholder-white/40"
+                    />
+                    <button onClick={handleSaveAlias} className="text-[11px] font-bold text-white/80 hover:text-white">Save</button>
+                    <button onClick={() => setEditingAlias(false)} className="text-[11px] text-white/50 hover:text-white/80">✕</button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => { setAliasDraft(student.alias ?? ''); setEditingAlias(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-[11px] font-bold rounded-full transition-colors"
+                    title="Set alias for Alias Mode"
+                  >
+                    {student.alias ? `Alias: ${student.alias}` : '+ Set alias'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

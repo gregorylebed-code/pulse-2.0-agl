@@ -3,6 +3,8 @@ import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus,
 import { motion, AnimatePresence } from 'framer-motion';
 import { Note, Student } from '../types';
 import { cn } from '../utils/cn';
+import { useAliasMode } from '../context/AliasModeContext';
+import { getDisplayName } from '../utils/getDisplayName';
 
 type Period = 'week' | 'lastWeek' | 'month';
 type ExpandedCard = 'indicators' | 'streak' | 'perStudent' | 'classBreakdown' | 'heatmap' | 'trendGrid' | null;
@@ -497,6 +499,7 @@ function ClassTrendGridContent({ studentTrends, onStudentClick }: {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function InsightsScreen({ notes, students, indicators, onStudentClick }: InsightsScreenProps) {
+  const { aliasMode } = useAliasMode();
   const [period, setPeriod] = useState<Period>('week');
   const [expandedCard, setExpandedCard] = useState<ExpandedCard>(null);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -721,7 +724,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
                         className="w-full flex items-center gap-3 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 rounded-xl px-1 transition-colors"
                       >
                         <StudentAvatar student={student} size={32} />
-                        <span className="flex-1 text-left text-sm font-semibold text-slate-700 truncate">{student.name}</span>
+                        <span className="flex-1 text-left text-sm font-semibold text-slate-700 truncate">{getDisplayName(student, aliasMode)}</span>
                         <div className="flex gap-1.5">
                           {dots.map((dot, i) => (
                             <div
@@ -757,7 +760,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
                           className="w-full flex items-center gap-3 py-2 hover:bg-slate-50 rounded-xl px-2 transition-colors"
                         >
                           <StudentAvatar student={student} size={28} />
-                          <span className="flex-1 text-left text-sm font-semibold text-slate-700 truncate">{student.name}</span>
+                          <span className="flex-1 text-left text-sm font-semibold text-slate-700 truncate">{getDisplayName(student, aliasMode)}</span>
                           <div className="w-32 h-4 bg-slate-100 rounded-full overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
@@ -903,7 +906,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
                   className="w-full flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 rounded-xl px-1 transition-colors"
                 >
                   <StudentAvatar student={student} size={26} />
-                  <span className="flex-1 text-left text-xs font-semibold text-slate-700 truncate">{student.name}</span>
+                  <span className="flex-1 text-left text-xs font-semibold text-slate-700 truncate">{getDisplayName(student, aliasMode)}</span>
                   <div className="flex gap-1.5">
                     {dots.map((dot, i) => (
                       <div
@@ -963,7 +966,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
                         </div>
                       )}
                       <span className="text-[8px] text-slate-400 truncate w-full text-center leading-none">
-                        {student.name.split(' ')[0]}
+                        {getDisplayName(student, aliasMode).split(' ')[0]}
                       </span>
                     </button>
                   );
@@ -1034,7 +1037,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
                               : 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200'
                           )}
                         >
-                          {student.name.split(' ')[0]} {student.name.split(' ').slice(-1)[0][0]}.
+                          {getDisplayName(student, aliasMode)}
                           &nbsp;·&nbsp;
                           {daysSince >= 999 ? 'never' : `${daysSince}d`}
                         </button>

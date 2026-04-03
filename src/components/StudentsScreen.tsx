@@ -9,6 +9,8 @@ import { askAboutStudents } from '../utils/aiAssistant';
 import StudentDetailView from './StudentDetailView';
 import { cn } from '../utils/cn';
 import { isFullMode } from '../lib/mode';
+import { useAliasMode } from '../context/AliasModeContext';
+import { getDisplayName, getDisplayFirst } from '../utils/getDisplayName';
 
 
 interface StudentsScreenProps {
@@ -170,6 +172,7 @@ export default function StudentsScreen({
   shoutouts,
   addTask,
 }: StudentsScreenProps) {
+  const { aliasMode } = useAliasMode();
   const [filter, setFilter] = useState<string>('All');
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
@@ -201,7 +204,7 @@ export default function StudentsScreen({
       togglePin(id);
       setPressingId(null);
       const student = students.find(s => s.id === id);
-      if (student) toast(willBePinned ? `📌 ${student.name.split(' ')[0]} pinned to top` : `${student.name.split(' ')[0]} unpinned`);
+      if (student) toast(willBePinned ? `📌 ${getDisplayFirst(student, aliasMode)} pinned to top` : `${getDisplayFirst(student, aliasMode)} unpinned`);
     }, 2000);
   };
 
@@ -699,11 +702,11 @@ export default function StudentsScreen({
                         <img src={s.photo_url} alt={s.name} className={cn('w-10 h-10 rounded-full object-cover', statusRing[status])} />
                       ) : (
                         <div className={cn('w-10 h-10 rounded-full flex items-center justify-center border text-lg', getAvatarColor(s.name), statusRing[status])} style={{ fontFamily: "'Boogaloo', cursive" }}>
-                          {s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                          {aliasMode ? getDisplayName(s, true).substring(0, 2).toUpperCase() : s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                       )}
 
-                      <h4 className="text-[12px] font-bold text-slate-900 line-clamp-2 leading-tight font-display h-[30px] flex items-start justify-center">{s.name}</h4>
+                      <h4 className="text-[12px] font-bold text-slate-900 line-clamp-2 leading-tight font-display h-[30px] flex items-start justify-center">{getDisplayName(s, aliasMode)}</h4>
 
                       {/* Note count */}
                       {noteCount > 0 && (
