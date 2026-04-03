@@ -1522,19 +1522,26 @@ export default function StudentDetailView({
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
           />
         </div>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-slate-300 flex-shrink-0 text-xs w-3.5 text-center">P</span>
-          <span className="text-[11px] text-slate-400 font-medium w-16">Pronouns</span>
-          <select
-            value={pronouns}
-            onChange={(e) => setPronouns(e.target.value)}
-            className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          >
-            <option value="">Auto-detect from name</option>
-            <option value="he/him">he/him</option>
-            <option value="she/her">she/her</option>
-            <option value="they/them">they/them</option>
-          </select>
+        <div className="flex items-start gap-2 mt-2">
+          <span className="text-slate-300 flex-shrink-0 text-xs w-3.5 text-center mt-2">P</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-400 font-medium w-16 flex-shrink-0">Pronouns</span>
+              <select
+                value={pronouns}
+                onChange={(e) => setPronouns(e.target.value)}
+                className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+              >
+                <option value="">Auto-detect (they/them if name is unclear)</option>
+                <option value="he/him">he/him</option>
+                <option value="she/her">she/her</option>
+                <option value="they/them">they/them</option>
+              </select>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1 leading-snug pl-[72px]">
+              This only controls how the AI writes reports and parent notes — e.g. "he completed" vs. "she completed." It's not a required field and has no other purpose in the app.
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 mt-2">
           <Cake className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
