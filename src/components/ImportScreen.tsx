@@ -603,18 +603,19 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
               className="w-full min-h-[240px] p-6 bg-slate-50 border border-slate-100 rounded-3xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm resize-none leading-relaxed"
             />
 
-            <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
-              <div
-                onClick={() => setUseInitialsOnly(v => !v)}
-                className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${useInitialsOnly ? 'bg-amber-400' : 'bg-slate-200'}`}
-              >
+            <button
+              type="button"
+              onClick={() => setUseInitialsOnly(v => !v)}
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${useInitialsOnly ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+            >
+              <div className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${useInitialsOnly ? 'bg-amber-400' : 'bg-slate-200'}`}>
                 <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mt-0.5 ${useInitialsOnly ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
               </div>
               <div>
-                <span className="text-xs font-black text-slate-700">Store initials only</span>
-                <p className="text-[11px] text-slate-400 leading-snug">e.g. "Sarah Johnson" → "S.J." — keeps real student names out of the app</p>
+                <span className={`text-sm font-black ${useInitialsOnly ? 'text-amber-700' : 'text-slate-700'}`}>Store initials only</span>
+                <p className={`text-xs font-medium mt-0.5 leading-snug ${useInitialsOnly ? 'text-amber-600' : 'text-slate-400'}`}>e.g. "Sarah Johnson" → "S.J." — keeps real student names out of the app</p>
               </div>
-            </label>
+            </button>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
               <div className="flex items-center gap-2 w-full sm:w-auto">
