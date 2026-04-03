@@ -40,6 +40,7 @@ export interface Student {
   birth_day?: number | null;
   photo_url?: string | null;
   pronouns?: string | null;
+  alias?: string | null;
 }
 
 export interface Note {
@@ -102,7 +103,7 @@ export interface Accommodation {
   user_id: string;
   plan_type: AccommodationPlanType;
   category: AccommodationCategory;
-  accommodation_text: string;
+  accommodation_text: string | null;
   is_active: boolean;
   review_date?: string | null;
   notes?: string | null;

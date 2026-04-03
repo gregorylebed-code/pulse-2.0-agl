@@ -661,7 +661,7 @@ export default function StudentDetailView({
   const [showAccomForm, setShowAccomForm] = useState(false);
   const [newAccomText, setNewAccomText] = useState('');
   const [newAccomPlan, setNewAccomPlan] = useState<AccommodationPlanType>('IEP');
-  const [newAccomCategory, setNewAccomCategory] = useState<AccommodationCategory>('extended_time');
+  const [newAccomCategories, setNewAccomCategories] = useState<AccommodationCategory[]>(['extended_time']);
   const [newAccomReviewDate, setNewAccomReviewDate] = useState('');
   const [newAccomNotes, setNewAccomNotes] = useState('');
   const [isSavingAccom, setIsSavingAccom] = useState(false);
@@ -2521,12 +2521,8 @@ export default function StudentDetailView({
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Category</label>
-                  <select
-                    value={newAccomCategory}
-                    onChange={e => setNewAccomCategory(e.target.value as AccommodationCategory)}
-                    className="w-full px-3 py-2 bg-white border border-sky-100 rounded-xl text-xs font-medium focus:outline-none focus:border-sky-400"
-                  >
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Categories</label>
+                  <div className="flex flex-wrap gap-1.5">
                     {([
                       ['extended_time', 'Extended Time'],
                       ['seating', 'Preferential Seating'],
@@ -2536,10 +2532,20 @@ export default function StudentDetailView({
                       ['presentation', 'Presentation'],
                       ['response', 'Response'],
                       ['other', 'Other'],
-                    ] as [AccommodationCategory, string][]).map(([val, label]) => (
-                      <option key={val} value={val}>{label}</option>
-                    ))}
-                  </select>
+                    ] as [AccommodationCategory, string][]).map(([val, label]) => {
+                      const selected = newAccomCategories.includes(val);
+                      return (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setNewAccomCategories(prev => selected ? prev.filter(c => c !== val) : [...prev, val])}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${selected ? 'bg-sky-500 text-white' : 'bg-white border border-sky-100 text-slate-500 hover:border-sky-300'}`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
               <textarea
@@ -2570,25 +2576,28 @@ export default function StudentDetailView({
               <div className="flex gap-2">
                 <button
                   type="button"
-                  disabled={!newAccomText.trim() || isSavingAccom}
+                  disabled={newAccomCategories.length === 0 || isSavingAccom}
                   onClick={async () => {
-                    if (!newAccomText.trim()) return;
+                    if (newAccomCategories.length === 0) return;
                     setIsSavingAccom(true);
-                    await addAccommodation({
-                      student_id: student.id,
-                      plan_type: newAccomPlan,
-                      category: newAccomCategory,
-                      accommodation_text: newAccomText.trim(),
-                      is_active: true,
-                      review_date: newAccomReviewDate || null,
-                      notes: newAccomNotes.trim() || null,
-                    });
+                    for (const cat of newAccomCategories) {
+                      await addAccommodation({
+                        student_id: student.id,
+                        plan_type: newAccomPlan,
+                        category: cat,
+                        accommodation_text: newAccomText.trim() || null,
+                        is_active: true,
+                        review_date: newAccomReviewDate || null,
+                        notes: newAccomNotes.trim() || null,
+                      });
+                    }
                     setNewAccomText('');
                     setNewAccomReviewDate('');
                     setNewAccomNotes('');
+                    setNewAccomCategories(['extended_time']);
                     setIsSavingAccom(false);
                     setShowAccomForm(false);
-                    toast.success('Accommodation added');
+                    toast.success(newAccomCategories.length > 1 ? `${newAccomCategories.length} accommodations added` : 'Accommodation added');
                   }}
                   className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-bold text-sm hover:brightness-110 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
@@ -2597,7 +2606,7 @@ export default function StudentDetailView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setShowAccomForm(false); setNewAccomText(''); setNewAccomReviewDate(''); setNewAccomNotes(''); }}
+                  onClick={() => { setShowAccomForm(false); setNewAccomText(''); setNewAccomReviewDate(''); setNewAccomNotes(''); setNewAccomCategories(['extended_time']); }}
                   className="px-4 py-2.5 bg-white text-slate-400 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all border border-slate-100"
                 >
                   Cancel
