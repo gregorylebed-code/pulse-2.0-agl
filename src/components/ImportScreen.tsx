@@ -656,7 +656,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                 {matches.map((m, i) => (
                   <div key={i} className="bg-sage/5 p-4 rounded-2xl border border-sage/20 flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-sage-dark text-sm">{m.imported.name} <span className="text-slate-400 font-normal text-xs ml-2">(Existing: {m.existing.name})</span></h4>
+                      <h4 className="font-bold text-sage-dark text-sm">{useInitialsOnly ? toInitials(m.imported.name) : m.imported.name} <span className="text-slate-400 font-normal text-xs ml-2">(Existing: {m.existing.name})</span></h4>
                       <div className="flex flex-wrap gap-3 mt-1">
                         {m.imported.parent_emails && m.imported.parent_emails.map((email: any, idx: number) => {
                           const emailStr = typeof email === 'object' ? email.value : email;
@@ -683,7 +683,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                 {newStudents.map((s, i) => (
                   <div key={i} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-slate-900 text-sm">{s.name}</h4>
+                      <h4 className="font-bold text-slate-900 text-sm">{useInitialsOnly ? toInitials(s.name) : s.name}</h4>
                       <div className="flex flex-wrap gap-3 mt-1">
                         {s.parent_emails && s.parent_emails.map((email: any, idx: number) => {
                           const emailStr = typeof email === 'object' ? email.value : email;
