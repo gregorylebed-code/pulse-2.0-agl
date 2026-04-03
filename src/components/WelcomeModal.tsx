@@ -177,7 +177,7 @@ export default function WelcomeModal({
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-black text-slate-800">Upload My Class</span>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Paste a roster, SIS export, or connect Google Classroom. You can store initials only if you don't want full names in the app.</p>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Paste a roster, SIS export, or connect Google Classroom. You can store initials only if you'd rather keep real student names out of the app.</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
                     </button>

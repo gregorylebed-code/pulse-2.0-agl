@@ -612,7 +612,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
               </div>
               <div>
                 <span className="text-xs font-black text-slate-700">Store initials only</span>
-                <p className="text-[11px] text-slate-400 leading-snug">e.g. "Sarah Johnson" → "S.J." — good for SmartBoard privacy</p>
+                <p className="text-[11px] text-slate-400 leading-snug">e.g. "Sarah Johnson" → "S.J." — keeps real student names out of the app</p>
               </div>
             </label>
 
