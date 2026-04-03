@@ -513,13 +513,13 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       }} />
 
       <WelcomeModal
-        show={!onboardingComplete && !welcomeHidden && !loading && students.length === 0 && notes.length === 0}
+        show={!welcomeHidden && !loading && students.length === 0 && notes.length === 0}
         teacherName={teacherFirstName || userName}
         onGoToProfile={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('profile'); }}
         onGoToRoster={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('data-management'); }}
         onGoToPulse={() => { setWelcomeHidden(true); setActiveTab('pulse'); }}
         onGoToCalendar={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('calendar'); }}
-        onDismiss={markOnboardingComplete}
+        onDismiss={() => setWelcomeHidden(true)}
         onAddStudents={async (names: string[]) => {
           for (const name of names) {
             await addStudent({ name, class_id: null });
