@@ -161,7 +161,7 @@ export default function WelcomeModal({
                           <span className="text-sm font-black text-slate-800">Quick Start</span>
                           <span className="text-[11px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-sage/10 text-sage">Recommended</span>
                         </div>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Type 3–10 nicknames or code names. No real data needed.</p>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Type first names, nicknames, or codes — e.g. "Emma", "Table 3", "M.J." No last names needed.</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
                     </button>
@@ -177,7 +177,7 @@ export default function WelcomeModal({
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-black text-slate-800">Upload My Class</span>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Paste your roster or import from Google Classroom.</p>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Paste a roster, SIS export, or connect Google Classroom. You can store initials only if you don't want full names in the app.</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
                     </button>
@@ -194,7 +194,7 @@ export default function WelcomeModal({
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-black text-slate-800">Just Let Me Click Around</span>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">We'll load 8 fake students so you can explore with zero setup.</p>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Loads 8 fake students ("Falcon", "Rocket"…) so you can try every feature before adding your real class.</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
                     </button>

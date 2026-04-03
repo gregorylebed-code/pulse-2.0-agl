@@ -25,6 +25,11 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
   const [defaultClassPeriod, setDefaultClassPeriod] = useState(classes[0] || 'Class 1');
   const [activeTab, setActiveTab] = useState<'roster' | 'birthdays' | 'google'>('roster');
 
+  const [useInitialsOnly, setUseInitialsOnly] = useState(false);
+
+  const toInitials = (name: string) =>
+    name.trim().split(/\s+/).filter(Boolean).map(p => p[0].toUpperCase()).join('.');
+
   // Google Classroom state
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
   const [gcCourses, setGcCourses] = useState<any[]>([]);
@@ -115,8 +120,9 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
       for (const s of gcStudents) {
         if (!s.name) continue;
         if (existingNames.includes(s.name.toLowerCase().trim())) { skipped++; continue; }
+        const studentName = useInitialsOnly ? toInitials(s.name) : s.name;
         await addStudent({
-          name: s.name,
+          name: studentName,
           class_period: targetClass,
           parent_guardian_names: [],
           parent_emails: s.email ? [{ value: s.email, label: 'Email' }] : [],
@@ -302,8 +308,9 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
 
       // Add brand-new students
       for (const s of newStudents) {
+        const rawName = extractString(s.name);
         await addStudent({
-          name: extractString(s.name),
+          name: useInitialsOnly ? toInitials(rawName) : rawName,
           class_period: defaultClassPeriod,
           parent_guardian_names: Array.isArray(s.parent_guardian_names) ? s.parent_guardian_names.map(extractString) : [],
           parent_emails: Array.isArray(s.parent_emails) ? s.parent_emails : [],
@@ -551,6 +558,19 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                     )}
                   </div>
 
+                  <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
+                    <div
+                      onClick={() => setUseInitialsOnly(v => !v)}
+                      className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${useInitialsOnly ? 'bg-amber-400' : 'bg-slate-200'}`}
+                    >
+                      <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mt-0.5 ${useInitialsOnly ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-slate-700">Store initials only</span>
+                      <p className="text-[11px] text-slate-400 leading-snug">e.g. "Sarah Johnson" → "S.J."</p>
+                    </div>
+                  </label>
+
                   <button
                     onClick={handleGcImport}
                     disabled={gcImporting || gcStudents.length === 0 || (gcClassPeriod === '__new__' && !gcNewClassName.trim())}
@@ -582,6 +602,19 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
               placeholder="e.g. John Smith - jsmith@email.com&#10;Brianna S. (brianna.s@web.com)..."
               className="w-full min-h-[240px] p-6 bg-slate-50 border border-slate-100 rounded-3xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm resize-none leading-relaxed"
             />
+
+            <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
+              <div
+                onClick={() => setUseInitialsOnly(v => !v)}
+                className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${useInitialsOnly ? 'bg-amber-400' : 'bg-slate-200'}`}
+              >
+                <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mt-0.5 ${useInitialsOnly ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-700">Store initials only</span>
+                <p className="text-[11px] text-slate-400 leading-snug">e.g. "Sarah Johnson" → "S.J." — good for SmartBoard privacy</p>
+              </div>
+            </label>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
               <div className="flex items-center gap-2 w-full sm:w-auto">
