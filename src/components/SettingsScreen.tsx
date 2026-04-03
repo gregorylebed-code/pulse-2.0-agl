@@ -376,6 +376,8 @@ export default function SettingsScreen({
   const [newStudentSection, setNewStudentSection] = useState<string>(classes[0] || 'AM');
   const [isAddingStudent, setIsAddingStudent] = useState(false);
   const [rosterFilter, setRosterFilter] = useState<string>('all');
+  const [editingStudentNameId, setEditingStudentNameId] = useState<string | null>(null);
+  const [editingStudentNameVal, setEditingStudentNameVal] = useState('');
 
   // Class Management state
   const [newClassName, setNewClassName] = useState('');
@@ -1018,7 +1020,33 @@ export default function SettingsScreen({
                   {rosterStudents.filter(s => rosterFilter === 'all' || s.class_period === rosterFilter).map(s => (
                     <div key={s.id} className="flex items-center justify-between p-4 bg-white rounded-[32px] border border-slate-100 card-shadow">
                       <div className="flex flex-col gap-1.5 flex-1 min-w-0 mr-3">
-                        <span className="text-sm font-bold text-slate-900">{s.name}</span>
+                        {editingStudentNameId === s.id ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            value={editingStudentNameVal}
+                            onChange={e => setEditingStudentNameVal(e.target.value)}
+                            onBlur={async () => {
+                              const trimmed = editingStudentNameVal.trim();
+                              if (trimmed && trimmed !== s.name) await updateStudent(s.id, { name: trimmed });
+                              setEditingStudentNameId(null);
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                              if (e.key === 'Escape') setEditingStudentNameId(null);
+                            }}
+                            className="w-full px-2 py-1 text-sm font-bold border border-sage rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/30"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => { setEditingStudentNameId(s.id); setEditingStudentNameVal(s.name); }}
+                            className="text-sm font-bold text-slate-900 text-left hover:text-sage transition-colors"
+                            title="Click to rename"
+                          >
+                            {s.name}
+                          </button>
+                        )}
                         <select
                           value={s.class_period || classes[0]}
                           onChange={(e) => handleUpdateSection(s.id, e.target.value)}
@@ -2287,6 +2315,14 @@ export default function SettingsScreen({
               <X className="w-4 h-4" />
               <span className="text-[11px] font-bold">Back to Settings</span>
             </button>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+              <span className="text-amber-400 text-lg flex-shrink-0">💡</span>
+              <div>
+                <p className="text-xs font-black text-amber-700">Started with initials or nicknames?</p>
+                <p className="text-xs text-amber-600 mt-0.5 leading-snug">You can update any student's name anytime. Go to <button type="button" onClick={() => setView('roster')} className="font-black underline">Roster Management</button> and tap a name to edit it.</p>
+              </div>
+            </div>
 
             <ImportScreen onImportComplete={() => { onImportComplete(); setView('main'); }} classes={classes} students={students} addStudent={addStudent} updateStudent={updateStudent} userId={userId} />
 
