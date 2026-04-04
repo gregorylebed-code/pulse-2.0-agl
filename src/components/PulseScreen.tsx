@@ -871,12 +871,18 @@ const handleVoiceLog = async () => {
           </div>
         )}
 
-        <div className="flex items-center gap-2 max-w-2xl w-full -mb-2">
+        <div className="flex items-center gap-3 max-w-2xl w-full">
+          <button
+            onClick={handleClear}
+            className="px-5 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all flex items-center gap-2"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={() => noteDateInputRef.current?.showPicker?.() ?? noteDateInputRef.current?.click()}
-            className="text-[11px] font-bold text-slate-400 hover:text-blue-500 transition-colors flex items-center gap-1"
+            className="px-4 py-3.5 bg-slate-100 text-slate-500 hover:text-blue-500 rounded-2xl font-bold text-[11px] transition-all whitespace-nowrap flex items-center gap-1"
           >
-            📅 {noteDate === todayStr ? 'Today' : new Date(noteDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ▾
+            📅 {noteDate === todayStr ? 'Today' : new Date(noteDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
           </button>
           <input
             ref={noteDateInputRef}
@@ -886,15 +892,6 @@ const handleVoiceLog = async () => {
             onChange={e => setNoteDate(e.target.value || todayStr)}
             className="sr-only"
           />
-        </div>
-
-        <div className="flex items-center gap-3 max-w-2xl w-full">
-          <button
-            onClick={handleClear}
-            className="px-5 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all flex items-center gap-2"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
           <button
             onClick={handleSave}
             disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim())) || (!noteContent.trim() && !image && selectedTags.length === 0)}
