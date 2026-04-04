@@ -15,7 +15,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
       onClick={onClick}
       whileTap={{ scale: 0.92 }}
       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-      className="relative flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-colors duration-200"
+      className="relative flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-colors duration-200 min-w-0 flex-1"
     >
       {active && (
         <motion.div
@@ -41,7 +41,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
 export default function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 no-print bg-slate-900 dark:bg-slate-800 flex items-center justify-around px-4"
+      className="fixed bottom-0 left-0 right-0 z-50 no-print bg-slate-900 dark:bg-slate-800 flex items-center justify-around px-2"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(72px + env(safe-area-inset-bottom))' }}
     >
       <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Notes" />
