@@ -92,6 +92,11 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const [isUsingBackup, setIsUsingBackup] = useState(false);
   const [showRotationForecast, setShowRotationForecast] = useState(false);
   const [welcomeHidden, setWelcomeHidden] = useState(false);
+  const [showGreetingBanner, setShowGreetingBanner] = useState(() => {
+    const count = parseInt(localStorage.getItem('cp_login_count') || '0', 10) + 1;
+    localStorage.setItem('cp_login_count', String(count));
+    return count <= 3;
+  });
 
   // Re-show welcome when user navigates back to the pulse tab
   useEffect(() => {
@@ -307,6 +312,36 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         tasks={tasks}
         setShowTasks={setShowTasks}
       />
+
+      <AnimatePresence>
+        {showGreetingBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="mx-4 mb-2 px-4 py-2.5 bg-sage/10 border border-sage/20 rounded-2xl flex items-center justify-between gap-3 no-print"
+          >
+            <p className="text-[11px] font-medium text-sage-dark leading-snug">
+              Hey! I'm Greg, a 3rd-grade teacher who built this because I kept forgetting to follow up with parents.{' '}
+              <a
+                href="https://www.tiktok.com/@shorthandapp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold underline underline-offset-2"
+              >
+                Follow along on TikTok 👉
+              </a>
+            </p>
+            <button
+              onClick={() => setShowGreetingBanner(false)}
+              className="text-sage/50 hover:text-sage transition-colors flex-shrink-0 text-base leading-none"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main ref={mainRef} className="flex-1 px-6 overflow-y-auto" style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <AnimatePresence mode="wait" custom={tabDirection}>
