@@ -197,6 +197,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     for (let i = 0; i < 6; i++) pushEntry();
 
     const handlePopState = () => {
+      // Let InsightsScreen's own handler close fullscreen cards first
+      if ((window as any).__insightsCardOpen) {
+        (window as any).__insightsCardOpen = false;
+        setTimeout(pushEntry, 50);
+        return;
+      }
       if (selectedStudentIdRef.current) {
         selectedStudentIdRef.current = null;
         setSelectedStudentId(null);

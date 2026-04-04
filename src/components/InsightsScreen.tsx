@@ -100,53 +100,44 @@ function FullScreenCard({ title, onBack, shareText, children }: { title: string;
   const [capturing, setCapturing] = useState(false);
 
   const handleShare = async () => {
-    // Try to capture the card as an image first
-    if (contentRef.current) {
-      setCapturing(true);
-      try {
-        const canvas = await html2canvas(contentRef.current, {
-          backgroundColor: '#f8fafc', // slate-50
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
-        setCapturing(false);
-        canvas.toBlob(async (blob) => {
-          if (!blob) throw new Error('no blob');
-          const file = new File([blob], `shorthand-${title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`, { type: 'image/png' });
-          if (navigator.share && navigator.canShare?.({ files: [file] })) {
-            try {
-              await navigator.share({ title: `ShortHand — ${title}`, files: [file] });
-              return;
-            } catch {}
-          }
-          // Fallback: download the image
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = file.name;
-          a.click();
-          URL.revokeObjectURL(url);
-          toast.success('Image saved');
-        }, 'image/png');
-        return;
-      } catch {
-        setCapturing(false);
-      }
-    }
-    // Final fallback: plain text
-    const text = shareText ?? title;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `ShortHand — ${title}`, text });
-        return;
-      } catch {}
-    }
+    if (!contentRef.current) return;
+    setCapturing(true);
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success('Copied to clipboard');
-    } catch {
-      toast.error('Could not share');
+      // Scroll the card to top so html2canvas captures from the start
+      contentRef.current.closest('.overflow-y-auto')?.scrollTo(0, 0);
+      // Small delay to let any animations settle
+      await new Promise(r => setTimeout(r, 150));
+      const canvas = await html2canvas(contentRef.current, {
+        backgroundColor: '#f8fafc',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        width: contentRef.current.scrollWidth,
+        height: contentRef.current.scrollHeight,
+        windowWidth: contentRef.current.scrollWidth,
+      });
+      const blob = await new Promise<Blob>((res, rej) =>
+        canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/png')
+      );
+      const fileName = `shorthand-${title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
+      const file = new File([blob], fileName, { type: 'image/png' });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ title: `ShortHand — ${title}`, files: [file] });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Image saved');
+      }
+    } catch (err) {
+      console.error('Share failed:', err);
+      toast.error('Could not export image');
+    } finally {
+      setCapturing(false);
     }
   };
 
@@ -605,24 +596,24 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
   const [expandedCard, setExpandedCard] = useState<ExpandedCard>(null);
   const [alertOpen, setAlertOpen] = useState(false);
 
-  // Push a history entry when a card opens so the phone's back button closes it
+  // Expose expanded state to App.tsx's back handler via a window flag
   useEffect(() => {
+    (window as any).__insightsCardOpen = !!expandedCard;
     if (expandedCard) {
       history.pushState({ insightsCard: expandedCard }, '');
     }
+    return () => { (window as any).__insightsCardOpen = false; };
   }, [expandedCard]);
+
   useEffect(() => {
     const handlePop = (e: PopStateEvent) => {
       if (expandedCard && !e.state?.insightsCard) {
-        e.stopImmediatePropagation();
         setExpandedCard(null);
-        // Re-push so App.tsx back handler still has entries
         setTimeout(() => history.pushState({}, ''), 50);
       }
     };
-    // capture: true so this fires before App.tsx's bubble-phase handler
-    window.addEventListener('popstate', handlePop, { capture: true });
-    return () => window.removeEventListener('popstate', handlePop, { capture: true });
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
   }, [expandedCard]);
 
   const indicatorTypeMap = useMemo(() => {
