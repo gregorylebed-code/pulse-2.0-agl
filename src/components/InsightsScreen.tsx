@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import html2canvas from 'html2canvas';
 import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,7 +96,45 @@ function CardHeader({ title, onExpand }: { title: string; onExpand: () => void }
 // ─── Full Screen Wrapper ──────────────────────────────────────────────────────
 
 function FullScreenCard({ title, onBack, shareText, children }: { title: string; onBack: () => void; shareText?: string; children: React.ReactNode }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [capturing, setCapturing] = useState(false);
+
   const handleShare = async () => {
+    // Try to capture the card as an image first
+    if (contentRef.current) {
+      setCapturing(true);
+      try {
+        const canvas = await html2canvas(contentRef.current, {
+          backgroundColor: '#f8fafc', // slate-50
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        setCapturing(false);
+        canvas.toBlob(async (blob) => {
+          if (!blob) throw new Error('no blob');
+          const file = new File([blob], `shorthand-${title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`, { type: 'image/png' });
+          if (navigator.share && navigator.canShare?.({ files: [file] })) {
+            try {
+              await navigator.share({ title: `ShortHand — ${title}`, files: [file] });
+              return;
+            } catch {}
+          }
+          // Fallback: download the image
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = file.name;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast.success('Image saved');
+        }, 'image/png');
+        return;
+      } catch {
+        setCapturing(false);
+      }
+    }
+    // Final fallback: plain text
     const text = shareText ?? title;
     if (navigator.share) {
       try {
@@ -128,17 +167,16 @@ function FullScreenCard({ title, onBack, shareText, children }: { title: string;
           <ArrowLeft className="w-4 h-4" />
           Back to Insights
         </button>
-        {shareText && (
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 text-[11px] font-black text-slate-400 hover:text-sage transition-colors px-3 py-1.5 rounded-xl hover:bg-slate-100"
-          >
-            <Share2 className="w-3.5 h-3.5" /> Share
-          </button>
-        )}
+        <button
+          onClick={handleShare}
+          disabled={capturing}
+          className="flex items-center gap-1.5 text-[11px] font-black text-slate-400 hover:text-sage transition-colors px-3 py-1.5 rounded-xl hover:bg-slate-100 disabled:opacity-50"
+        >
+          <Share2 className="w-3.5 h-3.5" /> {capturing ? 'Capturing…' : 'Share'}
+        </button>
       </div>
       {/* Content */}
-      <div className="p-4 pb-12">
+      <div ref={contentRef} className="p-4 pb-12">
         <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-5">{title}</p>
         {children}
       </div>
@@ -576,13 +614,15 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
   useEffect(() => {
     const handlePop = (e: PopStateEvent) => {
       if (expandedCard && !e.state?.insightsCard) {
+        e.stopImmediatePropagation();
         setExpandedCard(null);
         // Re-push so App.tsx back handler still has entries
         setTimeout(() => history.pushState({}, ''), 50);
       }
     };
-    window.addEventListener('popstate', handlePop);
-    return () => window.removeEventListener('popstate', handlePop);
+    // capture: true so this fires before App.tsx's bubble-phase handler
+    window.addEventListener('popstate', handlePop, { capture: true });
+    return () => window.removeEventListener('popstate', handlePop, { capture: true });
   }, [expandedCard]);
 
   const indicatorTypeMap = useMemo(() => {
