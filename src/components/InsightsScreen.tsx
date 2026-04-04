@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import html2canvas from 'html2canvas';
+// @ts-ignore
+import domtoimage from 'dom-to-image-more';
 import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -103,23 +104,18 @@ function FullScreenCard({ title, onBack, shareText, children }: { title: string;
     if (!contentRef.current) return;
     setCapturing(true);
     try {
-      // Scroll the card to top so html2canvas captures from the start
+      // Scroll the card to top and let animations settle
       contentRef.current.closest('.overflow-y-auto')?.scrollTo(0, 0);
-      // Small delay to let any animations settle
-      await new Promise(r => setTimeout(r, 150));
-      const canvas = await html2canvas(contentRef.current, {
-        backgroundColor: '#f8fafc',
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        width: contentRef.current.scrollWidth,
-        height: contentRef.current.scrollHeight,
-        windowWidth: contentRef.current.scrollWidth,
+      await new Promise(r => setTimeout(r, 200));
+      const node = contentRef.current;
+      const blob: Blob = await domtoimage.toBlob(node, {
+        bgcolor: '#f8fafc',
+        width: node.scrollWidth,
+        height: node.scrollHeight,
+        style: { margin: '0' },
+        // Skip cross-origin images (student photos) to avoid taint errors
+        filter: (el: Element) => !(el instanceof HTMLImageElement && el.src && !el.src.startsWith(window.location.origin)),
       });
-      const blob = await new Promise<Blob>((res, rej) =>
-        canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/png')
-      );
       const fileName = `shorthand-${title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
       const file = new File([blob], fileName, { type: 'image/png' });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
