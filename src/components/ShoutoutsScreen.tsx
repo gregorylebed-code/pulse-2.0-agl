@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Plus, Trash2, X, AlertCircle, Mic, MicOff, Copy, Mail, Download } from 'lucide-react';
+import { Star, Plus, Trash2, X, AlertCircle, Mic, MicOff, Copy, Mail, Download, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 import { Student, Shoutout } from '../types';
@@ -13,6 +13,7 @@ interface ShoutoutsScreenProps {
   students: Student[];
   addShoutout: (shoutout: Omit<Shoutout, 'id' | 'created_at' | 'user_id'>) => Promise<Shoutout | null>;
   deleteShoutout: (id: string) => Promise<void>;
+  onCelebrate?: () => void;
 }
 
 function formatDate(iso: string) {
@@ -20,7 +21,7 @@ function formatDate(iso: string) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function ShoutoutsScreen({ shoutouts, students, addShoutout, deleteShoutout }: ShoutoutsScreenProps) {
+export default function ShoutoutsScreen({ shoutouts, students, addShoutout, deleteShoutout, onCelebrate }: ShoutoutsScreenProps) {
   const [showForm, setShowForm] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [content, setContent] = useState('');
@@ -30,6 +31,7 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const [exportRange, setExportRange] = useState<'day' | 'week' | 'lastweek' | 'month' | 'lastmonth' | 'year'>('week');
+  const [showOverlooked, setShowOverlooked] = useState(false);
 
   // Helper: Monday of a given date's week
   const getMondayOf = (d: Date) => {
@@ -205,6 +207,7 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
     });
     setSaving(false);
     if (result) {
+      onCelebrate?.();
       toast.success(`⭐ Shoutout for ${selectedStudent.name}!`);
       setShowForm(false);
       setSelectedStudent(null);
@@ -235,26 +238,42 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
 
       {/* Overlooked students alert */}
       {overlookedStudents.length > 0 && students.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-[20px] p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-[12px] font-black text-amber-700 mb-2">
-                {overlookedStudents.length} student{overlookedStudents.length > 1 ? 's' : ''} haven't had a shoutout in 14+ days
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {overlookedStudents.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => { setSelectedStudent(s); setShowForm(true); }}
-                    className="text-[11px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 px-2.5 py-1 rounded-xl transition-colors"
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
+        <div className="border border-amber-200 rounded-[20px] overflow-hidden">
+          <button
+            onClick={() => setShowOverlooked(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-amber-50 hover:bg-amber-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-[12px] font-black text-amber-600">
+                {overlookedStudents.length} student{overlookedStudents.length > 1 ? 's' : ''} without a shoutout in 14+ days
+              </span>
             </div>
-          </div>
+            <ChevronDown className={cn('w-4 h-4 text-amber-400 transition-transform duration-200', showOverlooked && 'rotate-180')} />
+          </button>
+          <AnimatePresence initial={false}>
+            {showOverlooked && (
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 'auto' }}
+                exit={{ height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden bg-amber-50"
+              >
+                <div className="flex flex-wrap gap-1.5 px-4 pb-4 pt-1">
+                  {overlookedStudents.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => { setSelectedStudent(s); setShowForm(true); setShowOverlooked(false); }}
+                      className="text-[11px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-700 px-2.5 py-1 rounded-xl transition-colors"
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
@@ -350,9 +369,18 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
                   <p className="text-[12px] text-slate-600 dark:text-slate-300 leading-relaxed">{s.content}</p>
                 </div>
                 <button
-                  onClick={async () => {
-                    await deleteShoutout(s.id);
-                    toast.success('Removed.');
+                  onClick={() => {
+                    let undone = false;
+                    const timer = setTimeout(() => {
+                      if (!undone) deleteShoutout(s.id);
+                    }, 4000);
+                    toast('Shoutout removed.', {
+                      duration: 4000,
+                      action: {
+                        label: 'Undo',
+                        onClick: () => { undone = true; clearTimeout(timer); },
+                      },
+                    });
                   }}
                   className="text-slate-300 hover:text-terracotta transition-colors shrink-0"
                 >
