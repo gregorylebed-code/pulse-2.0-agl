@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 // @ts-ignore
 import domtoimage from 'dom-to-image-more';
-import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown, Share2 } from 'lucide-react';
+import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown, Share2, BarChart2, Grid, Activity, ThermometerSun } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Note, Student } from '../types';
@@ -602,6 +602,19 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
   const [expandedCard, setExpandedCard] = useState<ExpandedCard>(null);
   const [alertOpen, setAlertOpen] = useState(false);
 
+  // Section refs for nav bar
+  const sectionRefs = {
+    summary:     useRef<HTMLDivElement>(null),
+    indicators:  useRef<HTMLDivElement>(null),
+    streak:      useRef<HTMLDivElement>(null),
+    perStudent:  useRef<HTMLDivElement>(null),
+    heatmap:     useRef<HTMLDivElement>(null),
+    trends:      useRef<HTMLDivElement>(null),
+  };
+  const scrollTo = (ref: React.RefObject<HTMLDivElement>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   // Expose expanded state to App.tsx's back handler via a window flag
   useEffect(() => {
     (window as any).__insightsCardOpen = !!expandedCard;
@@ -937,24 +950,9 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
       </AnimatePresence>
 
       <div className="space-y-5 pt-2">
-        {/* Period picker */}
-        <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
-          {(['week', 'lastWeek', 'month'] as Period[]).map(p => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={cn(
-                'flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all',
-                period === p ? 'bg-white text-sage shadow-sm' : 'text-slate-400 hover:text-slate-600'
-              )}
-            >
-              {p === 'week' ? 'This Week' : p === 'lastWeek' ? 'Last Week' : 'Month'}
-            </button>
-          ))}
-        </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-4 gap-2.5">
+        {/* Stats summary */}
+        <div ref={sectionRefs.summary} className="grid grid-cols-4 gap-2.5">
           <StatTile
             value={filteredNotes.length}
             label="Notes"
@@ -983,8 +981,43 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
           />
         </div>
 
+        {/* Period picker — below summary */}
+        <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
+          {(['week', 'lastWeek', 'month'] as Period[]).map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={cn(
+                'flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all',
+                period === p ? 'bg-white text-sage shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              )}
+            >
+              {p === 'week' ? 'This Week' : p === 'lastWeek' ? 'Last Week' : 'Month'}
+            </button>
+          ))}
+        </div>
+
+        {/* Section nav bar */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+          {[
+            { label: 'Indicators', icon: <BarChart2 className="w-3.5 h-3.5" />, ref: sectionRefs.indicators },
+            { label: 'Streak',     icon: <Flame className="w-3.5 h-3.5" />,    ref: sectionRefs.streak },
+            { label: 'Students',   icon: <Users className="w-3.5 h-3.5" />,    ref: sectionRefs.perStudent },
+            { label: 'Heatmap',    icon: <ThermometerSun className="w-3.5 h-3.5" />, ref: sectionRefs.heatmap },
+            { label: 'Trends',     icon: <Activity className="w-3.5 h-3.5" />, ref: sectionRefs.trends },
+          ].map(({ label, icon, ref }) => (
+            <button
+              key={label}
+              onClick={() => scrollTo(ref)}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-100 rounded-xl text-[11px] font-black text-slate-500 hover:text-sage hover:border-sage/30 hover:bg-sage/5 transition-all shadow-sm"
+            >
+              {icon}{label}
+            </button>
+          ))}
+        </div>
+
         {/* Top indicators */}
-        <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
+        <div ref={sectionRefs.indicators} className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
           <CardHeader title={`Top indicators · ${bounds.label}`} onExpand={() => setExpandedCard('indicators')} />
           {topIndicators.length === 0 ? (
             <p className="text-xs text-slate-300 italic py-4 text-center">No tagged notes yet this period.</p>
@@ -1015,7 +1048,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
         </div>
 
         {/* 7-day student logging streak */}
-        <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
+        <div ref={sectionRefs.streak} className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setExpandedCard('streak')}
@@ -1068,7 +1101,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
         </div>
 
         {/* Notes per student */}
-        <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
+        <div ref={sectionRefs.perStudent} className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
           <CardHeader title={`Notes per student · ${bounds.label}`} onExpand={() => setExpandedCard('perStudent')} />
           {notesPerStudent.length === 0 ? (
             <p className="text-xs text-slate-300 italic py-4 text-center">No notes this period.</p>
@@ -1135,7 +1168,9 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
         />
 
         {/* Logging Heatmap */}
+        <div ref={sectionRefs.heatmap}>
         <LoggingHeatmap notes={notes} onExpand={() => setExpandedCard('heatmap')} />
+        </div>
 
         {/* Students not seen accordion */}
         {notLoggedStudents.length > 0 && (
@@ -1190,7 +1225,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
 
         {/* Class Trend Grid */}
         {studentTrends.length > 0 && (
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
+          <div ref={sectionRefs.trends} className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
             <CardHeader title="Student behavior trends · 4 weeks" onExpand={() => setExpandedCard('trendGrid')} />
             <ClassTrendGridContent
               studentTrends={[...studentTrends].sort((a, b) => {
