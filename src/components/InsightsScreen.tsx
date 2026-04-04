@@ -108,11 +108,21 @@ function FullScreenCard({ title, onBack, shareText, children }: { title: string;
       contentRef.current.closest('.overflow-y-auto')?.scrollTo(0, 0);
       await new Promise(r => setTimeout(r, 200));
       const node = contentRef.current;
+      const scale = 3; // render at 3× for crisp display on any screen
+      const w = node.scrollWidth;
+      const h = node.scrollHeight;
       const blob: Blob = await domtoimage.toBlob(node, {
         bgcolor: '#f8fafc',
-        width: node.scrollWidth,
-        height: node.scrollHeight,
-        style: { margin: '0' },
+        // Canvas output is scale× larger than CSS pixels
+        width: w * scale,
+        height: h * scale,
+        style: {
+          margin: '0',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          width: `${w}px`,
+          height: `${h}px`,
+        },
         // Skip cross-origin images (student photos) to avoid taint errors
         filter: (el: Element) => !(el instanceof HTMLImageElement && el.src && !el.src.startsWith(window.location.origin)),
       });
