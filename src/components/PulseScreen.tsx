@@ -954,8 +954,8 @@ const handleVoiceLog = async () => {
             className={cn(
               "p-6 rounded-[32px] card-shadow border flex items-start gap-4",
               note.class_name
-                ? "bg-gradient-to-br from-white to-blue-50/40 border-blue-100"
-                : "bg-gradient-to-br from-white to-slate-50/60 border-slate-100"
+                ? "bg-gradient-to-br from-white to-blue-50/40 border-blue-100 dark:from-slate-800 dark:to-slate-800/80 dark:border-slate-700"
+                : "bg-gradient-to-br from-white to-slate-50/60 border-slate-100 dark:from-slate-800 dark:to-slate-800/80 dark:border-slate-700"
             )}
           >
             <div className={cn(
