@@ -4,6 +4,7 @@ import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, Goa
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { SpecialsMode } from '../utils/rotationHelpers';
 import { NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '../utils/notifications';
+import { enqueueNote } from '../lib/offlineQueue';
 
 interface Task {
   id: string;
@@ -404,6 +405,17 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       await incrementStat('notes_created');
       return data;
     } catch (error) {
+      // If offline, queue the note for later sync
+      if (!navigator.onLine) {
+        await enqueueNote({
+          id: crypto.randomUUID(),
+          note: note as any,
+          createdAt: createdAt,
+          userId,
+          queuedAt: new Date().toISOString(),
+        });
+        return null;
+      }
       console.error('Error adding note:', error);
       return null;
     }

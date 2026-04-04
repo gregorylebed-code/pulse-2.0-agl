@@ -403,7 +403,11 @@ const handleVoiceLog = async () => {
           is_pinned: false,
         }, noteCreatedAt);
         handleClear();
-        toast.success(`Class note saved for ${selectedClass}`);
+        if (!navigator.onLine) {
+          toast(`Class note saved offline — will sync when reconnected`, { icon: '📶' });
+        } else {
+          toast.success(`Class note saved for ${selectedClass}`);
+        }
         onNoteAdded();
       } catch (err) {
         console.error('Error saving class note:', err);
@@ -471,7 +475,11 @@ const handleVoiceLog = async () => {
       }, noteCreatedAt);
 
       handleClear();
-      toast.success('Entry saved successfully');
+      if (!navigator.onLine) {
+        toast('Note saved offline — will sync when reconnected', { icon: '📶' });
+      } else {
+        toast.success('Entry saved successfully');
+      }
       onNoteAdded();
     } catch (err) {
       console.error('Error saving note:', err);

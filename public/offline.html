@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShortHand — Offline</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fffbeb;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      color: #1e293b;
+    }
+    .icon { font-size: 3rem; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.25rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    p { font-size: 0.875rem; color: #64748b; line-height: 1.6; max-width: 280px; }
+    .pill {
+      margin-top: 2rem;
+      padding: 0.75rem 1.5rem;
+      background: #1e293b;
+      color: white;
+      border-radius: 999px;
+      font-size: 0.8125rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="icon">📶</div>
+  <h1>You're offline</h1>
+  <p>Notes you write will be saved and synced automatically when you reconnect.</p>
+  <button class="pill" onclick="location.reload()">Try again</button>
+</body>
+</html>

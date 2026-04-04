@@ -17,6 +17,7 @@ import ShoutoutsScreen from './components/ShoutoutsScreen';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import InstallBanner from './components/InstallBanner';
+import { useOfflineSync } from './hooks/useOfflineSync';
 import { cn } from './utils/cn';
 import { isFullMode } from './lib/mode';
 import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
@@ -132,6 +133,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   useEffect(() => {
     migrateLocalDataToUser(userId).then(() => refreshData());
   }, [userId]);
+
+  useOfflineSync(userId, refreshData);
 
   // Register service worker for notification support
   useEffect(() => {
