@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown } from 'lucide-react';
+import React, { useMemo, useState, useRef } from 'react';
+import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Note, Student } from '../types';
 import { cn } from '../utils/cn';
@@ -93,7 +94,23 @@ function CardHeader({ title, onExpand }: { title: string; onExpand: () => void }
 
 // ─── Full Screen Wrapper ──────────────────────────────────────────────────────
 
-function FullScreenCard({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
+function FullScreenCard({ title, onBack, shareText, children }: { title: string; onBack: () => void; shareText?: string; children: React.ReactNode }) {
+  const handleShare = async () => {
+    const text = shareText ?? title;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `ShortHand — ${title}`, text });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Copied to clipboard');
+    } catch {
+      toast.error('Could not share');
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -103,7 +120,7 @@ function FullScreenCard({ title, onBack, children }: { title: string; onBack: ()
       className="fixed inset-0 z-50 bg-slate-50 overflow-y-auto"
     >
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center justify-between gap-3">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-sage font-black text-[12px] uppercase tracking-widest hover:text-sage-dark transition-colors"
@@ -111,6 +128,14 @@ function FullScreenCard({ title, onBack, children }: { title: string; onBack: ()
           <ArrowLeft className="w-4 h-4" />
           Back to Insights
         </button>
+        {shareText && (
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 text-[11px] font-black text-slate-400 hover:text-sage transition-colors px-3 py-1.5 rounded-xl hover:bg-slate-100"
+          >
+            <Share2 className="w-3.5 h-3.5" /> Share
+          </button>
+        )}
       </div>
       {/* Content */}
       <div className="p-4 pb-12">
@@ -673,11 +698,27 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
     trendGrid: 'Student behavior trends · 4 weeks',
   };
 
+  // Build plain-text summaries for sharing
+  const shareTexts: Partial<Record<NonNullable<ExpandedCard>, string>> = {
+    indicators: topIndicators.length > 0
+      ? `📊 Top indicators (${bounds.label}):\n` + topIndicators.map(([tag, count]) => `• ${tag}: ${count}`).join('\n')
+      : undefined,
+    perStudent: notesPerStudent.length > 0
+      ? `📝 Notes per student (${bounds.label}):\n` + notesPerStudent.map(({ student, count }) => `• ${getDisplayName(student, aliasMode)}: ${count}`).join('\n')
+      : undefined,
+    classBreakdown: undefined,
+    streak: undefined,
+    heatmap: undefined,
+    trendGrid: studentTrends.length > 0
+      ? `📈 Student behavior trends (4 weeks):\n` + [...studentTrends].sort((a, b) => a.student.name.localeCompare(b.student.name)).map(d => `• ${getDisplayName(d.student, aliasMode)}: ${d.trend === 'up' ? '↑ Trending Up' : d.trend === 'down' ? '↓ Needs Attention' : '→ Stable'} (${d.totalNotes} notes)`).join('\n')
+      : undefined,
+  };
+
   return (
     <>
       <AnimatePresence>
         {expandedCard && (
-          <FullScreenCard title={expandedTitles[expandedCard]} onBack={() => setExpandedCard(null)}>
+          <FullScreenCard title={expandedTitles[expandedCard]} onBack={() => setExpandedCard(null)} shareText={shareTexts[expandedCard]}>
             {expandedCard === 'indicators' && (
               topIndicators.length === 0 ? (
                 <p className="text-xs text-slate-300 italic py-4 text-center">No tagged notes yet this period.</p>
@@ -792,7 +833,10 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
             )}
 
             {expandedCard === 'trendGrid' && (
-              <ClassTrendGridContent studentTrends={studentTrends} onStudentClick={(id) => { setExpandedCard(null); onStudentClick(id); }} />
+              <ClassTrendGridContent
+                studentTrends={[...studentTrends].sort((a, b) => a.student.name.localeCompare(b.student.name))}
+                onStudentClick={(id) => { setExpandedCard(null); onStudentClick(id); }}
+              />
             )}
           </FullScreenCard>
         )}
@@ -1055,7 +1099,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
           <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
             <CardHeader title="Student behavior trends · 4 weeks" onExpand={() => setExpandedCard('trendGrid')} />
             <ClassTrendGridContent
-              studentTrends={studentTrends.slice(0, 6)}
+              studentTrends={[...studentTrends].sort((a, b) => b.totalNotes - a.totalNotes).slice(0, 6)}
               onStudentClick={onStudentClick}
             />
             {studentTrends.length > 6 && (
