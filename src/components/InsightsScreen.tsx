@@ -300,7 +300,7 @@ function LoggingHeatmapContent({ notes }: { notes: Note[] }) {
           more
         </div>
       </div>
-      <div className="overflow-x-auto -mx-1 px-1">
+      <div className="overflow-x-auto -mx-1 px-1" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
         <div style={{ display: 'grid', gridTemplateRows: 'auto repeat(7, 11px)', gridTemplateColumns: `16px repeat(${weeks.length}, 11px)`, gap: '2px', width: 'max-content' }}>
           <div />
           {weeks.map((_, wi) => {
@@ -935,7 +935,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
           {notesPerStudent.length === 0 ? (
             <p className="text-xs text-slate-300 italic py-4 text-center">No notes this period.</p>
           ) : (
-            <div className="overflow-x-auto -mx-1 px-1 pb-1">
+            <div className="overflow-x-auto -mx-1 px-1 pb-1" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
               <div className="flex items-end gap-2" style={{ minWidth: Math.max(notesPerStudent.length * 42, 100) }}>
                 {notesPerStudent.map(({ student, count }) => {
                   const pct = maxStudentNotes > 0 ? (count / maxStudentNotes) * 100 : 0;
