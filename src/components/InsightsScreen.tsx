@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -528,6 +528,24 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
   const [period, setPeriod] = useState<Period>('week');
   const [expandedCard, setExpandedCard] = useState<ExpandedCard>(null);
   const [alertOpen, setAlertOpen] = useState(false);
+
+  // Push a history entry when a card opens so the phone's back button closes it
+  useEffect(() => {
+    if (expandedCard) {
+      history.pushState({ insightsCard: expandedCard }, '');
+    }
+  }, [expandedCard]);
+  useEffect(() => {
+    const handlePop = (e: PopStateEvent) => {
+      if (expandedCard && !e.state?.insightsCard) {
+        setExpandedCard(null);
+        // Re-push so App.tsx back handler still has entries
+        setTimeout(() => history.pushState({}, ''), 50);
+      }
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [expandedCard]);
 
   const indicatorTypeMap = useMemo(() => {
     const map: Record<string, 'positive' | 'neutral' | 'growth'> = {};
@@ -1096,10 +1114,10 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
 
         {/* Class Trend Grid */}
         {studentTrends.length > 0 && (
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5">
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
             <CardHeader title="Student behavior trends · 4 weeks" onExpand={() => setExpandedCard('trendGrid')} />
             <ClassTrendGridContent
-              studentTrends={[...studentTrends].sort((a, b) => b.totalNotes - a.totalNotes).slice(0, 6)}
+              studentTrends={[...studentTrends].sort((a, b) => b.weeks[3].total - a.weeks[3].total).slice(0, 6)}
               onStudentClick={onStudentClick}
             />
             {studentTrends.length > 6 && (
