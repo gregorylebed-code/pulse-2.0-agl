@@ -1429,25 +1429,27 @@ export default function StudentDetailView({
                 </span>
                 {(() => {
                   const accomIcons: Record<AccommodationCategory, React.ReactNode> = {
-                    extended_time: <History className="w-3 h-3" />,
-                    seating:       <Armchair className="w-3 h-3" />,
-                    testing:       <ClipboardCheck className="w-3 h-3" />,
-                    materials:     <Scissors className="w-3 h-3" />,
-                    behavioral:    <Activity className="w-3 h-3" />,
-                    presentation:  <Monitor className="w-3 h-3" />,
-                    response:      <MessageSquare className="w-3 h-3" />,
-                    other:         <Tag className="w-3 h-3" />,
+                    extended_time: <History className="w-3.5 h-3.5" strokeWidth={2.5} />,
+                    seating:       <Armchair className="w-3.5 h-3.5" strokeWidth={2.5} />,
+                    testing:       <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={2.5} />,
+                    materials:     <Scissors className="w-3.5 h-3.5" strokeWidth={2.5} />,
+                    behavioral:    <Activity className="w-3.5 h-3.5" strokeWidth={2.5} />,
+                    presentation:  <Monitor className="w-3.5 h-3.5" strokeWidth={2.5} />,
+                    response:      <MessageSquare className="w-3.5 h-3.5" strokeWidth={2.5} />,
+                    other:         <Tag className="w-3.5 h-3.5" strokeWidth={2.5} />,
                   };
                   const active = accommodations.filter(a => a.student_id === student.id && a.is_active);
-                  if (active.length === 0) return null;
+                  // Deduplicate by category so duplicates only show one icon
+                  const uniqueCategories = [...new Set(active.map(a => a.category))];
+                  if (uniqueCategories.length === 0) return null;
                   return (
                     <button
                       onClick={() => scrollToSection('accommodations')}
                       className="inline-flex items-center gap-1 px-2 py-1 bg-violet-400/80 hover:bg-violet-400 text-white rounded-full backdrop-blur-sm transition-colors"
                       title={`${active.length} active accommodation${active.length !== 1 ? 's' : ''} — tap to view`}
                     >
-                      {active.map((a, i) => (
-                        <span key={i} className="opacity-90">{accomIcons[a.category]}</span>
+                      {uniqueCategories.map(cat => (
+                        <span key={cat}>{accomIcons[cat]}</span>
                       ))}
                     </button>
                   );
