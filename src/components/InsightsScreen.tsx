@@ -418,7 +418,11 @@ function useStudentTrends(
         else if (diff < -5) trend = 'down';
       }
 
-      return { student, weeks, thisWeek, lastWeek, delta, trend, totalNotes: sNotes.length };
+      const lastNoteDate = sNotes.length > 0
+        ? Math.max(...sNotes.map(n => new Date(n.created_at).getTime()))
+        : 0;
+
+      return { student, weeks, thisWeek, lastWeek, delta, trend, totalNotes: sNotes.length, lastNoteDate };
     }).sort((a, b) => {
       // Needs attention first, then stable, then up
       const order = { down: 0, stable: 1, up: 2 };
@@ -1153,12 +1157,10 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
             <CardHeader title="Student behavior trends · 4 weeks" onExpand={() => setExpandedCard('trendGrid')} />
             <ClassTrendGridContent
               studentTrends={[...studentTrends].sort((a, b) => {
-                // Sort by most recent week first, cascade through prior weeks as tiebreaker
-                for (let w = 3; w >= 0; w--) {
-                  const diff = b.weeks[w].total - a.weeks[w].total;
-                  if (diff !== 0) return diff;
-                }
-                return a.student.name.localeCompare(b.student.name);
+                // Most notes this week first, then most recently noted overall
+                const weekDiff = b.weeks[3].total - a.weeks[3].total;
+                if (weekDiff !== 0) return weekDiff;
+                return b.lastNoteDate - a.lastNoteDate;
               }).slice(0, 6)}
               onStudentClick={onStudentClick}
             />
