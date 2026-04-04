@@ -13,46 +13,44 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
   return (
     <motion.button
       onClick={onClick}
-      whileTap={{ scale: 0.88 }}
+      whileTap={{ scale: 0.92 }}
       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-      className="flex flex-col items-center gap-1 transition-all duration-200 relative px-3 py-1"
+      className="relative flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-colors duration-200"
     >
-      <div className="relative flex items-center justify-center">
-        {active && (
-          <motion.div
-            layoutId="nav-pill"
-            className="absolute inset-0 -mx-2 -my-1 bg-sage/10 rounded-2xl"
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          />
-        )}
-        {React.cloneElement(icon as React.ReactElement, {
-          className: cn('w-5 h-5 relative z-10 transition-colors duration-200', active ? 'text-sage' : 'text-slate-400'),
-          strokeWidth: active ? 2.5 : 1.8,
-        })}
-      </div>
+      {active && (
+        <motion.div
+          layoutId="nav-active"
+          className="absolute inset-0 bg-slate-900 dark:bg-white rounded-2xl"
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        />
+      )}
+      {React.cloneElement(icon as React.ReactElement, {
+        className: cn('w-5 h-5 relative z-10 transition-colors duration-200', active ? 'text-white dark:text-slate-900' : 'text-slate-400'),
+        strokeWidth: active ? 2.5 : 1.8,
+      })}
       <span className={cn(
-        'text-[11px] font-bold tracking-wide transition-colors duration-200',
-        active ? 'text-sage' : 'text-slate-400'
+        'text-[10px] font-black tracking-wide relative z-10 transition-colors duration-200',
+        active ? 'text-white dark:text-slate-900' : 'text-slate-400'
       )}>
         {label}
       </span>
-      <motion.div
-        className="h-1 w-1 rounded-full bg-sage"
-        animate={{ scale: active ? 1 : 0, opacity: active ? 1 : 0 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-      />
     </motion.button>
   );
 }
 
 export default function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around px-2 z-50 no-print nav-frosted" style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(68px + env(safe-area-inset-bottom))' }}>
-      <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Notes" />
-      <NavButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users />} label="Students" />
-      {isFullMode && <NavButton active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} icon={<BarChart2 />} label="Insights" />}
-      <NavButton active={activeTab === 'shoutouts'} onClick={() => setActiveTab('shoutouts')} icon={<Star />} label="Shoutouts" />
-      <NavButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings />} label="Settings" />
-    </nav>
+    <div
+      className="fixed bottom-0 left-0 right-0 flex justify-center z-50 no-print"
+      style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
+    >
+      <nav className="flex items-center gap-1 px-3 py-2 bg-white dark:bg-slate-800 rounded-[28px] shadow-xl shadow-black/10 border border-slate-100 dark:border-slate-700">
+        <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Notes" />
+        <NavButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users />} label="Students" />
+        {isFullMode && <NavButton active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} icon={<BarChart2 />} label="Insights" />}
+        <NavButton active={activeTab === 'shoutouts'} onClick={() => setActiveTab('shoutouts')} icon={<Star />} label="Shoutouts" />
+        <NavButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings />} label="Settings" />
+      </nav>
+    </div>
   );
 }
