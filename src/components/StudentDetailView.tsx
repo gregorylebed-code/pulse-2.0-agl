@@ -6,7 +6,8 @@ import {
   Trash2, Copy, Mail, MessageSquare, CheckCircle2, Archive,
   X, Sparkles, ClipboardList, FileText, Download,
   Smile, Meh, Frown, Users, Phone, Tag, ChevronDown, Settings2,
-  Target, Plus, Printer, Cake
+  Target, Plus, Printer, Cake,
+  History, Armchair, ClipboardCheck, Scissors, Activity, Monitor
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
@@ -1426,18 +1427,31 @@ export default function StudentDetailView({
                 <span className="inline-block px-3 py-1 bg-white/20 text-white text-[11px] font-bold rounded-full backdrop-blur-sm">
                   Period {student.class_period || '—'}
                 </span>
-                {accommodations.some(a => a.student_id === student.id && a.is_active) && (
-                  <button
-                    onClick={() => scrollToSection('accommodations')}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-400/80 hover:bg-violet-400 text-white text-[10px] font-black rounded-full backdrop-blur-sm transition-colors uppercase tracking-wide"
-                    title="Has active accommodations — tap to view"
-                  >
-                    <FileText className="w-3 h-3" />
-                    {accommodations.filter(a => a.student_id === student.id && a.is_active).length === 1
-                      ? accommodations.find(a => a.student_id === student.id && a.is_active)?.plan_type
-                      : `${accommodations.filter(a => a.student_id === student.id && a.is_active).length} Plans`}
-                  </button>
-                )}
+                {(() => {
+                  const accomIcons: Record<AccommodationCategory, React.ReactNode> = {
+                    extended_time: <History className="w-3 h-3" />,
+                    seating:       <Armchair className="w-3 h-3" />,
+                    testing:       <ClipboardCheck className="w-3 h-3" />,
+                    materials:     <Scissors className="w-3 h-3" />,
+                    behavioral:    <Activity className="w-3 h-3" />,
+                    presentation:  <Monitor className="w-3 h-3" />,
+                    response:      <MessageSquare className="w-3 h-3" />,
+                    other:         <Tag className="w-3 h-3" />,
+                  };
+                  const active = accommodations.filter(a => a.student_id === student.id && a.is_active);
+                  if (active.length === 0) return null;
+                  return (
+                    <button
+                      onClick={() => scrollToSection('accommodations')}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-violet-400/80 hover:bg-violet-400 text-white rounded-full backdrop-blur-sm transition-colors"
+                      title={`${active.length} active accommodation${active.length !== 1 ? 's' : ''} — tap to view`}
+                    >
+                      {active.map((a, i) => (
+                        <span key={i} className="opacity-90">{accomIcons[a.category]}</span>
+                      ))}
+                    </button>
+                  );
+                })()}
               </div>
               {/* Alias field */}
               <div className="mt-2 flex items-center gap-2">
