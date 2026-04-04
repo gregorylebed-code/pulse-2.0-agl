@@ -221,6 +221,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [noteDate, setNoteDate] = useState(todayStr);
+  const noteDateInputRef = useRef<HTMLInputElement>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [eventsExpanded, setEventsExpanded] = useState(false);
   const calendarData = localStorage.getItem('school_calendar');
@@ -290,6 +293,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     setImagePreview(null);
     setSuggestions([]);
     setShowSuggestions(false);
+    setNoteDate(new Date().toISOString().split('T')[0]);
     // Keep noteMode and selectedClass so teacher can log multiple class notes in a row
   };
 
@@ -387,6 +391,7 @@ const handleVoiceLog = async () => {
         const todayEvent = calendarEvents?.find(e => e.date === today);
         if (todayEvent) finalTags.push(`[${todayEvent.title}]`);
 
+        const noteCreatedAt = noteDate !== todayStr ? `${noteDate}T12:00:00.000Z` : undefined;
         await addNote({
           student_id: null,
           class_name: selectedClass,
@@ -396,7 +401,7 @@ const handleVoiceLog = async () => {
           parent_communication_type: null,
           image_url: null,
           is_pinned: false,
-        });
+        }, noteCreatedAt);
         handleClear();
         toast.success(`Class note saved for ${selectedClass}`);
         onNoteAdded();
@@ -453,6 +458,7 @@ const handleVoiceLog = async () => {
       const todayEvent = calendarEvents?.find(e => e.date === today);
       if (todayEvent) finalTags.push(`[${todayEvent.title}]`);
 
+      const noteCreatedAt = noteDate !== todayStr ? `${noteDate}T12:00:00.000Z` : undefined;
       const student = students.find(s => s.name === studentToUse);
       await addNote({
         student_id: student?.id || '',
@@ -462,7 +468,7 @@ const handleVoiceLog = async () => {
         parent_communication_type: null,
         image_url: imageUrl,
         is_pinned: false,
-      });
+      }, noteCreatedAt);
 
       handleClear();
       toast.success('Entry saved successfully');
@@ -864,6 +870,23 @@ const handleVoiceLog = async () => {
             <button onClick={() => { setImage(null); setImagePreview(null); }} className="absolute -top-2 -right-2 bg-terracotta text-white p-1 rounded-full shadow-lg"><X className="w-3 h-3" /></button>
           </div>
         )}
+
+        <div className="flex items-center gap-2 max-w-2xl w-full -mb-2">
+          <button
+            onClick={() => noteDateInputRef.current?.showPicker?.() ?? noteDateInputRef.current?.click()}
+            className="text-[11px] font-bold text-slate-400 hover:text-blue-500 transition-colors flex items-center gap-1"
+          >
+            📅 {noteDate === todayStr ? 'Today' : new Date(noteDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ▾
+          </button>
+          <input
+            ref={noteDateInputRef}
+            type="date"
+            value={noteDate}
+            max={todayStr}
+            onChange={e => setNoteDate(e.target.value || todayStr)}
+            className="sr-only"
+          />
+        </div>
 
         <div className="flex items-center gap-3 max-w-2xl w-full">
           <button

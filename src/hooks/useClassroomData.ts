@@ -124,7 +124,7 @@ interface ClassroomDataState {
 }
 
 interface ClassroomDataActions {
-  addNote: (note: Omit<Note, 'id' | 'created_at' | 'user_id'>) => Promise<Note | null>;
+  addNote: (note: Omit<Note, 'id' | 'created_at' | 'user_id'>, createdAt?: string) => Promise<Note | null>;
   addGoal: (goal: Omit<StudentGoal, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<StudentGoal | null>;
   updateGoal: (id: string, updates: Partial<Pick<StudentGoal, 'goal_text' | 'status' | 'teacher_note' | 'category'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
@@ -380,11 +380,11 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   // ─── Notes ─────────────────────────────────────────────────────────────────
 
-  const addNote = useCallback(async (note: Omit<Note, 'id' | 'created_at' | 'user_id'>) => {
+  const addNote = useCallback(async (note: Omit<Note, 'id' | 'created_at' | 'user_id'>, createdAt?: string) => {
     try {
       const { data, error } = await supabase
         .from('notes')
-        .insert([{ ...note, user_id: userId, created_at: new Date().toISOString() }])
+        .insert([{ ...note, user_id: userId, created_at: createdAt ?? new Date().toISOString() }])
         .select()
         .single();
       if (error) throw error;
