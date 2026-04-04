@@ -1422,9 +1422,23 @@ export default function StudentDetailView({
                   </button>
                 </div>
               )}
-              <span className="inline-block mt-1.5 px-3 py-1 bg-white/20 text-white text-[11px] font-bold rounded-full backdrop-blur-sm">
-                Period {student.class_period || '—'}
-              </span>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="inline-block px-3 py-1 bg-white/20 text-white text-[11px] font-bold rounded-full backdrop-blur-sm">
+                  Period {student.class_period || '—'}
+                </span>
+                {accommodations.some(a => a.student_id === student.id && a.is_active) && (
+                  <button
+                    onClick={() => scrollToSection('accommodations')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-400/80 hover:bg-violet-400 text-white text-[10px] font-black rounded-full backdrop-blur-sm transition-colors uppercase tracking-wide"
+                    title="Has active accommodations — tap to view"
+                  >
+                    <FileText className="w-3 h-3" />
+                    {accommodations.filter(a => a.student_id === student.id && a.is_active).length === 1
+                      ? accommodations.find(a => a.student_id === student.id && a.is_active)?.plan_type
+                      : `${accommodations.filter(a => a.student_id === student.id && a.is_active).length} Plans`}
+                  </button>
+                )}
+              </div>
               {/* Alias field */}
               <div className="mt-2 flex items-center gap-2">
                 {editingAlias ? (
