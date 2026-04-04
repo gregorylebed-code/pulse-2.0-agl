@@ -16,6 +16,7 @@ import SettingsScreen from './components/SettingsScreen';
 import ShoutoutsScreen from './components/ShoutoutsScreen';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
+import InstallBanner from './components/InstallBanner';
 import { cn } from './utils/cn';
 import { isFullMode } from './lib/mode';
 import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
@@ -342,6 +343,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           </motion.div>
         )}
       </AnimatePresence>
+
+      <InstallBanner />
 
       <main ref={mainRef} className="flex-1 px-6 overflow-y-auto" style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <AnimatePresence mode="wait" custom={tabDirection}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import imageCompression from 'browser-image-compression';
@@ -216,6 +217,7 @@ export default function SettingsScreen({
   onGoToCalendar,
   onGoToReport,
 }: SettingsScreenProps) {
+  const { canInstallAndroid, showIosInstructions, triggerInstall } = useInstallPrompt();
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
@@ -739,6 +741,19 @@ export default function SettingsScreen({
               >
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
+              {canInstallAndroid && (
+                <button
+                  onClick={triggerInstall}
+                  className="flex items-center gap-2 text-sm font-black text-sage hover:text-sage-dark transition-colors"
+                >
+                  📲 Install App to Home Screen
+                </button>
+              )}
+              {showIosInstructions && (
+                <div className="text-xs text-slate-500 leading-relaxed">
+                  <span className="font-black text-slate-600">Add to Home Screen:</span> tap the Share button <span>⬆️</span> in Safari, then tap <span className="font-black">Add to Home Screen</span>.
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
