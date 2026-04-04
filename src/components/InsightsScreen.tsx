@@ -488,12 +488,25 @@ function StudentTrendCard({ data, onClick }: {
   );
 }
 
-function ClassTrendGridContent({ studentTrends, onStudentClick }: {
+function ClassTrendGridContent({ studentTrends, onStudentClick, expanded = false }: {
   studentTrends: ReturnType<typeof useStudentTrends>;
   onStudentClick: (id: string) => void;
+  expanded?: boolean;
 }) {
   const downCount = studentTrends.filter(d => d.trend === 'down').length;
   const upCount = studentTrends.filter(d => d.trend === 'up').length;
+  const [selectedClass, setSelectedClass] = useState<string>('All');
+
+  // All unique class periods, sorted
+  const classes = useMemo(() => {
+    const s = new Set(studentTrends.map(d => d.student.class_period || 'No Class'));
+    return ['All', ...Array.from(s).sort()];
+  }, [studentTrends]);
+
+  const visible = useMemo(() => {
+    if (!expanded || selectedClass === 'All') return studentTrends;
+    return studentTrends.filter(d => (d.student.class_period || 'No Class') === selectedClass);
+  }, [studentTrends, expanded, selectedClass]);
 
   return (
     <>
@@ -507,8 +520,29 @@ function ClassTrendGridContent({ studentTrends, onStudentClick }: {
           <span key={p.label} className={`text-[11px] font-black px-2.5 py-1 rounded-full ${p.color}`}>{p.label}</span>
         ))}
       </div>
+
+      {/* Class filter buttons — only in expanded view */}
+      {expanded && classes.length > 2 && (
+        <div className="flex gap-2 flex-wrap mb-4" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
+          {classes.map(cls => (
+            <button
+              key={cls}
+              onClick={() => setSelectedClass(cls)}
+              className={cn(
+                'text-[11px] font-black px-3 py-1.5 rounded-full border transition-all',
+                selectedClass === cls
+                  ? 'bg-sage text-white border-sage'
+                  : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+              )}
+            >
+              {cls}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
-        {studentTrends.map(data => (
+        {visible.map(data => (
           <StudentTrendCard
             key={data.student.id}
             data={data}
@@ -854,6 +888,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
               <ClassTrendGridContent
                 studentTrends={[...studentTrends].sort((a, b) => a.student.name.localeCompare(b.student.name))}
                 onStudentClick={(id) => { setExpandedCard(null); onStudentClick(id); }}
+                expanded
               />
             )}
           </FullScreenCard>
@@ -1117,7 +1152,14 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
           <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
             <CardHeader title="Student behavior trends · 4 weeks" onExpand={() => setExpandedCard('trendGrid')} />
             <ClassTrendGridContent
-              studentTrends={[...studentTrends].sort((a, b) => b.weeks[3].total - a.weeks[3].total).slice(0, 6)}
+              studentTrends={[...studentTrends].sort((a, b) => {
+                // Sort by most recent week first, cascade through prior weeks as tiebreaker
+                for (let w = 3; w >= 0; w--) {
+                  const diff = b.weeks[w].total - a.weeks[w].total;
+                  if (diff !== 0) return diff;
+                }
+                return a.student.name.localeCompare(b.student.name);
+              }).slice(0, 6)}
               onStudentClick={onStudentClick}
             />
             {studentTrends.length > 6 && (
