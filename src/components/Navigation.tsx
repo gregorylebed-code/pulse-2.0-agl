@@ -20,17 +20,17 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
       {active && (
         <motion.div
           layoutId="nav-active"
-          className="absolute inset-0 bg-slate-900 dark:bg-white rounded-2xl"
+          className="absolute inset-0 bg-white rounded-2xl"
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         />
       )}
       {React.cloneElement(icon as React.ReactElement, {
-        className: cn('w-5 h-5 relative z-10 transition-colors duration-200', active ? 'text-white dark:text-slate-900' : 'text-slate-400'),
+        className: cn('w-5 h-5 relative z-10 transition-colors duration-200', active ? 'text-teal-600' : 'text-white/70'),
         strokeWidth: active ? 2.5 : 1.8,
       })}
       <span className={cn(
         'text-[10px] font-black tracking-wide relative z-10 transition-colors duration-200',
-        active ? 'text-white dark:text-slate-900' : 'text-slate-400'
+        active ? 'text-teal-600' : 'text-white/70'
       )}>
         {label}
       </span>
@@ -41,7 +41,8 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
 export default function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 no-print bg-slate-900 dark:bg-slate-800 flex items-center justify-around px-2"
+      className="fixed bottom-0 left-0 right-0 z-50 no-print flex items-center justify-around px-2"
+      style={{ background: '#14B8A6' }}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(72px + env(safe-area-inset-bottom))' }}
     >
       <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Notes" />
