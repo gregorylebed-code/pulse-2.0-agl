@@ -44,9 +44,7 @@
 }
 
 .nav-frosted {
-  background: rgba(255, 249, 229, 0.75);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: rgba(255, 249, 229, 1);
   border-top: 1px solid rgba(255,255,255,0.6);
 }
 
@@ -124,7 +122,7 @@ html.dark {
 }
 
 .dark .nav-frosted {
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(15, 23, 42, 1);
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 
