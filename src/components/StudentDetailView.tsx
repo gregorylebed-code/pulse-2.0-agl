@@ -2420,7 +2420,7 @@ export default function StudentDetailView({
               <FileText className="w-4 h-4" /> IEP / 504 Accommodations
             </h3>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-              {accommodations.filter(a => a.is_active).length} active accommodation{accommodations.filter(a => a.is_active).length !== 1 ? 's' : ''}
+              {accommodations.filter(a => a.student_id === student.id && a.is_active).length} active accommodation{accommodations.filter(a => a.student_id === student.id && a.is_active).length !== 1 ? 's' : ''}
             </p>
           </div>
           <button
@@ -2432,12 +2432,12 @@ export default function StudentDetailView({
           </button>
         </div>
 
-        {accommodations.length === 0 && !showAccomForm && (
+        {accommodations.filter(a => a.student_id === student.id).length === 0 && !showAccomForm && (
           <p className="text-xs text-slate-400 text-center py-6">No accommodations yet — tap + to add one.</p>
         )}
 
         <div className="space-y-3">
-          {accommodations.map(acc => {
+          {accommodations.filter(a => a.student_id === student.id).map(acc => {
             const planColors: Record<AccommodationPlanType, string> = {
               'IEP':   'bg-violet-100 text-violet-700',
               '504':   'bg-sky-100 text-sky-700',
@@ -2580,22 +2580,25 @@ export default function StudentDetailView({
                   onClick={async () => {
                     if (newAccomCategories.length === 0) return;
                     setIsSavingAccom(true);
+                    let allOk = true;
                     for (const cat of newAccomCategories) {
-                      await addAccommodation({
+                      const result = await addAccommodation({
                         student_id: student.id,
                         plan_type: newAccomPlan,
                         category: cat,
-                        accommodation_text: newAccomText.trim() || null,
+                        accommodation_text: newAccomText.trim() || '',
                         is_active: true,
                         review_date: newAccomReviewDate || null,
                         notes: newAccomNotes.trim() || null,
                       });
+                      if (!result) allOk = false;
                     }
+                    setIsSavingAccom(false);
+                    if (!allOk) { toast.error('Could not save accommodation'); return; }
                     setNewAccomText('');
                     setNewAccomReviewDate('');
                     setNewAccomNotes('');
                     setNewAccomCategories(['extended_time']);
-                    setIsSavingAccom(false);
                     setShowAccomForm(false);
                     toast.success(newAccomCategories.length > 1 ? `${newAccomCategories.length} accommodations added` : 'Accommodation added');
                   }}
