@@ -465,7 +465,7 @@ const handleVoiceLog = async () => {
       const noteCreatedAt = noteDate !== todayStr ? `${noteDate}T12:00:00.000Z` : undefined;
       const student = students.find(s => s.name === studentToUse);
       await addNote({
-        student_id: student?.id || '',
+        student_id: student?.id ?? null,
         content: expandedContent,
         tags: finalTags,
         is_parent_communication: false,

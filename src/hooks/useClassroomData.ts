@@ -409,7 +409,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       await incrementStat('notes_created');
       return data;
     } catch (error) {
-      // If offline, queue the note for later sync
+      // If offline, queue the note for later sync and return null gracefully
       if (!navigator.onLine) {
         await enqueueNote({
           id: crypto.randomUUID(),
@@ -420,8 +420,9 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         });
         return null;
       }
+      // Online error — re-throw so the caller can show the right error UI
       console.error('Error adding note:', error);
-      return null;
+      throw error;
     }
   }, [userId, incrementStat]);
 
