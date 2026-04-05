@@ -379,7 +379,7 @@ const handleVoiceLog = async () => {
       try {
         const expandedContent = expandAbbreviations(noteContent, abbreviations);
         let finalTags = [...selectedTags];
-        if (finalTags.length === 0) {
+        if (finalTags.length === 0 && expandedContent.trim()) {
           try {
             const aiResult = await categorizeNote(expandedContent, new Date().toLocaleString(), false, indicators.map(i => i.label));
             finalTags = aiResult.tags ?? [];
@@ -449,7 +449,7 @@ const handleVoiceLog = async () => {
       }
 
       let finalTags = [...selectedTags];
-      if (finalTags.length === 0) {
+      if (finalTags.length === 0 && expandedContent.trim()) {
         try {
           const aiResult = await categorizeNote(expandedContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
           finalTags = aiResult.tags ?? [];
@@ -852,7 +852,7 @@ const handleVoiceLog = async () => {
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
             onFocus={() => setTimeout(() => noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-            placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : "Add a note... (tip: use initials or seat numbers instead of full names)"}
+            placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : "Add a note... (optional — indicators alone work fine)"}
             className="w-full min-h-[80px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
           <div className="absolute right-3 bottom-3 flex gap-2">
