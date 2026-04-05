@@ -293,6 +293,7 @@ export default function StudentsScreen({
   const [attendanceMode, setAttendanceMode] = useState(false);
   const [attendanceSelections, setAttendanceSelections] = useState<Record<string, 'absent' | 'tardy'>>({});
   const [attendanceSaving, setAttendanceSaving] = useState(false);
+  const [attendanceDate, setAttendanceDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   const toggleAttendanceStudent = (id: string) => {
     setAttendanceSelections(prev => {
@@ -308,11 +309,11 @@ export default function StudentsScreen({
   const cancelAttendanceMode = () => {
     setAttendanceMode(false);
     setAttendanceSelections({});
+    setAttendanceDate(new Date().toISOString().split('T')[0]);
   };
 
   const submitAttendance = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    const records = (Object.entries(attendanceSelections) as [string, 'absent' | 'tardy'][]).map(([student_id, status]) => ({ student_id, date: today, status }));
+    const records = (Object.entries(attendanceSelections) as [string, 'absent' | 'tardy'][]).map(([student_id, status]) => ({ student_id, date: attendanceDate, status }));
     if (records.length === 0) { cancelAttendanceMode(); return; }
     setAttendanceSaving(true);
     await addAttendanceRecords(records);
@@ -324,7 +325,9 @@ export default function StudentsScreen({
     const parts: string[] = [];
     if (absentCount > 0) parts.push(`${absentCount} absent`);
     if (tardyCount > 0) parts.push(`${tardyCount} tardy`);
-    toast.success(`Attendance saved · ${parts.join(', ')}`);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dateLabel = attendanceDate === todayStr ? 'today' : new Date(attendanceDate + 'T00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    toast.success(`Attendance saved for ${dateLabel} · ${parts.join(', ')}`);
   };
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
@@ -728,23 +731,38 @@ export default function StudentsScreen({
             exit={{ opacity: 0, y: -6 }}
             className="px-2"
           >
-            <div className="rounded-2xl bg-slate-800 text-white px-4 py-3 flex items-center gap-3">
-              <div className="flex-1">
-                <p className="text-[12px] font-black">Tap once = Absent · Tap again = Tardy · Tap again = Clear</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  {Object.keys(attendanceSelections).length === 0
-                    ? 'No students selected yet'
-                    : `${Object.values(attendanceSelections).filter(s => s === 'absent').length} absent · ${Object.values(attendanceSelections).filter(s => s === 'tardy').length} tardy`}
-                </p>
+            <div className="rounded-2xl bg-slate-800 text-white px-4 py-3 space-y-2.5">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-[12px] font-black">Tap once = Absent · Tap again = Tardy · Tap again = Clear</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {Object.keys(attendanceSelections).length === 0
+                      ? 'No students selected yet'
+                      : `${Object.values(attendanceSelections).filter(s => s === 'absent').length} absent · ${Object.values(attendanceSelections).filter(s => s === 'tardy').length} tardy`}
+                  </p>
+                </div>
+                <button
+                  onClick={submitAttendance}
+                  disabled={attendanceSaving || Object.keys(attendanceSelections).length === 0}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-white rounded-xl text-[12px] font-black transition-colors"
+                >
+                  {attendanceSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  Submit
+                </button>
               </div>
-              <button
-                onClick={submitAttendance}
-                disabled={attendanceSaving || Object.keys(attendanceSelections).length === 0}
-                className="flex items-center gap-1.5 px-3 py-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-white rounded-xl text-[12px] font-black transition-colors"
-              >
-                {attendanceSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                Submit
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 font-bold">Date:</span>
+                <input
+                  type="date"
+                  value={attendanceDate}
+                  max={new Date().toISOString().split('T')[0]}
+                  onChange={e => setAttendanceDate(e.target.value)}
+                  className="bg-slate-700 text-white text-[11px] font-bold rounded-lg px-2 py-1 border border-slate-600 focus:outline-none focus:border-teal-400"
+                />
+                {attendanceDate !== new Date().toISOString().split('T')[0] && (
+                  <span className="text-[11px] text-amber-400 font-bold">Backdated</span>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
