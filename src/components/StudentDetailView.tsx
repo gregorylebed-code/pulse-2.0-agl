@@ -788,7 +788,10 @@ export default function StudentDetailView({
         if (result) {
           if (result.content) setNoteContent(result.content);
           if (result.tags && result.tags.length > 0) {
-            setNoteContent(prev => prev ? `${prev}\n\nIndicators: ${result.tags.join(', ')}` : `Indicators: ${result.tags.join(', ')}`);
+            const matchedTags = result.tags.filter((t: string) =>
+              indicatorLabels.some(l => l.toLowerCase() === t.toLowerCase())
+            );
+            if (matchedTags.length > 0) setSelectedTags(matchedTags);
           }
         } else {
           setNoteContent(transcript);
