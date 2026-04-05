@@ -379,7 +379,7 @@ export async function parseVoiceLog(transcript: string, students: string[], indi
       Extract:
       1. student_name: The name of the student mentioned (must match one from the list if possible, else return the name found).
       2. content: The core observation/note without the student's name. Never write indicator/tag names in the content field — not as labels, not inline, not as "indicators: X". If a concept is captured as a tag, it must be SILENT in the content text.
-      3. tags: Array of indicators that match the sentiment or keywords.
+      3. tags: Array of indicators that match. CRITICAL — match based on the FULL meaning, not just a keyword. If the note says a student "had trouble with", "struggled with", or "was disruptive during" something, do NOT pick the positive tag for that topic. Instead pick a growth/negative indicator that fits (e.g. Peer Conflict, Disruption, Off Task). Only pick a positive indicator if the note clearly describes the student doing that thing well.
 
       Return as JSON object with fields: student_name, content, tags.`;
 
