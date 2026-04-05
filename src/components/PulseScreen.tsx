@@ -439,6 +439,16 @@ const handleVoiceLog = async () => {
       }
     }
 
+    // No student selected — try to find a name mentioned in the note text
+    if (!studentToUse && noteContent.trim()) {
+      const words = noteContent.toLowerCase().split(/\s+/);
+      const nameMatch = students.find(s => {
+        const first = s.name.split(' ')[0].toLowerCase();
+        return words.includes(first);
+      });
+      if (nameMatch) studentToUse = nameMatch.name;
+    }
+
     if (!studentToUse) {
       setValidationError('Select a student before saving.');
       setTimeout(() => setValidationError(null), 3000);
