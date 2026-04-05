@@ -378,7 +378,7 @@ export async function parseVoiceLog(transcript: string, students: string[], indi
 
       Extract:
       1. student_name: The name of the student mentioned (must match one from the list if possible, else return the name found).
-      2. content: The core observation/note without the student's name. Do NOT include the name of any matched indicator in the content text — if a concept is already captured as a tag, remove that label word from the note text so it isn't written out twice.
+      2. content: The core observation/note without the student's name. Never write indicator/tag names in the content field — not as labels, not inline, not as "indicators: X". If a concept is captured as a tag, it must be SILENT in the content text.
       3. tags: Array of indicators that match the sentiment or keywords.
 
       Return as JSON object with fields: student_name, content, tags.`;
