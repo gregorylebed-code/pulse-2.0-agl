@@ -339,7 +339,14 @@ const handleVoiceLog = async () => {
         const result = await parseVoiceLog(transcript, studentNames, indicatorLabels);
 
         if (result) {
-          if (result.student_name) selectStudent(result.student_name);
+          if (result.student_name) {
+            const aiName = result.student_name.toLowerCase();
+            const fullMatch = students.find(s =>
+              s.name.toLowerCase() === aiName ||
+              s.name.toLowerCase().startsWith(aiName + ' ')
+            );
+            selectStudent(fullMatch ? fullMatch.name : result.student_name);
+          }
           if (result.content) setNoteContent(result.content);
           if (result.tags && result.tags.length > 0) {
             const matchedTags = result.tags.filter((t: string) =>
