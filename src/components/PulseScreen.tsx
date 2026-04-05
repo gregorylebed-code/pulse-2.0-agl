@@ -817,7 +817,7 @@ const handleVoiceLog = async () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="flex flex-wrap gap-2 pt-3 pb-1 px-1">
+                      <div className="flex flex-wrap gap-1.5 pt-3 pb-1 px-1">
                         {cat.items.map((b: any) => {
                           const isSelected = selectedTags.includes(b.label);
                           return (
@@ -828,11 +828,11 @@ const handleVoiceLog = async () => {
                               animate={isSelected ? { scale: [1, 1.15, 0.95, 1] } : { scale: 1 }}
                               transition={{ type: 'spring', stiffness: 500, damping: 20 }}
                               className={cn(
-                                "px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                                "px-3 py-2 rounded-xl text-[12px] font-bold flex items-center gap-1 transition-colors border-2",
                                 isSelected ? activeItemColors[cat.color] : inactiveItemColors[cat.color]
                               )}
                             >
-                              <span className="text-base leading-none">{b.icon}</span> {b.label}
+                              <span className="text-sm leading-none">{b.icon}</span> {b.label}
                             </motion.button>
                           );
                         })}
