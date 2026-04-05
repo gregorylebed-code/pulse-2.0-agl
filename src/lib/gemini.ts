@@ -1,5 +1,7 @@
 import { Note, Shoutout, SELTopic, SELLesson, GoalCategory } from "../types";
 import { supabase } from "./supabase";
+import { getStudentPronounInfo, buildPronounInstruction, PronounInfo } from "./pronounUtils";
+export type { PronounInfo };
 
 const stripEmDashes = (text: string) => text.replace(/\s*—\s*/g, ' - ');
 
@@ -246,10 +248,12 @@ function parseReportJson(raw: string): ReportData | null {
   }
 }
 
-export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard', shoutouts: Shoutout[] = []): Promise<ReportData | null> {
+export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard', shoutouts: Shoutout[] = [], studentPronouns?: string | null): Promise<{ report: ReportData | null; pronounInfo: PronounInfo }> {
   const firstNameOnly = (name: string) => name?.split(' ')[0] || name;
   const notesText = notes.map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${firstNameOnly(n.student_name)}: ${n.content}`).join('\n');
   const studentFirstName = notes[0]?.student_name?.split(' ')[0] || 'your child';
+  const pronounInfo = getStudentPronounInfo(studentFirstName, studentPronouns);
+  const pronounInstruction = buildPronounInstruction(pronounInfo);
   const shoutoutsText = shoutouts.length > 0
     ? '\n\nShoutouts (positive moments worth highlighting):\n' +
       shoutouts.map(s => `- ${s.category ? `[${s.category}] ` : ''}${s.content} (${new Date(s.created_at).toLocaleDateString()})`).join('\n')
@@ -267,7 +271,7 @@ export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Stan
 TONE RULES:
 - 8th Grade Reading Level: Use simple, direct language. No academic jargon like 'demonstrates,' 'interpersonal skills,' or 'prosocial.'
 - South Jersey Teacher Vibe: Write like you're talking to a parent over coffee. Use phrases like "They've been doing great with..." or "We're working on...".
-- IMPORTANT: Never use he/him/his or she/her/hers — always use they/them/their.
+- IMPORTANT: ${pronounInstruction}
 - Trend Analysis: Look at the notes as a whole and identify any patterns or improvements over time.
 - ${lengthInstruction}
 
@@ -289,7 +293,8 @@ Notes:
 ${notesText}${shoutoutsText}`;
 
   const raw = await callGroq(prompt, true, undefined, 'summarize_notes');
-  return parseReportJson(raw);
+  const report = parseReportJson(raw);
+  return { report, pronounInfo };
 }
 
 export async function refineQuickNote(currentNote: string, instructions: string): Promise<string> {
@@ -304,7 +309,9 @@ Rewrite the note following the instruction. Keep it concise, warm, and appropria
   return stripEmDashes((await callGroq(prompt, false, undefined, 'refine_quick_note')).trim());
 }
 
-export async function refineReport(current: ReportData, instructions: string): Promise<ReportData | null> {
+export async function refineReport(current: ReportData, instructions: string, studentPronouns?: string | null, studentFirstName?: string): Promise<ReportData | null> {
+  const pronounInfo = getStudentPronounInfo(studentFirstName || '', studentPronouns);
+  const pronounInstruction = buildPronounInstruction(pronounInfo);
   const prompt = `Here is a student progress report structured as a parent letter with Glow / Grow / Goal sections:
 
 Opening: "${current.opening}"
@@ -317,6 +324,7 @@ The teacher wants to refine this report with the following instructions:
 "${instructions}"
 
 Please rewrite the report based on these instructions while maintaining the Glow, Grow, Goal structure and the South Jersey Teacher Vibe (8th grade reading level, warm, supportive, no jargon).
+IMPORTANT: ${pronounInstruction}
 
 Return ONLY valid JSON — no markdown, no extra commentary:
 {"opening":"...","glow":"...","grow":"...","goal":"...","closing":"..."}`;
@@ -370,7 +378,7 @@ export async function parseVoiceLog(transcript: string, students: string[], indi
 
       Extract:
       1. student_name: The name of the student mentioned (must match one from the list if possible, else return the name found).
-      2. content: The core observation/note without the student's name.
+      2. content: The core observation/note without the student's name. Do NOT include the name of any matched indicator in the content text — if a concept is already captured as a tag, remove that label word from the note text so it isn't written out twice.
       3. tags: Array of indicators that match the sentiment or keywords.
 
       Return as JSON object with fields: student_name, content, tags.`;
@@ -466,8 +474,10 @@ Return JSON:
   }
 }
 
-export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string, studentName: string, shoutouts: Shoutout[] = []): Promise<string> {
+export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string, studentName: string, shoutouts: Shoutout[] = [], studentPronouns?: string | null): Promise<{ note: string; pronounInfo: PronounInfo }> {
   const firstName = studentName.split(' ')[0];
+  const pronounInfo = getStudentPronounInfo(firstName, studentPronouns);
+  const pronounInstruction = buildPronounInstruction(pronounInfo);
   const notesText = notes.map(n => n.content).join('\n- ');
   const shoutoutsText = shoutouts.length > 0
     ? '\n\nPositive shoutouts for this student:\n- ' +
@@ -486,7 +496,7 @@ RULES:
 - Write 1–3 sentences starting with "Dear Family,"
 - State only the facts from the observations — no Glow/Grow/Goal, no goals, no framework
 - Be warm but direct
-- IMPORTANT: Never use he/him/his or she/her/hers — always use they/them/their
+- IMPORTANT: ${pronounInstruction}
 - If the overall tone of the observations is POSITIVE: end with exactly this line on a new line: "I am very proud and thought you would be too! — ${signOff}"
 - If the overall tone is NEGATIVE or CONCERNING: end with exactly this line on a new line: "I am disappointed in what happened today, but I thought you should know. — ${signOff}"
 - If the tone is MIXED: use your judgment on which sign-off fits better
@@ -494,7 +504,8 @@ RULES:
 - Do NOT include any labels like "Positive:" or "Note:" — just output the message directly
 - Do NOT add any extra commentary, headers, or explanation`;
 
-  return stripEmDashes(await callGroq(prompt, false, undefined, 'quick_parent_note'));
+  const note = stripEmDashes(await callGroq(prompt, false, undefined, 'quick_parent_note'));
+  return { note, pronounInfo };
 }
 
 export async function suggestGoals(studentName: string, notes: Note[]): Promise<Array<{ category: GoalCategory; goal_text: string }>> {
