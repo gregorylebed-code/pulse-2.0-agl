@@ -140,6 +140,15 @@ export interface DeliveredLesson {
   date: string;
 }
 
+export interface AttendanceRecord {
+  id: string;
+  user_id: string;
+  student_id: string;
+  date: string; // 'YYYY-MM-DD'
+  status: 'absent' | 'tardy';
+  created_at: string;
+}
+
 export interface ParentCommunication {
   id: string;
   user_id: string;

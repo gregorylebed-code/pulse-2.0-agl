@@ -53,6 +53,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     goals, addGoal, updateGoal, deleteGoal,
     accommodations, addAccommodation, updateAccommodation, deleteAccommodation,
     parentCommunications, addParentCommunication, updateParentCommunication, deleteParentCommunication,
+    attendanceRecords, addAttendanceRecords, deleteAttendanceRecord,
     shoutouts, addShoutout, deleteShoutout,
     saveProfile, saveRotationMapping, saveSpecialsNames, saveAbbreviations,
     saveSpecialsMode, saveDayOfWeekSpecials, saveRollingConfig, saveTodayOverride,
@@ -421,6 +422,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 addParentCommunication={addParentCommunication}
                 updateParentCommunication={updateParentCommunication}
                 deleteParentCommunication={deleteParentCommunication}
+                attendanceRecords={attendanceRecords}
+                addAttendanceRecords={addAttendanceRecords}
+                deleteAttendanceRecord={deleteAttendanceRecord}
                 abbreviations={abbreviations}
                 selectedStudentId={selectedStudentId}
                 setSelectedStudentId={setSelectedStudentId}

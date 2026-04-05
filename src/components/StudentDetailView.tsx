@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
-import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus, ParentCommunication, Shoutout, Accommodation, AccommodationCategory, AccommodationPlanType } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalStatus, ParentCommunication, Shoutout, Accommodation, AccommodationCategory, AccommodationPlanType, AttendanceRecord } from '../types';
 import ParentCommunicationLog from './ParentCommunicationLog';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
@@ -96,6 +96,8 @@ interface StudentDetailViewProps {
   teacherLastName: string;
   shoutouts: Shoutout[];
   addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
+  attendanceRecords: AttendanceRecord[];
+  deleteAttendanceRecord: (id: string) => Promise<void>;
 }
 
 // ─── Student Mini Dashboard ───────────────────────────────────────────────────
@@ -605,6 +607,8 @@ export default function StudentDetailView({
   teacherLastName,
   shoutouts,
   addTask,
+  attendanceRecords,
+  deleteAttendanceRecord,
 }: StudentDetailViewProps) {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, []);
 
@@ -2177,6 +2181,48 @@ export default function StudentDetailView({
       </div>
 
       <div className="pt-6 border-t border-slate-100" />
+
+      {/* ─── Attendance History ────────────────────────────────────────── */}
+      {attendanceRecords.length > 0 && (
+        <div className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-600 flex items-center gap-2">
+              <ClipboardCheck className="w-4 h-4" /> Attendance
+            </h3>
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+              {attendanceRecords.filter(r => r.status === 'absent').length} absent · {attendanceRecords.filter(r => r.status === 'tardy').length} tardy
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {attendanceRecords
+              .slice()
+              .sort((a, b) => b.date.localeCompare(a.date))
+              .map(rec => {
+                const d = new Date(rec.date + 'T00:00');
+                const today = new Date().toISOString().split('T')[0];
+                const dateStr = rec.date === today ? 'Today' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+                return (
+                  <div key={rec.id} className="flex items-center gap-2">
+                    <span className={cn(
+                      'text-[10px] font-black px-1.5 py-0.5 rounded-md w-8 text-center',
+                      rec.status === 'absent' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                    )}>
+                      {rec.status === 'absent' ? 'ABS' : 'TAR'}
+                    </span>
+                    <span className="text-[12px] font-bold text-slate-600 flex-1">{dateStr}</span>
+                    <button
+                      onClick={() => deleteAttendanceRecord(rec.id)}
+                      className="p-1 text-slate-200 hover:text-red-400 transition-colors"
+                      title="Remove"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* ─── Goals ─────────────────────────────────────────────── */}
       {/* ─── Parent Communication Log ─────────────────────────────────── */}

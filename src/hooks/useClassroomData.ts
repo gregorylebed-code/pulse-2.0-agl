@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus, Shoutout, ParentCommunication, Accommodation } from '../types';
+import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus, Shoutout, ParentCommunication, Accommodation, AttendanceRecord } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { SpecialsMode } from '../utils/rotationHelpers';
 import { NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '../utils/notifications';
@@ -101,6 +101,7 @@ interface ClassroomDataState {
   accommodations: Accommodation[];
   shoutouts: Shoutout[];
   parentCommunications: ParentCommunication[];
+  attendanceRecords: AttendanceRecord[];
   indicators: Indicator[];
   commTypes: Indicator[];
   classes: string[];
@@ -137,6 +138,8 @@ interface ClassroomDataActions {
   deleteParentCommunication: (id: string) => Promise<void>;
   addShoutout: (shoutout: Omit<Shoutout, 'id' | 'created_at' | 'user_id'>) => Promise<Shoutout | null>;
   deleteShoutout: (id: string) => Promise<void>;
+  addAttendanceRecords: (records: { student_id: string; date: string; status: 'absent' | 'tardy' }[]) => Promise<void>;
+  deleteAttendanceRecord: (id: string) => Promise<void>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   addStudent: (student: Omit<Student, 'id' | 'created_at' | 'user_id'>) => Promise<Student | null>;
@@ -173,6 +176,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     accommodations: [],
     shoutouts: [],
     parentCommunications: [],
+    attendanceRecords: [],
     indicators: [],
     commTypes: [],
     classes: ['AM', 'PM'],
@@ -216,6 +220,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         { data: shoutoutsData },
         { data: parentCommsData },
         { data: accommodationsData },
+        { data: attendanceData },
       ] = await Promise.all([
         supabase.from('notes').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('students').select('*').eq('user_id', userId),
@@ -230,6 +235,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         supabase.from('shoutouts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('parent_communications').select('*').eq('user_id', userId).order('comm_date', { ascending: false }),
         supabase.from('student_accommodations').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+        supabase.from('attendance_records').select('*').eq('user_id', userId).order('date', { ascending: false }),
       ]);
 
       if (notesError) throw new Error(`Notes: ${notesError.message}`);
@@ -288,6 +294,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         accommodations: (accommodationsData || []) as Accommodation[],
         shoutouts: (shoutoutsData || []) as Shoutout[],
         parentCommunications: (parentCommsData || []) as ParentCommunication[],
+        attendanceRecords: (attendanceData || []) as AttendanceRecord[],
         // Use DB indicators directly; seed defaults for new accounts
         indicators: (indicatorsData && indicatorsData.length > 0)
           ? (indicatorsData as Indicator[])
@@ -907,6 +914,37 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, []);
 
+  // ─── Attendance ─────────────────────────────────────────────────────────────
+
+  const addAttendanceRecords = useCallback(async (records: { student_id: string; date: string; status: 'absent' | 'tardy' }[]) => {
+    if (records.length === 0) return;
+    try {
+      const rows = records.map(r => ({ ...r, user_id: userId, created_at: new Date().toISOString() }));
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .upsert(rows, { onConflict: 'user_id,student_id,date' })
+        .select();
+      if (error) throw error;
+      setState(prev => {
+        const newIds = new Set((data as AttendanceRecord[]).map(r => r.id));
+        const filtered = prev.attendanceRecords.filter(r => !newIds.has(r.id));
+        return { ...prev, attendanceRecords: [...(data as AttendanceRecord[]), ...filtered] };
+      });
+    } catch (error) {
+      console.error('Error adding attendance records:', error);
+    }
+  }, [userId]);
+
+  const deleteAttendanceRecord = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase.from('attendance_records').delete().eq('id', id);
+      if (error) throw error;
+      setState(prev => ({ ...prev, attendanceRecords: prev.attendanceRecords.filter(r => r.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting attendance record:', error);
+    }
+  }, []);
+
   // ─── Shoutouts ──────────────────────────────────────────────────────────────
 
   const addShoutout = useCallback(async (shoutout: Omit<Shoutout, 'id' | 'created_at' | 'user_id'>) => {
@@ -975,5 +1013,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     deleteParentCommunication,
     addShoutout,
     deleteShoutout,
+    addAttendanceRecords,
+    deleteAttendanceRecord,
   };
 }

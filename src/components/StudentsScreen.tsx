@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout, Accommodation } from '../types';
+import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout, Accommodation, AttendanceRecord } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
@@ -41,6 +41,9 @@ interface StudentsScreenProps {
   addParentCommunication: (comm: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
   updateParentCommunication: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
   deleteParentCommunication: (id: string) => Promise<void>;
+  attendanceRecords: AttendanceRecord[];
+  addAttendanceRecords: (records: { student_id: string; date: string; status: 'absent' | 'tardy' }[]) => Promise<void>;
+  deleteAttendanceRecord: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
   selectedStudentId: string | null;
   setSelectedStudentId: (id: string | null) => void;
@@ -48,6 +51,114 @@ interface StudentsScreenProps {
   teacherLastName: string;
   shoutouts: Shoutout[];
   addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
+}
+
+// ─── Attendance Banner ────────────────────────────────────────────────────────
+
+function AttendanceBanner({
+  attendanceRecords,
+  students,
+  onStudentClick,
+  onDelete,
+}: {
+  attendanceRecords: AttendanceRecord[];
+  students: Student[];
+  onStudentClick: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(true);
+  const today = new Date().toISOString().split('T')[0];
+
+  // Group by date, most recent first
+  const byDate = useMemo(() => {
+    const map: Record<string, AttendanceRecord[]> = {};
+    attendanceRecords.forEach(r => {
+      if (!map[r.date]) map[r.date] = [];
+      map[r.date].push(r);
+    });
+    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [attendanceRecords]);
+
+  if (byDate.length === 0) return null;
+
+  const todayRecords = attendanceRecords.filter(r => r.date === today);
+  const todayAbsent = todayRecords.filter(r => r.status === 'absent').length;
+  const todayTardy = todayRecords.filter(r => r.status === 'tardy').length;
+
+  const summaryParts: string[] = [];
+  if (todayAbsent > 0) summaryParts.push(`${todayAbsent} absent`);
+  if (todayTardy > 0) summaryParts.push(`${todayTardy} tardy`);
+  const todaySummary = summaryParts.length > 0 ? summaryParts.join(', ') : null;
+
+  return (
+    <div className="px-2">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          className="w-full flex items-center gap-2 px-4 py-2.5"
+        >
+          <ClipboardCheck className="w-4 h-4 flex-shrink-0 text-slate-400" />
+          <span className="text-[12px] font-black flex-1 text-left text-slate-600">
+            Attendance
+            {todaySummary && <span className="ml-1.5 text-slate-400 font-bold">· Today: {todaySummary}</span>}
+          </span>
+          {collapsed ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronUp className="w-3.5 h-3.5 text-slate-400" />}
+        </button>
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="px-4 pb-3 space-y-3">
+                {byDate.slice(0, 14).map(([date, records]) => {
+                  const isToday = date === today;
+                  const d = new Date(date + 'T00:00');
+                  const dateStr = isToday ? 'Today' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                  const absent = records.filter(r => r.status === 'absent');
+                  const tardy = records.filter(r => r.status === 'tardy');
+                  return (
+                    <div key={date} className="space-y-1">
+                      <span className="text-[11px] font-black text-slate-400 uppercase tracking-wide">{dateStr}</span>
+                      {[...absent, ...tardy].map(rec => {
+                        const student = students.find(s => s.id === rec.student_id);
+                        if (!student) return null;
+                        return (
+                          <div key={rec.id} className="flex items-center gap-2">
+                            <button
+                              onClick={() => { onStudentClick(rec.student_id); setCollapsed(true); }}
+                              className="flex-1 flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-100 rounded-xl text-left hover:opacity-80 transition-all"
+                            >
+                              <span className={cn(
+                                'text-[10px] font-black px-1.5 py-0.5 rounded-md',
+                                rec.status === 'absent' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                              )}>
+                                {rec.status === 'absent' ? 'ABS' : 'TAR'}
+                              </span>
+                              <span className="text-[12px] font-bold text-slate-700 flex-1 truncate">{student.name}</span>
+                            </button>
+                            <button
+                              onClick={() => onDelete(rec.id)}
+                              className="p-1.5 text-slate-300 hover:text-red-400 transition-colors"
+                              title="Remove"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
 }
 
 // ─── Pending Follow-ups Banner ────────────────────────────────────────────────
@@ -164,6 +275,9 @@ export default function StudentsScreen({
   addParentCommunication,
   updateParentCommunication,
   deleteParentCommunication,
+  attendanceRecords,
+  addAttendanceRecords,
+  deleteAttendanceRecord,
   abbreviations,
   selectedStudentId,
   setSelectedStudentId,
@@ -174,6 +288,44 @@ export default function StudentsScreen({
 }: StudentsScreenProps) {
   const { aliasMode } = useAliasMode();
   const [filter, setFilter] = useState<string>('All');
+
+  // ─── Attendance mode ─────────────────────────────────────────────────────
+  const [attendanceMode, setAttendanceMode] = useState(false);
+  const [attendanceSelections, setAttendanceSelections] = useState<Record<string, 'absent' | 'tardy'>>({});
+  const [attendanceSaving, setAttendanceSaving] = useState(false);
+
+  const toggleAttendanceStudent = (id: string) => {
+    setAttendanceSelections(prev => {
+      const current = prev[id];
+      if (!current) return { ...prev, [id]: 'absent' };
+      if (current === 'absent') return { ...prev, [id]: 'tardy' };
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const cancelAttendanceMode = () => {
+    setAttendanceMode(false);
+    setAttendanceSelections({});
+  };
+
+  const submitAttendance = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const records = (Object.entries(attendanceSelections) as [string, 'absent' | 'tardy'][]).map(([student_id, status]) => ({ student_id, date: today, status }));
+    if (records.length === 0) { cancelAttendanceMode(); return; }
+    setAttendanceSaving(true);
+    await addAttendanceRecords(records);
+    setAttendanceSaving(false);
+    setAttendanceMode(false);
+    setAttendanceSelections({});
+    const absentCount = records.filter(r => r.status === 'absent').length;
+    const tardyCount = records.filter(r => r.status === 'tardy').length;
+    const parts: string[] = [];
+    if (absentCount > 0) parts.push(`${absentCount} absent`);
+    if (tardyCount > 0) parts.push(`${tardyCount} tardy`);
+    toast.success(`Attendance saved · ${parts.join(', ')}`);
+  };
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
     try {
@@ -420,6 +572,8 @@ export default function StudentsScreen({
         teacherLastName={teacherLastName}
         shoutouts={shoutouts.filter(s => s.student_id === selectedStudent.id)}
         addTask={addTask}
+        attendanceRecords={attendanceRecords.filter(r => r.student_id === selectedStudent.id)}
+        deleteAttendanceRecord={deleteAttendanceRecord}
       />
     );
   }
@@ -512,6 +666,19 @@ export default function StudentsScreen({
         <div className="flex items-center gap-2">
           <h2 className="text-[11px] font-bold text-blue-600">Your Roster</h2>
           <button
+            onClick={() => attendanceMode ? cancelAttendanceMode() : setAttendanceMode(true)}
+            className={cn(
+              'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black transition-colors',
+              attendanceMode
+                ? 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            )}
+            title="Mark Attendance"
+          >
+            <ClipboardCheck className="w-3.5 h-3.5" />
+            {attendanceMode ? 'Cancel' : 'Attendance'}
+          </button>
+          <button
             onClick={() => setIsBirthdayModalOpen(true)}
             className="p-1.5 bg-pink-50 text-pink-400 rounded-lg hover:bg-pink-100 hover:text-pink-500 transition-colors"
             title="Import Birthdays"
@@ -551,6 +718,47 @@ export default function StudentsScreen({
           className="w-full p-4 bg-white border border-slate-100 rounded-full focus:outline-none focus:ring-2 focus:ring-sage/20 text-sm font-medium shadow-inner"
         />
       </div>
+
+      {/* Attendance mode instruction bar */}
+      <AnimatePresence>
+        {attendanceMode && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="px-2"
+          >
+            <div className="rounded-2xl bg-slate-800 text-white px-4 py-3 flex items-center gap-3">
+              <div className="flex-1">
+                <p className="text-[12px] font-black">Tap once = Absent · Tap again = Tardy · Tap again = Clear</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {Object.keys(attendanceSelections).length === 0
+                    ? 'No students selected yet'
+                    : `${Object.values(attendanceSelections).filter(s => s === 'absent').length} absent · ${Object.values(attendanceSelections).filter(s => s === 'tardy').length} tardy`}
+                </p>
+              </div>
+              <button
+                onClick={submitAttendance}
+                disabled={attendanceSaving || Object.keys(attendanceSelections).length === 0}
+                className="flex items-center gap-1.5 px-3 py-2 bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-white rounded-xl text-[12px] font-black transition-colors"
+              >
+                {attendanceSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                Submit
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Attendance history banner */}
+      {!attendanceMode && (
+        <AttendanceBanner
+          attendanceRecords={attendanceRecords}
+          students={students}
+          onStudentClick={setSelectedStudentId}
+          onDelete={deleteAttendanceRecord}
+        />
+      )}
 
       {/* Pending Follow-ups Banner */}
       <PendingFollowUpsBanner
@@ -664,21 +872,30 @@ export default function StudentsScreen({
                   const noteCount = notes.filter(n => n.student_name === s.name).length;
                   const isPinned = pinnedIds.has(s.id);
                   const isPressing = pressingId === s.id;
+                  const attendanceSel = attendanceSelections[s.id];
                   return (
                     <motion.div
                       key={s.id}
-                      onClick={() => { if (!didPin.current) setSelectedStudentId(s.id); didPin.current = false; }}
-                      onMouseDown={() => startPress(s.id)}
+                      onClick={() => {
+                        if (attendanceMode) { toggleAttendanceStudent(s.id); return; }
+                        if (!didPin.current) setSelectedStudentId(s.id);
+                        didPin.current = false;
+                      }}
+                      onMouseDown={() => { if (!attendanceMode) startPress(s.id); }}
                       onMouseUp={cancelPress}
                       onMouseLeave={cancelPress}
-                      onTouchStart={() => startPress(s.id)}
+                      onTouchStart={() => { if (!attendanceMode) startPress(s.id); }}
                       onTouchEnd={cancelPress}
                       onTouchCancel={cancelPress}
                       onContextMenu={e => e.preventDefault()}
                       whileTap={{ scale: 0.94 }}
                       className={cn(
                         "bg-white p-2 rounded-2xl card-shadow border flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:-translate-y-0.5 transition-all text-center relative select-none",
-                        isPinned ? "border-amber-200 bg-amber-50/40 hover:border-amber-300" : "border-slate-100 hover:border-sage/30",
+                        attendanceMode && attendanceSel === 'absent' && "border-red-300 bg-red-50",
+                        attendanceMode && attendanceSel === 'tardy' && "border-amber-300 bg-amber-50",
+                        attendanceMode && !attendanceSel && "opacity-70",
+                        !attendanceMode && isPinned && "border-amber-200 bg-amber-50/40 hover:border-amber-300",
+                        !attendanceMode && !isPinned && "border-slate-100 hover:border-sage/30",
                         isPressing && "scale-95"
                       )}
                     >
@@ -687,11 +904,21 @@ export default function StudentsScreen({
                         <span className="pin-press-ring absolute inset-0 rounded-2xl pointer-events-none" style={{ zIndex: 10 }} />
                       )}
 
-                      {/* Status dot */}
-                      <span className={cn('absolute top-1.5 right-1.5 w-2 h-2 rounded-full', statusDot[status])} />
+                      {/* Attendance badge overlay */}
+                      {attendanceMode && attendanceSel && (
+                        <span className={cn(
+                          'absolute top-1 right-1 text-[9px] font-black px-1 py-0.5 rounded-md z-10',
+                          attendanceSel === 'absent' ? 'bg-red-500 text-white' : 'bg-amber-400 text-white'
+                        )}>
+                          {attendanceSel === 'absent' ? 'ABS' : 'TAR'}
+                        </span>
+                      )}
 
-                      {/* Pin indicator (pinned students only) */}
-                      {isPinned && (
+                      {/* Status dot (hidden in attendance mode) */}
+                      {!attendanceMode && <span className={cn('absolute top-1.5 right-1.5 w-2 h-2 rounded-full', statusDot[status])} />}
+
+                      {/* Pin indicator (pinned students only, hidden in attendance mode) */}
+                      {!attendanceMode && isPinned && (
                         <span className="absolute top-1 left-1">
                           <Pin className="w-3 h-3 text-amber-400 fill-amber-400" />
                         </span>
@@ -699,17 +926,17 @@ export default function StudentsScreen({
 
                       {/* Photo / avatar with status ring */}
                       {s.photo_url ? (
-                        <img src={s.photo_url} alt={s.name} className={cn('w-10 h-10 rounded-full object-cover', statusRing[status])} />
+                        <img src={s.photo_url} alt={s.name} className={cn('w-10 h-10 rounded-full object-cover', !attendanceMode && statusRing[status])} />
                       ) : (
-                        <div className={cn('w-10 h-10 rounded-full flex items-center justify-center border text-lg', getAvatarColor(s.name), statusRing[status])} style={{ fontFamily: "'Boogaloo', cursive" }}>
+                        <div className={cn('w-10 h-10 rounded-full flex items-center justify-center border text-lg', getAvatarColor(s.name), !attendanceMode && statusRing[status])} style={{ fontFamily: "'Boogaloo', cursive" }}>
                           {aliasMode ? getDisplayName(s, true).substring(0, 2).toUpperCase() : s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                       )}
 
                       <h4 className="text-[12px] font-bold text-slate-900 line-clamp-2 leading-tight font-display h-[30px] flex items-start justify-center">{getDisplayName(s, aliasMode)}</h4>
 
-                      {/* Note count */}
-                      {noteCount > 0 && (
+                      {/* Note count (hidden in attendance mode) */}
+                      {!attendanceMode && noteCount > 0 && (
                         <span className="text-[11px] font-bold text-slate-400">{noteCount} note{noteCount !== 1 ? 's' : ''}</span>
                       )}
                     </motion.div>
