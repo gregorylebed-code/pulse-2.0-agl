@@ -4,7 +4,7 @@ import { parseVoiceLog, categorizeNote } from '../lib/gemini';
 import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations';
 import imageCompression from 'browser-image-compression';
 import {
-  Mic, Image as ImageIcon, Send, Trash2, Edit2, Copy,
+  Mic, MicOff, Image as ImageIcon, Send, Trash2, Edit2, Copy,
   Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Cake, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -878,18 +878,19 @@ const handleVoiceLog = async () => {
             placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : "Add a note... (optional — indicators alone work fine)"}
             className="w-full min-h-[80px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
-          <div className="absolute right-3 bottom-3 flex gap-2">
+          <div className="absolute right-3 bottom-3 flex gap-2 items-center">
             <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-white text-slate-400 rounded-xl shadow-sm border border-slate-100 hover:text-sage transition-all">
               <ImageIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleVoiceLog}
               className={cn(
-                "p-2 rounded-xl shadow-sm border border-slate-100 transition-all",
-                isListening ? "bg-terracotta text-white animate-pulse" : "bg-white text-slate-400 hover:text-terracotta"
+                "flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest",
+                isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
               )}
             >
-              <Mic className="w-3.5 h-3.5" />
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              <span>{isListening ? 'Stop' : 'Voice'}</span>
             </button>
             <input type="file" ref={fileInputRef} onChange={handleImageSelect} className="hidden" accept="image/*" />
           </div>

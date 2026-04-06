@@ -646,6 +646,8 @@ export default function StudentDetailView({
 
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
   const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]);
+  const [timelineVisible, setTimelineVisible] = useState(5);
+  const [parentCommVisible, setParentCommVisible] = useState(5);
   const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'accommodations' | 'ai-report' | 'history' | 'quick-note' | 'parents'>('timeline');
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
@@ -654,6 +656,7 @@ export default function StudentDetailView({
   const [isRefiningQuickNote, setIsRefiningQuickNote] = useState(false);
   const [isListeningQuickNoteRefine, setIsListeningQuickNoteRefine] = useState(false);
   const [isListeningReportRefine, setIsListeningReportRefine] = useState(false);
+  const [isListeningWizardInstructions, setIsListeningWizardInstructions] = useState(false);
   const quickNoteRef = useRef<HTMLDivElement>(null);
   const goalsRef = useRef<HTMLDivElement>(null);
   const accommodationsRef = useRef<HTMLDivElement>(null);
@@ -1839,16 +1842,39 @@ export default function StudentDetailView({
               <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-[9px] font-black mr-1.5">3</span>
               Any special instructions? <span className="font-normal text-slate-300 normal-case tracking-normal">(optional)</span>
             </p>
-            <textarea
-              value={refineInstructions}
-              onChange={(e) => setRefineInstructions(e.target.value)}
-              placeholder={`e.g. "Focus on math progress", "Mention we're planning a meeting", "Keep it under 3 sentences"…`}
-              autoComplete="off"
-              data-1p-ignore
-              data-lpignore="true"
-              rows={2}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs focus:outline-none focus:border-sage/40 resize-none"
-            />
+            <div className="flex gap-2">
+              <textarea
+                value={refineInstructions}
+                onChange={(e) => setRefineInstructions(e.target.value)}
+                placeholder={`e.g. "Focus on math progress", "Mention we're planning a meeting", "Keep it under 3 sentences"…`}
+                autoComplete="off"
+                data-1p-ignore
+                data-lpignore="true"
+                rows={2}
+                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs focus:outline-none focus:border-sage/40 resize-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (isListeningWizardInstructions) { (window as any)._wizardInstRec?.stop(); return; }
+                  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                  if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+                  const r = new SR();
+                  r.lang = 'en-US';
+                  r.onstart = () => setIsListeningWizardInstructions(true);
+                  r.onend = () => setIsListeningWizardInstructions(false);
+                  r.onresult = (e: any) => { const t = e.results[0][0].transcript; setRefineInstructions(prev => prev ? prev + ' ' + t : t); };
+                  (window as any)._wizardInstRec = r; r.start();
+                }}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 px-3 rounded-2xl border transition-all self-stretch',
+                  isListeningWizardInstructions ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-400 border-slate-100 hover:text-terracotta hover:border-terracotta/40'
+                )}
+              >
+                {isListeningWizardInstructions ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                <span className="text-[9px] font-bold uppercase tracking-wide">{isListeningWizardInstructions ? 'Stop' : 'Voice'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Generate button */}
@@ -1945,8 +1971,8 @@ export default function StudentDetailView({
                   <button type="button" onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all">
                     <MessageSquare className="w-3.5 h-3.5" /> Text
                   </button>
-                  <button type="button" onClick={async () => { const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() }; await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] }); toast.success('Saved to history!'); onNoteUpdate(); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terracotta/10 text-terracotta rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-terracotta/20 transition-all">
-                    <Archive className="w-3.5 h-3.5" /> Save to History
+                  <button type="button" onClick={async () => { const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() }; await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] }); toast.success('Saved!'); onNoteUpdate(); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all shadow-sm shadow-sage/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Save Note
                   </button>
                 </div>
               </motion.div>
@@ -2023,25 +2049,24 @@ export default function StudentDetailView({
                     </div>
                   </div>
                 </div>
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 px-6 pb-6">
-                  <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); navigator.clipboard.writeText(text); toast.success('Report copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all">
-                    <Copy className="w-3.5 h-3.5" /> Copy
-                  </button>
-                  <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); triggerEmail(text, `Progress Report — ${student.name}`); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
-                    <Mail className="w-3.5 h-3.5" /> Email
-                  </button>
-                  <button type="button" onClick={handleCopyParentSquare} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
-                    <ClipboardList className="w-3.5 h-3.5" /> ParentSquare
-                  </button>
-                  <div className="w-full grid grid-cols-2 gap-2 mt-1">
-                    <button type="button" onClick={archiveAndKeepNotes} className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-700 transition-all">
-                      <Archive className="w-3.5 h-3.5" /> Archive & Keep
+                {/* Send actions — separated from Refine by a clear divider */}
+                <div className="border-t-2 border-dashed border-slate-200 mx-6 mt-1" />
+                <div className="px-6 pb-2 pt-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-3">Send this report</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); navigator.clipboard.writeText(text); toast.success('Report copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all">
+                      <Copy className="w-3.5 h-3.5" /> Copy
                     </button>
-                    <button type="button" onClick={archiveAndClearNotes} className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all">
-                      <Trash2 className="w-3.5 h-3.5" /> Archive & Clear
+                    <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); triggerEmail(text, `Progress Report — ${student.name}`); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
+                      <Mail className="w-3.5 h-3.5" /> Email
+                    </button>
+                    <button type="button" onClick={handleCopyParentSquare} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
+                      <ClipboardList className="w-3.5 h-3.5" /> ParentSquare
                     </button>
                   </div>
+                  <button type="button" onClick={archiveAndKeepNotes} className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all shadow-sm shadow-sage/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Save Note
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -2049,24 +2074,36 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <div id="timeline" ref={timelineRef} className="space-y-6 pt-4 scroll-mt-header">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[15px] font-black text-slate-400 ml-1">Observation Timeline</h3>
-          {shoutouts.length > 0 && (
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-bold text-amber-400 mr-1">⭐ {shoutouts.length}</span>
-              <button onClick={handleCopyShoutouts} title="Copy shoutouts" className="p-1.5 text-slate-300 hover:text-slate-600 transition-all">
-                <Copy className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={handleEmailShoutouts} title="Email shoutouts" className="p-1.5 text-slate-300 hover:text-blue-500 transition-all">
-                <Mail className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={handleDownloadShoutoutsPDF} title="Download PDF" className="p-1.5 text-slate-300 hover:text-terracotta transition-all">
-                <Download className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
+      <div id="timeline" ref={timelineRef} className="space-y-4 scroll-mt-header">
+        <button
+          type="button"
+          onClick={() => setTimelineVisible(v => v > 0 ? 0 : 5)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-2xl border border-slate-100 card-shadow hover:border-sage/30 transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <h3 className="text-[13px] font-black text-slate-600">Observation Timeline</h3>
+            <span className="text-[11px] font-bold text-slate-400">({[...shoutouts, ...notes.filter(n => !pendingDeleteNoteIds.has(n.id))].length} entries)</span>
+            {shoutouts.length > 0 && <span className="text-[11px] font-bold text-amber-400">⭐ {shoutouts.length}</span>}
+          </div>
+          <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', timelineVisible > 0 && 'rotate-180')} />
+        </button>
+        <AnimatePresence>
+        {timelineVisible > 0 && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-4">
+        {shoutouts.length > 0 && (
+          <div className="flex items-center gap-1 px-1">
+            <span className="text-[11px] font-bold text-amber-400 mr-1">⭐ Shoutouts</span>
+            <button onClick={handleCopyShoutouts} title="Copy shoutouts" className="p-1.5 text-slate-300 hover:text-slate-600 transition-all">
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={handleEmailShoutouts} title="Email shoutouts" className="p-1.5 text-slate-300 hover:text-blue-500 transition-all">
+              <Mail className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={handleDownloadShoutoutsPDF} title="Download PDF" className="p-1.5 text-slate-300 hover:text-terracotta transition-all">
+              <Download className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
           {/* Shoutout entries */}
           {shoutouts.map((shoutout) => (
@@ -2085,7 +2122,7 @@ export default function StudentDetailView({
               </div>
             </div>
           ))}
-          {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).map((note) => (
+          {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, timelineVisible).map((note) => (
             <div key={note.id} className="relative">
               <div className="absolute -left-[29px] top-1 w-6 h-6 bg-white border-2 border-sage rounded-full flex items-center justify-center z-10 shadow-sm">
                 <div className="w-2 h-2 bg-sage rounded-full" />
@@ -2247,56 +2284,34 @@ export default function StudentDetailView({
             </div>
           ))}
           {notes.length === 0 && (
-            <div className="text-center py-20 bg-white rounded-[40px] border border-dashed border-slate-200">
+            <div className="text-center py-12 bg-white rounded-[32px] border border-dashed border-slate-200">
               <p className="text-sm text-slate-400 font-medium">No notes yet for this student.</p>
             </div>
           )}
         </div>
+        {/* Show more / less */}
+        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length > timelineVisible && (
+          <button
+            type="button"
+            onClick={() => setTimelineVisible(v => v + 5)}
+            className="w-full py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-sage border border-dashed border-slate-200 rounded-2xl hover:border-sage/40 transition-all"
+          >
+            Show 5 More ({notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length - timelineVisible} remaining)
+          </button>
+        )}
+        {timelineVisible > 5 && (
+          <button
+            type="button"
+            onClick={() => setTimelineVisible(5)}
+            className="w-full py-2 text-[11px] font-bold text-slate-300 hover:text-slate-500 transition-all"
+          >
+            Show less
+          </button>
+        )}
+          </motion.div>
+        )}
+        </AnimatePresence>
       </div>
-
-      <div className="pt-6 border-t border-slate-100" />
-
-      {/* ─── Attendance History ────────────────────────────────────────── */}
-      {attendanceRecords.length > 0 && (
-        <div className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-600 flex items-center gap-2">
-              <ClipboardCheck className="w-4 h-4" /> Attendance
-            </h3>
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-              {attendanceRecords.filter(r => r.status === 'absent').length} absent · {attendanceRecords.filter(r => r.status === 'tardy').length} tardy
-            </span>
-          </div>
-          <div className="space-y-1.5">
-            {attendanceRecords
-              .slice()
-              .sort((a, b) => b.date.localeCompare(a.date))
-              .map(rec => {
-                const d = new Date(rec.date + 'T00:00');
-                const today = new Date().toISOString().split('T')[0];
-                const dateStr = rec.date === today ? 'Today' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
-                return (
-                  <div key={rec.id} className="flex items-center gap-2">
-                    <span className={cn(
-                      'text-[10px] font-black px-1.5 py-0.5 rounded-md w-8 text-center',
-                      rec.status === 'absent' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
-                    )}>
-                      {rec.status === 'absent' ? 'ABS' : 'TAR'}
-                    </span>
-                    <span className="text-[12px] font-bold text-slate-600 flex-1">{dateStr}</span>
-                    <button
-                      onClick={() => deleteAttendanceRecord(rec.id)}
-                      className="p-1 text-slate-200 hover:text-red-400 transition-colors"
-                      title="Remove"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
 
       {/* ─── Parent Contact Info ─────────────────────────────────────── */}
       <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100 no-print">
@@ -2396,7 +2411,6 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      {/* ─── Goals ─────────────────────────────────────────────── */}
       {/* ─── Parent Communication Log ─────────────────────────────────── */}
       <div id="parents" ref={parentCommRef} className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-4 scroll-mt-header no-print">
         <ParentCommunicationLog
@@ -2661,7 +2675,7 @@ export default function StudentDetailView({
       <div className="pt-6 border-t border-slate-100" />
 
       {/* ─── Accommodations ─────────────────────────────────────────── */}
-      <div id="accommodations" ref={accommodationsRef} className="space-y-4 scroll-mt-header">
+      <div id="accommodations" ref={accommodationsRef} className={cn("space-y-4 scroll-mt-header", !isFullMode && "hidden")}>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-sky-600 flex items-center gap-2">
