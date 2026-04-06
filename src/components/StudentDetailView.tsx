@@ -1567,7 +1567,7 @@ export default function StudentDetailView({
               <select
                 value={pronouns}
                 onChange={(e) => setPronouns(e.target.value)}
-                className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+                className="min-w-0 w-full px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
               >
                 <option value="">Auto-detect (they/them if name is unclear)</option>
                 <option value="he/him">he/him</option>
@@ -1576,7 +1576,7 @@ export default function StudentDetailView({
               </select>
             </div>
             <p className="text-[10px] text-slate-400 mt-1 leading-snug pl-[72px]">
-              This only controls how the AI writes reports and parent notes — e.g. "he completed" vs. "she completed." It's not a required field and has no other purpose in the app.
+              Helps the AI refer to this student correctly in notes and reports.
             </p>
           </div>
         </div>
