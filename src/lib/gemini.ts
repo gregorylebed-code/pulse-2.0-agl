@@ -192,12 +192,13 @@ Available tags: ${indicatorList}
 STRICT RULES — follow these exactly:
 - Only apply a tag if the note DIRECTLY and CLEARLY describes that behavior or situation.
 - Do NOT infer intent, assume what might have happened, or add tags based on what could be implied.
-- Do NOT apply multiple tags unless the note explicitly describes multiple distinct situations.
+- If a note describes multiple distinct situations (e.g. did well in math AND was disruptive in science), apply a tag for EACH situation — including positive ones.
+- Do NOT apply multiple tags for the same situation — e.g. don't tag both "Distracted" and "Disruption" for a single off-task incident unless the note clearly describes both.
 - A student being on the wrong website is NOT a "disruption" unless the note explicitly says they disturbed other students.
 - A "technical issue" means a device or software malfunction — NOT student misuse or rule-breaking.
 - If a note is about rule-breaking or off-task behavior, use "Behavior" only — do not also add "Academic" or other tags unless they are clearly described.
 - If no tag fits clearly, return an empty array [].
-- Prefer fewer tags over more. One tag is usually correct. Two is rarely needed. Three is almost never right.
+- Prefer accuracy over brevity — if there are genuinely two distinct situations, use two tags.
 
 Return a JSON object:
 - tags: array of strings (use exact tag names from the available list, or [] if none fit)
