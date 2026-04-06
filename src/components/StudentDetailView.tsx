@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import imageCompression from 'browser-image-compression';
 import {
-  ChevronLeft, Edit2, Send, Mic, Image as ImageIcon, Loader2,
+  ChevronLeft, Edit2, Send, Mic, MicOff, Image as ImageIcon, Loader2,
   Trash2, Copy, Mail, MessageSquare, CheckCircle2, Archive,
   X, Sparkles, ClipboardList, FileText, Download,
   Smile, Meh, Frown, Users, Phone, Tag, ChevronDown, Settings2,
@@ -652,6 +652,8 @@ export default function StudentDetailView({
   const [quickNoteDays, setQuickNoteDays] = useState<0 | 1 | 3 | 5 | 7>(0);
   const [quickNoteRefineInstructions, setQuickNoteRefineInstructions] = useState('');
   const [isRefiningQuickNote, setIsRefiningQuickNote] = useState(false);
+  const [isListeningQuickNoteRefine, setIsListeningQuickNoteRefine] = useState(false);
+  const [isListeningReportRefine, setIsListeningReportRefine] = useState(false);
   const quickNoteRef = useRef<HTMLDivElement>(null);
   const goalsRef = useRef<HTMLDivElement>(null);
   const accommodationsRef = useRef<HTMLDivElement>(null);
@@ -1232,7 +1234,7 @@ export default function StudentDetailView({
     if (!quickNote || !quickNoteRefineInstructions.trim()) return;
     setIsRefiningQuickNote(true);
     try {
-      const refined = await refineQuickNote(quickNote, quickNoteRefineInstructions);
+      const refined = await refineQuickNote(quickNote, quickNoteRefineInstructions, student.pronouns, student.name.split(' ')[0]);
       if (refined) {
         setQuickNote(refined);
         setQuickNoteRefineInstructions('');
@@ -1900,34 +1902,60 @@ export default function StudentDetailView({
               <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
 
               {/* Refine with AI */}
-              <div className="flex items-center gap-2 pt-1">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={quickNoteRefineInstructions}
-                    onChange={(e) => setQuickNoteRefineInstructions(e.target.value)}
-                    placeholder="Refine... (e.g. 'shorter', 'more positive')"
-                    autoComplete="off"
-                    data-1p-ignore
-                    data-lpignore="true"
-                    className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-terracotta/40 pr-8"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && quickNoteRefineInstructions.trim() && !isRefiningQuickNote) {
-                        handleRefineQuickNote();
-                      }
-                    }}
-                  />
-                  <Sparkles className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" />
+              <div className="space-y-2 pt-1">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-terracotta" />
+                  Give the AI new instructions to rewrite this note
+                </p>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <textarea
+                      value={quickNoteRefineInstructions}
+                      onChange={(e) => setQuickNoteRefineInstructions(e.target.value)}
+                      placeholder="e.g. 'Make it shorter', 'More positive tone', 'Add that we're scheduling a meeting'..."
+                      autoComplete="off"
+                      data-1p-ignore
+                      data-lpignore="true"
+                      rows={2}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-terracotta/40 resize-none"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isListeningQuickNoteRefine) { (window as any)._qnRefineRec?.stop(); return; }
+                        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                        if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+                        const r = new SR();
+                        r.lang = 'en-US';
+                        r.onstart = () => setIsListeningQuickNoteRefine(true);
+                        r.onend = () => setIsListeningQuickNoteRefine(false);
+                        r.onresult = (e: any) => {
+                          const t = e.results[0][0].transcript;
+                          setQuickNoteRefineInstructions(prev => prev ? prev + ' ' + t : t);
+                        };
+                        (window as any)._qnRefineRec = r;
+                        r.start();
+                      }}
+                      className={cn(
+                        'p-2.5 rounded-xl border transition-all',
+                        isListeningQuickNoteRefine ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-400 border-slate-100 hover:text-terracotta'
+                      )}
+                    >
+                      {isListeningQuickNoteRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRefineQuickNote}
+                      disabled={isRefiningQuickNote || !quickNoteRefineInstructions.trim()}
+                      className="px-3 py-2 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1 whitespace-nowrap"
+                    >
+                      {isRefiningQuickNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      {isRefiningQuickNote ? '...' : 'Rewrite'}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleRefineQuickNote}
-                  disabled={isRefiningQuickNote || !quickNoteRefineInstructions.trim()}
-                  className="px-4 py-2 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  {isRefiningQuickNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  {isRefiningQuickNote ? 'Refining...' : 'Refine'}
-                </button>
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2">
@@ -2789,43 +2817,61 @@ export default function StudentDetailView({
 
               {/* Refinement Section */}
               <div className="space-y-3 px-8 pb-6 border-t border-cream-dark pt-5">
-                <div className="flex items-center gap-2">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-sage" />
+                  Give the AI new instructions to rewrite this report
+                </p>
+                <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <label htmlFor="refine_report_input" className="sr-only">Refine your draft</label>
-                    <input
-                      id="refine_report_input"
-                      name="refine_report_input"
-                      type="text"
+                    <textarea
                       value={refineInstructions}
                       onChange={(e) => setRefineInstructions(e.target.value)}
-                      placeholder="Tweak this draft... (e.g., 'Make it more formal')"
+                      placeholder="e.g. 'Make it more formal', 'Shorter', 'Focus more on the goal', 'More encouraging tone'..."
                       autoComplete="off"
                       data-1p-ignore
                       data-lpignore="true"
-                      className="w-full px-4 py-2 bg-white/70 border border-cream-dark rounded-xl text-xs focus:outline-none focus:border-sage pr-10"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && refineInstructions.trim() && !isRefining) {
-                          handleRefine();
-                        }
-                      }}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-white/70 border border-cream-dark rounded-xl text-xs focus:outline-none focus:border-sage resize-none"
                     />
-                    <Sparkles className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleRefine}
-                    disabled={isRefining || !refineInstructions.trim()}
-                    className="px-6 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50 flex items-center gap-2 min-w-[100px] justify-center shadow-md shadow-sage/10"
-                  >
-                    {isRefining ? (
-                      <>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isListeningReportRefine) { (window as any)._reportRefineRec?.stop(); return; }
+                        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                        if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+                        const r = new SR();
+                        r.lang = 'en-US';
+                        r.onstart = () => setIsListeningReportRefine(true);
+                        r.onend = () => setIsListeningReportRefine(false);
+                        r.onresult = (e: any) => {
+                          const t = e.results[0][0].transcript;
+                          setRefineInstructions(prev => prev ? prev + ' ' + t : t);
+                        };
+                        (window as any)._reportRefineRec = r;
+                        r.start();
+                      }}
+                      className={cn(
+                        'p-2.5 rounded-xl border transition-all',
+                        isListeningReportRefine ? 'bg-sage text-white border-sage animate-pulse' : 'bg-white text-slate-400 border-cream-dark hover:text-sage'
+                      )}
+                    >
+                      {isListeningReportRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRefine}
+                      disabled={isRefining || !refineInstructions.trim()}
+                      className="px-3 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50 flex items-center gap-1 justify-center shadow-md shadow-sage/10 whitespace-nowrap"
+                    >
+                      {isRefining ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        <span>Thinking...</span>
-                      </>
-                    ) : (
-                      'Refine'
-                    )}
-                  </button>
+                      ) : (
+                        <><Sparkles className="w-3 h-3" /> Rewrite</>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 

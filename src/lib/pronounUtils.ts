@@ -14,7 +14,7 @@ const MALE_NAMES = new Set([
   'benjamin','blake','brandon','brayden','brian','bryce','caleb','cameron','carlos','carter',
   'charles','chase','christian','christopher','cole','colin','conner','connor','cooper','cory',
   'daniel','david','derek','devon','dominic','dylan','elijah','eric','ethan','evan',
-  'gabriel','gavin','grant','henry','hunter','isaac','isaiah','jack','jackson','jacob',
+  'gabriel','gavin','grant','harry','henry','hunter','isaac','isaiah','jack','jackson','jacob',
   'jake','james','jason','javier','jayden','jermaine','jesse','joel','jonathan','jordan',
   'jose','joseph','joshua','juan','julian','justin','kevin','kyle','liam','logan',
   'lucas','luis','marcus','mason','matthew','max','michael','miguel','miles','nathan',

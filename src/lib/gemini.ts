@@ -298,14 +298,18 @@ ${notesText}${shoutoutsText}`;
   return { report, pronounInfo };
 }
 
-export async function refineQuickNote(currentNote: string, instructions: string): Promise<string> {
+export async function refineQuickNote(currentNote: string, instructions: string, studentPronouns?: string | null, studentFirstName?: string): Promise<string> {
+  const pronounInfo = getStudentPronounInfo(studentFirstName || '', studentPronouns);
+  const pronounInstruction = buildPronounInstruction(pronounInfo);
   const prompt = `Here is a short note a teacher drafted to send to a parent:
 
 "${currentNote}"
 
 The teacher wants to refine it with this instruction: "${instructions}"
 
-Rewrite the note following the instruction. Keep it concise, warm, and appropriate for a parent message. Return only the revised note text — no labels, no quotes, no extra commentary.`;
+Rewrite the note following the instruction. Keep it concise, warm, and appropriate for a parent message.
+IMPORTANT: ${pronounInstruction}
+Return only the revised note text — no labels, no quotes, no extra commentary.`;
 
   return stripEmDashes((await callGroq(prompt, false, undefined, 'refine_quick_note')).trim());
 }

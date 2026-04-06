@@ -50,7 +50,7 @@ const CommIcon = ({ type, size = 'sm' }: { type: string; size?: 'sm' | 'md' }) =
 // ─── Blank form state ─────────────────────────────────────────────────────────
 
 const blankForm = (student: Student) => ({
-  comm_type: 'Email' as string,
+  comm_type: '' as string,
   direction: 'outbound' as 'outbound' | 'inbound',
   subject: '',
   notes: '',
