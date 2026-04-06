@@ -1894,14 +1894,6 @@ export default function StudentDetailView({
                   <span className="text-[11px] font-bold uppercase tracking-widest text-terracotta">
                     {quickNoteDays === 0 ? "Today's Note" : quickNoteDays === 1 ? "Yesterday's Note" : `Last ${quickNoteDays} Days`}
                   </span>
-                  {quickNotePronounInfo && (
-                    <span
-                      title={quickNotePronounInfo.source === 'set' ? 'Pronouns set by you' : quickNotePronounInfo.source === 'guessed' ? 'Pronouns guessed from name — check the student profile if incorrect' : 'Ambiguous name — used they/them'}
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${quickNotePronounInfo.source === 'set' ? 'bg-sage/15 text-sage' : quickNotePronounInfo.source === 'guessed' ? 'bg-slate-100 text-slate-400' : 'bg-amber-50 text-amber-500'}`}
-                    >
-                      {quickNotePronounInfo.pronouns} {quickNotePronounInfo.source === 'set' ? '' : quickNotePronounInfo.source === 'ambiguous' ? '?' : '~'}
-                    </span>
-                  )}
                 </div>
                 <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
               </div>

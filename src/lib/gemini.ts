@@ -497,9 +497,9 @@ RULES:
 - State only the facts from the observations — no Glow/Grow/Goal, no goals, no framework
 - Be warm but direct
 - IMPORTANT: ${pronounInstruction}
-- If the overall tone of the observations is POSITIVE: end with exactly this line on a new line: "I am very proud and thought you would be too! — ${signOff}"
-- If the overall tone is NEGATIVE or CONCERNING: end with exactly this line on a new line: "I wanted to make sure you were informed. Please don't hesitate to reach out if you'd like to talk. — ${signOff}"
-- If the tone is MIXED: use your judgment on which sign-off fits better
+- If the overall tone of the observations is POSITIVE (no concerns at all): end with exactly this line on a new line: "I am very proud and thought you would be too! — ${signOff}"
+- If the overall tone is NEGATIVE or CONCERNING (no positives): end with exactly this line on a new line: "I wanted to make sure you were informed. Please don't hesitate to reach out if you'd like to talk. — ${signOff}"
+- If the tone is MIXED (both positives and concerns present): end with exactly this line on a new line: "There's been some good and some things we're still working on — just wanted to keep you in the loop. — ${signOff}"
 - IMPORTANT: If any other student's name appears in the observations (any name that is NOT "${firstName}"), replace it with "another student" in the note — EXCEPT names preceded by a title like Mr., Mrs., Miss, Ms., Dr., Coach, etc., which are teachers or staff and should be kept as-is
 - Do NOT include any labels like "Positive:" or "Note:" — just output the message directly
 - Do NOT add any extra commentary, headers, or explanation`;
