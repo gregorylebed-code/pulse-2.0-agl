@@ -669,19 +669,6 @@ export default function StudentsScreen({
         <div className="flex items-center gap-2">
           <h2 className="text-[11px] font-bold text-blue-600">Your Roster</h2>
           <button
-            onClick={() => attendanceMode ? cancelAttendanceMode() : setAttendanceMode(true)}
-            className={cn(
-              'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black transition-colors',
-              attendanceMode
-                ? 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-            )}
-            title="Mark Attendance"
-          >
-            <ClipboardCheck className="w-3.5 h-3.5" />
-            {attendanceMode ? 'Cancel' : 'Attendance'}
-          </button>
-          <button
             onClick={() => setIsBirthdayModalOpen(true)}
             className="p-1.5 bg-pink-50 text-pink-400 rounded-lg hover:bg-pink-100 hover:text-pink-500 transition-colors"
             title="Import Birthdays"

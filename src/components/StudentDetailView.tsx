@@ -646,7 +646,7 @@ export default function StudentDetailView({
 
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
   const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]);
-  const [timelineVisible, setTimelineVisible] = useState(5);
+  const [timelineVisible, setTimelineVisible] = useState(0);
   const [parentCommVisible, setParentCommVisible] = useState(5);
   const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'accommodations' | 'ai-report' | 'history' | 'quick-note' | 'parents'>('timeline');
   const [quickNote, setQuickNote] = useState<string | null>(null);
@@ -1513,7 +1513,6 @@ export default function StudentDetailView({
       </div>
 
       <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6 no-print">
-        <label htmlFor="quick_note" className="text-[15px] font-black text-slate-400 ml-1">Quick Note</label>
         <div className="relative border border-slate-100/50 rounded-[32px] p-1 bg-white shadow-inner">
           <textarea
             id="quick_note"
@@ -1679,7 +1678,7 @@ export default function StudentDetailView({
               activeSection === 'timeline' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
             )}
           >
-            Timeline
+            Recorded Notes
           </button>
           {isFullMode && (
             <button
@@ -1692,27 +1691,9 @@ export default function StudentDetailView({
               Goals
             </button>
           )}
-          <button
-            onClick={() => scrollToSection('accommodations')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'accommodations' ? "bg-sky-500 text-white shadow-md shadow-sky-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            IEP/504
-          </button>
         </div>
         {/* Row 2: communication-focused */}
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => scrollToSection('progress')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Trends
-          </button>
           <button
             onClick={() => scrollToSection('parents')}
             className={cn(
@@ -1720,16 +1701,7 @@ export default function StudentDetailView({
               activeSection === 'parents' ? "bg-blue-500 text-white shadow-md shadow-blue-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
             )}
           >
-            Parents
-          </button>
-          <button
-            onClick={() => scrollToSection('ai-report')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Compose
+            Parent Comm
           </button>
           <button
             onClick={() => scrollToSection('history')}
@@ -1739,6 +1711,15 @@ export default function StudentDetailView({
             )}
           >
             History
+          </button>
+          <button
+            onClick={() => scrollToSection('progress')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Behavior Trends
           </button>
         </div>
       </div>
@@ -2884,10 +2865,6 @@ export default function StudentDetailView({
 
       <div id="ai-report" ref={aiReportRef} className="scroll-mt-header" />
 
-      <div ref={progressRef} id="progress" className="scroll-mt-header">
-        <StudentProgressChart student={student} notes={notes} indicators={indicators} />
-      </div>
-
       <div id="history" ref={historyRef} className="space-y-4 scroll-mt-header">
             <div className="flex items-center justify-between">
               <div>
@@ -3022,6 +2999,10 @@ export default function StudentDetailView({
                 })
               )}
             </div>
+      </div>
+
+      <div ref={progressRef} id="progress" className="scroll-mt-header">
+        <StudentProgressChart student={student} notes={notes} indicators={indicators} />
       </div>
 
       {/* Undo delete toast */}
