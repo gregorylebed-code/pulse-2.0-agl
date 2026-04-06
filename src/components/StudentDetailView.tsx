@@ -1391,70 +1391,85 @@ export default function StudentDetailView({
         </button>
       </div>
 
-      {/* Hero Banner */}
-      <div className={`bg-linear-to-br ${heroGradient} rounded-[36px] shadow-xl overflow-hidden no-print`}>
-        <div className="px-6 pt-6 pb-5">
-          <div className="flex items-center gap-5">
+      {/* Hero Banner — compact */}
+      <div className={`bg-linear-to-br ${heroGradient} rounded-[28px] shadow-lg overflow-hidden no-print`}>
+        <div className="px-4 pt-4 pb-3">
+          <div className="flex items-center gap-3">
             {/* Photo */}
             <div className="relative flex-shrink-0">
               {student.photo_url ? (
-                <img src={student.photo_url} alt={student.name} className="w-24 h-24 rounded-[24px] object-cover ring-4 ring-white/30 shadow-lg" />
+                <img src={student.photo_url} alt={student.name} className="w-14 h-14 rounded-[16px] object-cover ring-2 ring-white/30 shadow-md" />
               ) : (
-                <div className="w-24 h-24 bg-white/20 rounded-[24px] flex items-center justify-center text-white font-black text-4xl font-display shadow-lg ring-4 ring-white/30">
+                <div className="w-14 h-14 bg-white/20 rounded-[16px] flex items-center justify-center text-white font-black text-2xl font-display shadow-md ring-2 ring-white/30">
                   {student.name.split(' ').map((n: string) => n[0]).join('')}
                 </div>
               )}
             </div>
 
-            {/* Name + period */}
+            {/* Name + period + stats inline */}
             <div className="flex-1 min-w-0">
-              {editingStudentName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={studentNameDraft}
-                    onChange={e => setStudentNameDraft(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleSaveStudentName(); if (e.key === 'Escape') setEditingStudentName(false); }}
-                    autoFocus
-                    className="text-xl font-bold text-white bg-white/20 border border-white/40 rounded-xl px-3 py-1 focus:outline-none focus:ring-2 focus:ring-white/40 placeholder-white/50"
-                  />
-                  <button onClick={handleSaveStudentName} className="text-[11px] font-bold text-white/80 hover:text-white">Save</button>
-                  <button onClick={() => setEditingStudentName(false)} className="text-[11px] font-bold text-white/60 hover:text-white/80">Cancel</button>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {editingStudentName ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={studentNameDraft}
+                        onChange={e => setStudentNameDraft(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveStudentName(); if (e.key === 'Escape') setEditingStudentName(false); }}
+                        autoFocus
+                        className="text-base font-bold text-white bg-white/20 border border-white/40 rounded-xl px-3 py-1 focus:outline-none focus:ring-2 focus:ring-white/40 placeholder-white/50"
+                      />
+                      <button onClick={handleSaveStudentName} className="text-[11px] font-bold text-white/80 hover:text-white">Save</button>
+                      <button onClick={() => setEditingStudentName(false)} className="text-[11px] font-bold text-white/60 hover:text-white/80">Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 group min-w-0">
+                      <h2 className="text-[20px] font-black text-white font-display leading-tight drop-shadow-sm truncate">
+                        {student.name.split(' ')[0]}{' '}
+                        <span className="text-white/80">{student.name.split(' ').slice(1).map((n: string) => n[0]).join('')}.</span>
+                      </h2>
+                      <button onClick={() => { setStudentNameDraft(student.name); setEditingStudentName(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-white/60 hover:text-white flex-shrink-0" title="Edit name">
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex items-center gap-2 group">
-                  <h2 className="text-[28px] font-black text-white font-display leading-tight drop-shadow-sm">
-                    {student.name.split(' ')[0]}{' '}
-                    <span className="text-white/80">{student.name.split(' ').slice(1).map((n: string) => n[0]).join('')}.</span>
-                  </h2>
-                  <button onClick={() => { setStudentNameDraft(student.name); setEditingStudentName(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/60 hover:text-white" title="Edit name">
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
+                {/* Stats inline */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {[
+                    { val: heroStats.total, label: 'notes' },
+                    { val: `${heroStats.positivePct}%`, label: 'pos' },
+                  ].map(({ val, label }) => (
+                    <div key={label} className="bg-white/15 backdrop-blur-sm rounded-xl px-2 py-1 text-center">
+                      <div className="text-[13px] font-black text-white leading-none">{val}</div>
+                      <div className="text-[9px] font-bold text-white/60 uppercase tracking-wide">{label}</div>
+                    </div>
+                  ))}
                 </div>
-              )}
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="inline-block px-3 py-1 bg-white/20 text-white text-[11px] font-bold rounded-full backdrop-blur-sm">
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span className="inline-block px-2 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded-full backdrop-blur-sm">
                   Period {student.class_period || '—'}
                 </span>
                 {(() => {
                   const accomIcons: Record<AccommodationCategory, React.ReactNode> = {
-                    extended_time: <History className="w-3.5 h-3.5" strokeWidth={2.5} />,
-                    seating:       <Armchair className="w-3.5 h-3.5" strokeWidth={2.5} />,
-                    testing:       <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={2.5} />,
-                    materials:     <Scissors className="w-3.5 h-3.5" strokeWidth={2.5} />,
-                    behavioral:    <Activity className="w-3.5 h-3.5" strokeWidth={2.5} />,
-                    presentation:  <Monitor className="w-3.5 h-3.5" strokeWidth={2.5} />,
-                    response:      <MessageSquare className="w-3.5 h-3.5" strokeWidth={2.5} />,
-                    other:         <Tag className="w-3.5 h-3.5" strokeWidth={2.5} />,
+                    extended_time: <History className="w-3 h-3" strokeWidth={2.5} />,
+                    seating:       <Armchair className="w-3 h-3" strokeWidth={2.5} />,
+                    testing:       <ClipboardCheck className="w-3 h-3" strokeWidth={2.5} />,
+                    materials:     <Scissors className="w-3 h-3" strokeWidth={2.5} />,
+                    behavioral:    <Activity className="w-3 h-3" strokeWidth={2.5} />,
+                    presentation:  <Monitor className="w-3 h-3" strokeWidth={2.5} />,
+                    response:      <MessageSquare className="w-3 h-3" strokeWidth={2.5} />,
+                    other:         <Tag className="w-3 h-3" strokeWidth={2.5} />,
                   };
                   const active = accommodations.filter(a => a.student_id === student.id && a.is_active);
-                  // Deduplicate by category so duplicates only show one icon
                   const uniqueCategories = [...new Set(active.map(a => a.category))];
                   if (uniqueCategories.length === 0) return null;
                   return (
                     <button
                       onClick={() => scrollToSection('accommodations')}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-violet-400/80 hover:bg-violet-400 text-white rounded-full backdrop-blur-sm transition-colors"
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-violet-400/80 hover:bg-violet-400 text-white rounded-full backdrop-blur-sm transition-colors"
                       title={`${active.length} active accommodation${active.length !== 1 ? 's' : ''} — tap to view`}
                     >
                       {uniqueCategories.map(cat => (
@@ -1463,231 +1478,34 @@ export default function StudentDetailView({
                     </button>
                   );
                 })()}
-              </div>
-              {/* Alias field */}
-              <div className="mt-2 flex items-center gap-2">
+                {/* Alias inline */}
                 {editingAlias ? (
-                  <>
+                  <div className="flex items-center gap-1">
                     <input
                       type="text"
                       value={aliasDraft}
                       onChange={e => setAliasDraft(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') handleSaveAlias(); if (e.key === 'Escape') setEditingAlias(false); }}
                       autoFocus
-                      placeholder="e.g. Star, JD, Buddy…"
-                      className="text-[11px] font-bold text-white bg-white/20 border border-white/40 rounded-xl px-3 py-1 w-36 focus:outline-none focus:ring-2 focus:ring-white/40 placeholder-white/40"
+                      placeholder="Alias…"
+                      className="text-[10px] font-bold text-white bg-white/20 border border-white/40 rounded-lg px-2 py-0.5 w-24 focus:outline-none"
                     />
-                    <button onClick={handleSaveAlias} className="text-[11px] font-bold text-white/80 hover:text-white">Save</button>
-                    <button onClick={() => setEditingAlias(false)} className="text-[11px] text-white/50 hover:text-white/80">✕</button>
-                  </>
+                    <button onClick={handleSaveAlias} className="text-[10px] font-bold text-white/80 hover:text-white">Save</button>
+                    <button onClick={() => setEditingAlias(false)} className="text-[10px] text-white/50 hover:text-white/80">✕</button>
+                  </div>
                 ) : (
                   <button
                     onClick={() => { setAliasDraft(student.alias ?? ''); setEditingAlias(true); }}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-[11px] font-bold rounded-full transition-colors"
+                    className="flex items-center gap-1 px-2 py-0.5 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-[10px] font-bold rounded-full transition-colors"
                     title="Set alias for Alias Mode"
                   >
-                    {student.alias ? `Alias: ${student.alias}` : '+ Set alias'}
+                    {student.alias ? `Alias: ${student.alias}` : '+ Alias'}
                   </button>
                 )}
+                <span className="text-[10px] font-bold text-white/50">{heroStats.lastLogged !== '—' ? `Last: ${heroStats.lastLogged}` : ''}</span>
               </div>
             </div>
           </div>
-
-          {/* Inline stats strip */}
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            {[
-              { val: heroStats.total, label: 'Total notes' },
-              { val: heroStats.lastLogged, label: 'Last noted' },
-              { val: `${heroStats.positivePct}%`, label: 'Positive' },
-            ].map(({ val, label }) => (
-              <div key={label} className="bg-white/15 backdrop-blur-sm rounded-2xl px-3 py-2.5 text-center">
-                <div className="text-[22px] font-black text-white leading-none">{val}</div>
-                <div className="text-[11px] font-bold text-white/70 mt-0.5 uppercase tracking-wide">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
-
-      <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Parent Contact</h3>
-          <button
-            type="button"
-            onClick={handleSaveContact}
-            disabled={isUpdatingContact}
-            className="text-[11px] font-black text-sage hover:text-sage-dark disabled:opacity-50"
-          >
-            {isUpdatingContact ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <input
-            id="parent_name"
-            name="parent_name"
-            type="text"
-            value={parentName}
-            onChange={(e) => setParentName(e.target.value)}
-            placeholder="Parent name..."
-            autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          />
-          <input
-            id="parent_email"
-            name="parent_email"
-            type="email"
-            value={parentEmail}
-            onChange={(e) => setParentEmail(e.target.value)}
-            placeholder="Email..."
-            autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          />
-          <input
-            id="parent_phone"
-            name="parent_phone"
-            type="tel"
-            value={parentPhone}
-            onChange={(e) => setParentPhone(e.target.value)}
-            placeholder="Phone..."
-            autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          />
-        </div>
-        <div className="flex items-start gap-2 mt-2">
-          <span className="text-slate-300 flex-shrink-0 text-xs w-3.5 text-center mt-2">P</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400 font-medium w-16 flex-shrink-0">Pronouns</span>
-              <select
-                value={pronouns}
-                onChange={(e) => setPronouns(e.target.value)}
-                className="min-w-0 w-full px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-              >
-                <option value="">Auto-detect (they/them if name is unclear)</option>
-                <option value="he/him">he/him</option>
-                <option value="she/her">she/her</option>
-                <option value="they/them">they/them</option>
-              </select>
-            </div>
-            <p className="text-[10px] text-slate-400 mt-1 leading-snug pl-[72px]">
-              Helps the AI refer to this student correctly in notes and reports.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 mt-2">
-          <Cake className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
-          <span className="text-[11px] text-slate-400 font-medium w-16">Birthday</span>
-          <select
-            value={birthMonth}
-            onChange={(e) => setBirthMonth(e.target.value)}
-            className="px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          >
-            <option value="">Month</option>
-            {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
-              <option key={i} value={i + 1}>{m}</option>
-            ))}
-          </select>
-          <select
-            value={birthDay}
-            onChange={(e) => setBirthDay(e.target.value)}
-            className="px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          >
-            <option value="">Day</option>
-            {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex flex-col gap-1.5 no-print">
-        {/* Row 1: student-focused */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => scrollToSection('quick-note')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Note
-          </button>
-          <button
-            onClick={() => scrollToSection('timeline')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'timeline' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Timeline
-          </button>
-          {isFullMode && (
-            <button
-              onClick={() => scrollToSection('goals')}
-              className={cn(
-                "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-                activeSection === 'goals' ? "bg-violet-500 text-white shadow-md shadow-violet-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-              )}
-            >
-              Goals
-            </button>
-          )}
-          <button
-            onClick={() => scrollToSection('accommodations')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'accommodations' ? "bg-sky-500 text-white shadow-md shadow-sky-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            IEP/504
-          </button>
-        </div>
-        {/* Row 2: communication-focused */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => scrollToSection('progress')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Trends
-          </button>
-          <button
-            onClick={() => scrollToSection('parents')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'parents' ? "bg-blue-500 text-white shadow-md shadow-blue-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Parents
-          </button>
-          <button
-            onClick={() => scrollToSection('ai-report')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Compose
-          </button>
-          <button
-            onClick={() => scrollToSection('history')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'history' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            History
-          </button>
         </div>
       </div>
 
@@ -1791,11 +1609,11 @@ export default function StudentDetailView({
                     >
                       <div className="flex flex-wrap gap-2 pt-3 pb-1 px-1">
                         {cat.items.map((b: any) => {
-                          const isSelected = cat.key === 'comm' ? selectedComm.includes(b.label) : selectedTags.includes(b.label);
+                          const isSelected = (cat.key as string) === 'comm' ? selectedComm.includes(b.label) : selectedTags.includes(b.label);
                           return (
                             <motion.button
                               key={b.label}
-                              onClick={() => cat.key === 'comm' ? toggleComm(b.label) : toggleTag(b.label)}
+                              onClick={() => (cat.key as string) === 'comm' ? toggleComm(b.label) : toggleTag(b.label)}
                               whileTap={{ scale: 0.88 }}
                               transition={{ type: 'spring', stiffness: 500, damping: 20 }}
                               className={cn(
@@ -1837,165 +1655,398 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      {/* Quick Note to Parent */}
-      <div id="quick-note" ref={quickNoteRef} className="space-y-4 scroll-mt-header">
-        <div>
-          <h3 className="text-sm font-bold text-terracotta flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" /> Quick Note to Parent
-          </h3>
-          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-            Choose which observations to include
-          </p>
-        </div>
+      <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
 
-        <div className="flex flex-wrap gap-2">
-          {([
-            { label: 'Today', days: 0 },
-            { label: 'Yesterday', days: 1 },
-            { label: 'Last 3 Days', days: 3 },
-            { label: 'Last 5 Days', days: 5 },
-            { label: 'Last 7 Days', days: 7 },
-          ] as { label: string; days: 0 | 1 | 3 | 5 | 7 }[]).map(opt => (
+      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex flex-col gap-1.5 no-print">
+        {/* Row 1: student-focused */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => scrollToSection('quick-note')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Note
+          </button>
+          <button
+            onClick={() => scrollToSection('timeline')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'timeline' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Timeline
+          </button>
+          {isFullMode && (
             <button
-              key={opt.days}
-              type="button"
-              onClick={() => { setQuickNoteDays(opt.days); setQuickNote(null); }}
+              onClick={() => scrollToSection('goals')}
               className={cn(
-                "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest border-2 transition-all",
-                quickNoteDays === opt.days
-                  ? "bg-terracotta text-white border-terracotta shadow-md"
-                  : "bg-white text-slate-400 border-slate-100 hover:border-terracotta/40"
+                "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+                activeSection === 'goals' ? "bg-violet-500 text-white shadow-md shadow-violet-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
               )}
             >
-              {opt.label}
+              Goals
             </button>
-          ))}
+          )}
+          <button
+            onClick={() => scrollToSection('accommodations')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'accommodations' ? "bg-sky-500 text-white shadow-md shadow-sky-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            IEP/504
+          </button>
         </div>
+        {/* Row 2: communication-focused */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => scrollToSection('progress')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Trends
+          </button>
+          <button
+            onClick={() => scrollToSection('parents')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'parents' ? "bg-blue-500 text-white shadow-md shadow-blue-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Parents
+          </button>
+          <button
+            onClick={() => scrollToSection('ai-report')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'ai-report' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            Compose
+          </button>
+          <button
+            onClick={() => scrollToSection('history')}
+            className={cn(
+              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
+              activeSection === 'history' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            History
+          </button>
+        </div>
+      </div>
 
-        <button
-          type="button"
-          onClick={handleGenerateQuickNote}
-          disabled={isGeneratingQuickNote}
-          className="w-full py-5 bg-terracotta text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-terracotta/20 flex items-center justify-center gap-3 disabled:opacity-50"
-        >
-          {isGeneratingQuickNote
-            ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing note...</>
-            : <><MessageSquare className="w-4 h-4" /> Draft a Note Home</>
-          }
-        </button>
+      {/* ─── AI Compose Wizard (Quick Note + Detailed Report combined) ─────── */}
+      <div id="quick-note" ref={quickNoteRef} className="scroll-mt-header">
+        <div className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-5 no-print">
+          {/* Header */}
+          <div>
+            <h3 className="text-[15px] font-black text-slate-700 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-sage" /> Contact Parent with AI
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-1">Answer two quick questions and we'll write it for you.</p>
+          </div>
 
-        <AnimatePresence>
-          {quickNote && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
+          {/* Step 1: Report type */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sage text-white text-[9px] font-black mr-1.5">1</span>
+              What kind of message would you like?
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { key: 'Quick Note' as const, label: 'Quick Note Home', desc: 'A short, friendly update for parents', icon: '✉️' },
+                { key: 'Detailed' as const, label: 'Detailed Report', desc: 'Full Glow/Grow/Goal breakdown', icon: '📋' },
+              ]).map(opt => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => { setReportLength(opt.key); setQuickNote(null); setCurrentReport(null); }}
+                  className={cn(
+                    "flex flex-col items-start text-left p-4 rounded-2xl border-2 transition-all",
+                    reportLength === opt.key
+                      ? "bg-sage/10 border-sage shadow-sm"
+                      : "bg-white border-slate-100 hover:border-sage/40"
+                  )}
+                >
+                  <span className="text-xl mb-1">{opt.icon}</span>
+                  <span className={cn("text-xs font-black", reportLength === opt.key ? "text-sage-dark" : "text-slate-700")}>{opt.label}</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 leading-snug">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Step 2: Days of notes */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sage text-white text-[9px] font-black mr-1.5">2</span>
+              How many days of notes should be included?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { label: 'Today', value: 'today' },
+                { label: '5 Days', value: 'Last 7 Days' },
+                { label: '14 Days', value: '15 Days' },
+                { label: '30 Days', value: 'Last 30 Days' },
+                { label: 'Custom', value: 'Custom Range' },
+              ]).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setTimeRange(opt.value === 'today' ? 'Today' : opt.value);
+                    if (reportLength === 'Quick Note') {
+                      // map to quickNoteDays
+                      const map: Record<string, 0 | 1 | 3 | 5 | 7> = { today: 0, 'Last 7 Days': 7, '15 Days': 7, 'Last 30 Days': 7 };
+                      const d = map[opt.value];
+                      if (d !== undefined) setQuickNoteDays(d);
+                    }
+                    setQuickNote(null); setCurrentReport(null);
+                  }}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest border-2 transition-all",
+                    (timeRange === (opt.value === 'today' ? 'Today' : opt.value))
+                      ? "bg-terracotta text-white border-terracotta shadow-md"
+                      : "bg-white text-slate-400 border-slate-100 hover:border-terracotta/40"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {timeRange === 'Custom Range' && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <label htmlFor="wizard_start_date" className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Start Date</label>
+                  <input id="wizard_start_date" name="wizard_start_date" type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="wizard_end_date" className="text-[9px] font-bold uppercase tracking-widest text-slate-400">End Date</label>
+                  <input id="wizard_end_date" name="wizard_end_date" type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Optional tone hint */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-[9px] font-black mr-1.5">3</span>
+              Any special instructions? <span className="font-normal text-slate-300 normal-case tracking-normal">(optional)</span>
+            </p>
+            <textarea
+              value={refineInstructions}
+              onChange={(e) => setRefineInstructions(e.target.value)}
+              placeholder={`e.g. "Focus on math progress", "Mention we're planning a meeting", "Keep it under 3 sentences"…`}
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              rows={2}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs focus:outline-none focus:border-sage/40 resize-none"
+            />
+          </div>
+
+          {/* Generate button */}
+          {notes.length === 0 && shoutouts.length === 0 ? (
+            <p className="text-[11px] text-center text-slate-400 italic py-2">No notes yet — add some observations above first.</p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (reportLength === 'Quick Note') {
+                  handleGenerateQuickNote();
+                } else {
+                  handleGenerate();
+                }
+              }}
+              disabled={isGenerating || isGeneratingQuickNote}
+              className="w-full py-4 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-orange-200/50 flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              {(isGenerating || isGeneratingQuickNote)
+                ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing…</>
+                : <><Sparkles className="w-4 h-4" /> Generate {reportLength === 'Quick Note' ? 'Quick Note' : 'Detailed Report'}</>
+              }
+            </button>
+          )}
+
+          {/* Quick Note result */}
+          <AnimatePresence>
+            {quickNote && reportLength === 'Quick Note' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
+              >
+                <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-widest text-terracotta">
                     {quickNoteDays === 0 ? "Today's Note" : quickNoteDays === 1 ? "Yesterday's Note" : `Last ${quickNoteDays} Days`}
                   </span>
+                  <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
                 </div>
-                <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
-              </div>
-              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
 
-              {/* Refine with AI */}
-              <div className="space-y-2 pt-1">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-terracotta" />
-                  Give the AI new instructions to rewrite this note
-                </p>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
+                {/* Refine */}
+                <div className="space-y-2 pt-1">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-terracotta" /> Refine this note
+                  </p>
+                  <div className="flex gap-2">
                     <textarea
                       value={quickNoteRefineInstructions}
                       onChange={(e) => setQuickNoteRefineInstructions(e.target.value)}
-                      placeholder="e.g. 'Make it shorter', 'More positive tone', 'Add that we're scheduling a meeting'..."
-                      autoComplete="off"
-                      data-1p-ignore
-                      data-lpignore="true"
+                      placeholder="e.g. 'Make it shorter', 'More positive tone'…"
+                      autoComplete="off" data-1p-ignore data-lpignore="true"
                       rows={2}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-terracotta/40 resize-none"
+                      className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-terracotta/40 resize-none"
                     />
+                    <div className="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isListeningQuickNoteRefine) { (window as any)._qnRefineRec?.stop(); return; }
+                          const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                          if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+                          const r = new SR();
+                          r.lang = 'en-US';
+                          r.onstart = () => setIsListeningQuickNoteRefine(true);
+                          r.onend = () => setIsListeningQuickNoteRefine(false);
+                          r.onresult = (e: any) => { const t = e.results[0][0].transcript; setQuickNoteRefineInstructions(prev => prev ? prev + ' ' + t : t); };
+                          (window as any)._qnRefineRec = r; r.start();
+                        }}
+                        className={cn('p-2.5 rounded-xl border transition-all', isListeningQuickNoteRefine ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-400 border-slate-100 hover:text-terracotta')}
+                      >
+                        {isListeningQuickNoteRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRefineQuickNote}
+                        disabled={isRefiningQuickNote || !quickNoteRefineInstructions.trim()}
+                        className="px-3 py-2 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1 whitespace-nowrap"
+                      >
+                        {isRefiningQuickNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        {isRefiningQuickNote ? '…' : 'Rewrite'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isListeningQuickNoteRefine) { (window as any)._qnRefineRec?.stop(); return; }
-                        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-                        if (!SR) { toast.error('Voice not supported on this browser.'); return; }
-                        const r = new SR();
-                        r.lang = 'en-US';
-                        r.onstart = () => setIsListeningQuickNoteRefine(true);
-                        r.onend = () => setIsListeningQuickNoteRefine(false);
-                        r.onresult = (e: any) => {
-                          const t = e.results[0][0].transcript;
-                          setQuickNoteRefineInstructions(prev => prev ? prev + ' ' + t : t);
-                        };
-                        (window as any)._qnRefineRec = r;
-                        r.start();
-                      }}
-                      className={cn(
-                        'p-2.5 rounded-xl border transition-all',
-                        isListeningQuickNoteRefine ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-400 border-slate-100 hover:text-terracotta'
-                      )}
-                    >
-                      {isListeningQuickNoteRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <button type="button" onClick={() => { navigator.clipboard.writeText(quickNote); toast.success('Copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all">
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                  </button>
+                  <button type="button" onClick={() => triggerEmail(quickNote, `Note about ${student.name}`)} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
+                    <Mail className="w-3.5 h-3.5" /> Email
+                  </button>
+                  <button type="button" onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all">
+                    <MessageSquare className="w-3.5 h-3.5" /> Text
+                  </button>
+                  <button type="button" onClick={async () => { const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() }; await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] }); toast.success('Saved to history!'); onNoteUpdate(); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terracotta/10 text-terracotta rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-terracotta/20 transition-all">
+                    <Archive className="w-3.5 h-3.5" /> Save to History
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Detailed Report result */}
+          <AnimatePresence>
+            {currentReport && reportLength !== 'Quick Note' && (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-cream border border-cream-dark shadow-md rounded-[28px] overflow-hidden">
+                <div className="border-b-4 border-sage/30 px-6 pt-6 pb-4 flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sage/60 mb-1">Detailed Report · {timeRange}</p>
+                    <p className="text-base font-black text-slate-800">{student.name}</p>
+                  </div>
+                  <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta mt-1"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="px-6 py-5 space-y-4">
+                  <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.opening}</p>
+                  <div className="border-l-4 border-emerald-400 pl-4 space-y-1">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-600">Glow</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.glow}</p>
+                  </div>
+                  <div className="border-l-4 border-amber-400 pl-4 space-y-1">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-600">Grow</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.grow}</p>
+                  </div>
+                  <div className="border-l-4 border-blue-400 pl-4 space-y-1">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">Goal</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.goal}</p>
+                  </div>
+                  <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.closing}</p>
+                </div>
+                {/* Refinement */}
+                <div className="space-y-3 px-6 pb-5 border-t border-cream-dark pt-4">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-sage" /> Refine this report
+                  </p>
+                  <div className="flex gap-2">
+                    <textarea
+                      value={refineInstructions}
+                      onChange={(e) => setRefineInstructions(e.target.value)}
+                      placeholder="e.g. 'Make it more formal', 'Shorter', 'More encouraging tone'…"
+                      autoComplete="off" data-1p-ignore data-lpignore="true"
+                      rows={2}
+                      className="flex-1 px-4 py-3 bg-white/70 border border-cream-dark rounded-xl text-xs focus:outline-none focus:border-sage resize-none"
+                    />
+                    <div className="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isListeningReportRefine) { (window as any)._reportRefineRec?.stop(); return; }
+                          const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                          if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+                          const r = new SR();
+                          r.lang = 'en-US';
+                          r.onstart = () => setIsListeningReportRefine(true);
+                          r.onend = () => setIsListeningReportRefine(false);
+                          r.onresult = (e: any) => { const t = e.results[0][0].transcript; setRefineInstructions(prev => prev ? prev + ' ' + t : t); };
+                          (window as any)._reportRefineRec = r; r.start();
+                        }}
+                        className={cn('p-2.5 rounded-xl border transition-all', isListeningReportRefine ? 'bg-sage text-white border-sage animate-pulse' : 'bg-white text-slate-400 border-cream-dark hover:text-sage')}
+                      >
+                        {isListeningReportRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRefine}
+                        disabled={isRefining || !refineInstructions.trim()}
+                        className="px-3 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50 flex items-center gap-1 justify-center shadow-md shadow-sage/10 whitespace-nowrap"
+                      >
+                        {isRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Sparkles className="w-3 h-3" /> Rewrite</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2 px-6 pb-6">
+                  <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); navigator.clipboard.writeText(text); toast.success('Report copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all">
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                  </button>
+                  <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); triggerEmail(text, `Progress Report — ${student.name}`); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
+                    <Mail className="w-3.5 h-3.5" /> Email
+                  </button>
+                  <button type="button" onClick={handleCopyParentSquare} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
+                    <ClipboardList className="w-3.5 h-3.5" /> ParentSquare
+                  </button>
+                  <div className="w-full grid grid-cols-2 gap-2 mt-1">
+                    <button type="button" onClick={archiveAndKeepNotes} className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-700 transition-all">
+                      <Archive className="w-3.5 h-3.5" /> Archive & Keep
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleRefineQuickNote}
-                      disabled={isRefiningQuickNote || !quickNoteRefineInstructions.trim()}
-                      className="px-3 py-2 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1 whitespace-nowrap"
-                    >
-                      {isRefiningQuickNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                      {isRefiningQuickNote ? '...' : 'Rewrite'}
+                    <button type="button" onClick={archiveAndClearNotes} className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all">
+                      <Trash2 className="w-3.5 h-3.5" /> Archive & Clear
                     </button>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { navigator.clipboard.writeText(quickNote); toast.success('Copied!'); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
-                >
-                  <Copy className="w-3.5 h-3.5" /> Copy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => triggerEmail(quickNote, `Note about ${student.name}`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
-                >
-                  <Mail className="w-3.5 h-3.5" /> Email Parent
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" /> Text
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() };
-                    await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] });
-                    toast.success('Saved to history!');
-                    onNoteUpdate();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terracotta/10 text-terracotta rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-terracotta/20 transition-all"
-                >
-                  <Archive className="w-3.5 h-3.5" /> Save to History
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       <div id="timeline" ref={timelineRef} className="space-y-6 pt-4 scroll-mt-header">
@@ -2246,6 +2297,104 @@ export default function StudentDetailView({
           </div>
         </div>
       )}
+
+      {/* ─── Parent Contact Info ─────────────────────────────────────── */}
+      <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100 no-print">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Parent Contact</h3>
+          <button
+            type="button"
+            onClick={handleSaveContact}
+            disabled={isUpdatingContact}
+            className="text-[11px] font-black text-sage hover:text-sage-dark disabled:opacity-50"
+          >
+            {isUpdatingContact ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <input
+            id="parent_name"
+            name="parent_name"
+            type="text"
+            value={parentName}
+            onChange={(e) => setParentName(e.target.value)}
+            placeholder="Parent name..."
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          />
+          <input
+            id="parent_email"
+            name="parent_email"
+            type="email"
+            value={parentEmail}
+            onChange={(e) => setParentEmail(e.target.value)}
+            placeholder="Email..."
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          />
+          <input
+            id="parent_phone"
+            name="parent_phone"
+            type="tel"
+            value={parentPhone}
+            onChange={(e) => setParentPhone(e.target.value)}
+            placeholder="Phone..."
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          />
+        </div>
+        <div className="flex items-start gap-2 mt-2">
+          <span className="text-slate-300 flex-shrink-0 text-xs w-3.5 text-center mt-2">P</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-400 font-medium w-16 flex-shrink-0">Pronouns</span>
+              <select
+                value={pronouns}
+                onChange={(e) => setPronouns(e.target.value)}
+                className="min-w-0 w-full px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+              >
+                <option value="">Auto-detect (they/them if name is unclear)</option>
+                <option value="he/him">he/him</option>
+                <option value="she/her">she/her</option>
+                <option value="they/them">they/them</option>
+              </select>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1 leading-snug pl-[72px]">
+              Helps the AI refer to this student correctly in notes and reports.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <Cake className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
+          <span className="text-[11px] text-slate-400 font-medium w-16">Birthday</span>
+          <select
+            value={birthMonth}
+            onChange={(e) => setBirthMonth(e.target.value)}
+            className="px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          >
+            <option value="">Month</option>
+            {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+              <option key={i} value={i + 1}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={birthDay}
+            onChange={(e) => setBirthDay(e.target.value)}
+            className="px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+          >
+            <option value="">Day</option>
+            {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {/* ─── Goals ─────────────────────────────────────────────── */}
       {/* ─── Parent Communication Log ─────────────────────────────────── */}
@@ -2719,219 +2868,13 @@ export default function StudentDetailView({
         </AnimatePresence>
       </div>
 
-      <div className="pt-6 border-t border-slate-100" />
+      <div id="ai-report" ref={aiReportRef} className="scroll-mt-header" />
 
-      <div id="ai-report" ref={aiReportRef} className="space-y-6 pt-4 scroll-mt-header">
-        <div className="bg-cream/30 p-8 rounded-[40px] border border-sage/10 space-y-6">
-          <div className="space-y-4">
-            {/* Primary action — always visible */}
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isGenerating || (notes.length === 0 && shoutouts.length === 0)}
-              className="w-full py-5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-orange-200/50 flex items-center justify-center gap-3 disabled:opacity-50"
-            >
-              {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Compose with AI</>}
-            </button>
-            {notes.length === 0 && shoutouts.length === 0 && <p className="text-[11px] text-center text-slate-400 italic">No notes available to compose a report.</p>}
+      <div ref={progressRef} id="progress" className="scroll-mt-header">
+        <StudentProgressChart student={student} notes={notes} indicators={indicators} />
+      </div>
 
-            {/* Customize options — hidden by default */}
-            <button
-              type="button"
-              onClick={() => setShowReportOptions(v => !v)}
-              className="flex items-center gap-1.5 mx-auto text-slate-400 hover:text-slate-600 transition-colors text-[11px] font-black uppercase tracking-widest"
-            >
-              <Settings2 className="w-3 h-3" />
-              Customize ({timeRange}, {reportLength})
-              <ChevronDown className={cn('w-3 h-3 transition-transform', showReportOptions && 'rotate-180')} />
-            </button>
-
-            <AnimatePresence>
-              {showReportOptions && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-6 overflow-hidden">
-                  <div className="space-y-3">
-                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1">Timeframe</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      {['Today', 'Last 7 Days', '15 Days', 'Last 30 Days', '60 Days', 'Whole Year', 'Custom Range'].map(range => (
-                        <button key={range} onClick={() => setTimeRange(range)} className={cn("py-2 rounded-xl text-[10px] font-black uppercase tracking-wide border-2 transition-all leading-tight px-1", timeRange === range ? "bg-orange-400 text-white border-orange-400 shadow-md" : "bg-white text-slate-400 border-slate-100 hover:border-orange-300")}>
-                          {range}
-                        </button>
-                      ))}
-                    </div>
-                    {timeRange === 'Custom Range' && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-4 pt-2">
-                        <div className="space-y-1">
-                          <label htmlFor="custom_start_date" className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">Start Date</label>
-                          <input id="custom_start_date" name="custom_start_date" type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
-                        </div>
-                        <div className="space-y-1">
-                          <label htmlFor="custom_end_date" className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-1">End Date</label>
-                          <input id="custom_end_date" name="custom_end_date" type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-white border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
-                        </div>
-                      </motion.div>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1">Report Type</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['Quick Note', 'Standard', 'Detailed'] as const).map(len => (
-                        <button key={len} onClick={() => setReportLength(len)} className={cn("py-2 rounded-xl text-[10px] font-black uppercase tracking-wide border-2 transition-all leading-tight px-1", reportLength === len ? "bg-orange-400 text-white border-orange-400 shadow-md" : "bg-white text-slate-400 border-slate-100 hover:border-orange-300")}>
-                          {len}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {currentReport && (
-            <>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-cream border border-cream-dark shadow-md rounded-[28px] overflow-hidden space-y-0">
-              {/* Document header */}
-              <div className="border-b-4 border-sage/30 px-8 pt-7 pb-5 flex items-start justify-between">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sage/60 mb-1">Composed Report · {timeRange}</p>
-                  <p className="text-base font-black text-slate-800">{student.name}</p>
-                </div>
-                <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta mt-1"><X className="w-4 h-4" /></button>
-              </div>
-              {/* Document body */}
-              <div className="px-8 py-6 space-y-5">
-                <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.opening}</p>
-                <div className="border-l-4 border-emerald-400 pl-4 space-y-1">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-600">Glow</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{currentReport.glow}</p>
-                </div>
-                <div className="border-l-4 border-amber-400 pl-4 space-y-1">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-600">Grow</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{currentReport.grow}</p>
-                </div>
-                <div className="border-l-4 border-blue-400 pl-4 space-y-1">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">Goal</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{currentReport.goal}</p>
-                </div>
-                <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.closing}</p>
-              </div>
-
-              {/* Refinement Section */}
-              <div className="space-y-3 px-8 pb-6 border-t border-cream-dark pt-5">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-sage" />
-                  Give the AI new instructions to rewrite this report
-                </p>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <textarea
-                      value={refineInstructions}
-                      onChange={(e) => setRefineInstructions(e.target.value)}
-                      placeholder="e.g. 'Make it more formal', 'Shorter', 'Focus more on the goal', 'More encouraging tone'..."
-                      autoComplete="off"
-                      data-1p-ignore
-                      data-lpignore="true"
-                      rows={2}
-                      className="w-full px-4 py-3 bg-white/70 border border-cream-dark rounded-xl text-xs focus:outline-none focus:border-sage resize-none"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isListeningReportRefine) { (window as any)._reportRefineRec?.stop(); return; }
-                        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-                        if (!SR) { toast.error('Voice not supported on this browser.'); return; }
-                        const r = new SR();
-                        r.lang = 'en-US';
-                        r.onstart = () => setIsListeningReportRefine(true);
-                        r.onend = () => setIsListeningReportRefine(false);
-                        r.onresult = (e: any) => {
-                          const t = e.results[0][0].transcript;
-                          setRefineInstructions(prev => prev ? prev + ' ' + t : t);
-                        };
-                        (window as any)._reportRefineRec = r;
-                        r.start();
-                      }}
-                      className={cn(
-                        'p-2.5 rounded-xl border transition-all',
-                        isListeningReportRefine ? 'bg-sage text-white border-sage animate-pulse' : 'bg-white text-slate-400 border-cream-dark hover:text-sage'
-                      )}
-                    >
-                      {isListeningReportRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRefine}
-                      disabled={isRefining || !refineInstructions.trim()}
-                      className="px-3 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50 flex items-center gap-1 justify-center shadow-md shadow-sage/10 whitespace-nowrap"
-                    >
-                      {isRefining ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <><Sparkles className="w-3 h-3" /> Rewrite</>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-            </motion.div>
-
-            {/* Send / archive actions — outside the document */}
-            <div className="flex flex-wrap gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleCopyReport}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all"
-                >
-                  <Copy className="w-3.5 h-3.5" /> Copy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleEmailReport}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
-                >
-                  <Mail className="w-3.5 h-3.5" /> Email Parent
-                </button>
-                <button
-                  type="button"
-                  onClick={handleTextReport}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" /> Text
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopyParentSquare}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all"
-                >
-                  <ClipboardList className="w-3.5 h-3.5" /> Copy for ParentSquare
-                </button>
-                <div className="w-full grid grid-cols-2 gap-2 mt-2">
-                  <button
-                    type="button"
-                    onClick={archiveAndKeepNotes}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-700 transition-all"
-                  >
-                    <Archive className="w-3.5 h-3.5" /> Archive & Keep Notes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={archiveAndClearNotes}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-red-600 transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Archive & Clear Notes
-                  </button>
-                </div>
-            </div>
-            </>
-          )}
-
-          <div ref={progressRef} id="progress" className="pt-6 mt-6 border-t border-slate-100 scroll-mt-header">
-            <StudentProgressChart student={student} notes={notes} indicators={indicators} />
-          </div>
-
-          <div id="history" ref={historyRef} className="space-y-4 pt-6 mt-6 border-t border-slate-100 scroll-mt-header">
+      <div id="history" ref={historyRef} className="space-y-4 scroll-mt-header">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-sage-dark flex items-center gap-2">
@@ -3065,9 +3008,6 @@ export default function StudentDetailView({
                 })
               )}
             </div>
-          </div>
-
-        </div>
       </div>
 
       {/* Undo delete toast */}
