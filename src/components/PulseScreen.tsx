@@ -550,7 +550,7 @@ const handleVoiceLog = async () => {
                 </div>
                 <div className="text-left">
                   <span className="text-[11px] font-bold text-sage/60">Next School Event</span>
-                  <p className="text-xs font-bold text-slate-700">{nextEvent.title} • {new Date(nextEvent.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+                  <p className="text-xs font-bold text-slate-700">{nextEvent.title} • {parseLocalDate(nextEvent.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -585,7 +585,7 @@ const handleVoiceLog = async () => {
                       <div key={event.id} className="flex items-center justify-between py-1.5 px-2">
                         <div>
                           <p className="text-xs font-bold text-slate-700">{event.title}</p>
-                          <p className="text-[11px] text-sage/70">{new Date(event.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                          <p className="text-[11px] text-sage/70">{parseLocalDate(event.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
                         </div>
                         <span className="text-[11px] font-bold uppercase tracking-wide bg-sage/20 text-sage px-2 py-0.5 rounded-md">{event.type}</span>
                       </div>

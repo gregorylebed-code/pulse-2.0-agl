@@ -116,7 +116,7 @@ export default function Header({
           {/* Alias Mode Toggle */}
           <button
             onClick={toggleAliasMode}
-            title={aliasMode ? 'Alias Mode ON — tap to show real names' : 'Alias Mode OFF — tap to hide names'}
+            title={aliasMode ? 'Student names are hidden — tap to show them' : 'Tap to hide student names (great for public spaces)'}
             className={cn(
               'p-1.5 rounded-xl border transition-all',
               aliasMode
