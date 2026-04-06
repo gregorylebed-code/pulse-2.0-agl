@@ -360,7 +360,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         <AnimatePresence mode="wait" custom={tabDirection}>
           {activeTab === 'pulse' && (
             <motion.div key="pulse" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit" className="space-y-4">
-              {pulseView === 'summary' && (
+              {isFullMode && pulseView === 'summary' && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Class Summary</span>
                   <button
@@ -372,7 +372,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 </div>
               )}
 
-              {pulseView === 'log' && (
+              {isFullMode && pulseView === 'log' && (
                 <div className="flex justify-end">
                   <button
                     onClick={() => setPulseView('summary')}
@@ -383,7 +383,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 </div>
               )}
 
-              {pulseView === 'log' ? (
+              {(pulseView === 'log' || !isFullMode) ? (
                 <PulseScreen
                   notes={notes}
                   students={students}

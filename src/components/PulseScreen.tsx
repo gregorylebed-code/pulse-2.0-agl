@@ -680,12 +680,14 @@ const handleVoiceLog = async () => {
           <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
             {noteMode === 'class' ? 'Class Note' : 'Student Note'}
           </span>
-          <button
-            onClick={() => setNoteMode(noteMode === 'class' ? 'student' : 'class')}
-            className="text-[11px] font-bold text-slate-400 hover:text-blue-500 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50 flex items-center gap-1"
-          >
-            {noteMode === 'class' ? '← Switch to Student Note' : 'Switch to Class Note →'}
-          </button>
+          {isFullMode && (
+            <button
+              onClick={() => setNoteMode(noteMode === 'class' ? 'student' : 'class')}
+              className="text-[11px] font-bold text-slate-400 hover:text-blue-500 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50 flex items-center gap-1"
+            >
+              {noteMode === 'class' ? '← Switch to Student Note' : 'Switch to Class Note →'}
+            </button>
+          )}
         </div>
 
         {noteMode === 'class' ? (
