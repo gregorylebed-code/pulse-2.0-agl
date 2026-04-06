@@ -771,7 +771,7 @@ export default function SettingsScreen({
                 <SettingsItem icon={<Users2 />} label="Roster Management" onClick={() => setView('roster')} />
                 <SettingsItem icon={<Folder />} label="Class Management" onClick={() => setView('classes')} />
                 {isFullMode && <SettingsItem icon={<TrendingUp />} label="Quick Grade Table" onClick={() => setView('quick-grader')} />}
-                <SettingsItem icon={<Calendar />} label="School Calendar" onClick={() => setView('calendar')} />
+                {isFullMode && <SettingsItem icon={<Calendar />} label="School Calendar" onClick={() => setView('calendar')} />}
                 {isFullMode && <SettingsItem icon={<School />} label="Rotation & Specials" onClick={() => setView('rotation')} />}
                 <SettingsItem icon={<FileInput />} label="Data Management" onClick={() => setView('data-management')} />
                 <SettingsItem icon={<MessageSquare />} label="Abbreviations" onClick={() => setView('abbreviations')} />

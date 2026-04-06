@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { cn } from '../utils/cn';
 import { useAliasMode } from '../context/AliasModeContext';
 import { getDisplayName, getDisplayFirst } from '../utils/getDisplayName';
+import { isFullMode } from '../lib/mode';
 
 
 interface PulseScreenProps {
@@ -533,7 +534,7 @@ const handleVoiceLog = async () => {
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
       <AnimatePresence>
-        {nextEvent && (
+        {isFullMode && nextEvent && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -599,7 +600,7 @@ const handleVoiceLog = async () => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {upcomingBirthdays.length > 0 && (
+        {isFullMode && upcomingBirthdays.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Users, PenLine, Calendar, ChevronRight, Sparkles, Zap, FlaskConical, X } from 'lucide-react';
+import { isFullMode } from '../lib/mode';
 
 const DEMO_STUDENTS = [
   'Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet',
@@ -206,7 +207,7 @@ export default function WelcomeModal({
                 <div className="px-6 pb-3">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 mt-4">Also worth doing</p>
                   <div className="space-y-2">
-                    {[profileStep, ...otherSteps].map((step) => (
+                    {[profileStep, ...otherSteps.filter(s => isFullMode || s.action !== 'onGoToCalendar')].map((step) => (
                       <button
                         key={step.title}
                         type="button"
