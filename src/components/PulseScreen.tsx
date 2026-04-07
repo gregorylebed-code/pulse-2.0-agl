@@ -124,6 +124,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [noteContent, setNoteContent] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [savedConfirm, setSavedConfirm] = useState<{ studentName: string; content: string; tags: string[] } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<'positive' | 'neutral' | 'growth' | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -422,7 +423,8 @@ const handleVoiceLog = async () => {
         if (!navigator.onLine) {
           toast(`Class note saved offline — will sync when reconnected`, { icon: '📶' });
         } else {
-          toast.success(`Class note saved for ${selectedClass}`);
+          setSavedConfirm({ studentName: selectedClass, content: expandedContent, tags: finalTags });
+          setTimeout(() => setSavedConfirm(null), 2800);
         }
         onNoteAdded();
       } catch (err) {
@@ -504,7 +506,8 @@ const handleVoiceLog = async () => {
       if (!navigator.onLine) {
         toast('Note saved offline — will sync when reconnected', { icon: '📶' });
       } else {
-        toast.success('Entry saved successfully');
+        setSavedConfirm({ studentName: studentToUse, content: expandedContent, tags: finalTags });
+        setTimeout(() => setSavedConfirm(null), 2800);
       }
       onNoteAdded();
     } catch (err) {
@@ -538,6 +541,62 @@ const handleVoiceLog = async () => {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
+
+      {/* NOTE SAVED CONFIRMATION OVERLAY */}
+      <AnimatePresence>
+        {savedConfirm && (
+          <motion.div
+            initial={{ y: 120, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 120, opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+            className="fixed bottom-24 left-4 right-4 z-50 pointer-events-none"
+          >
+            <div className="rounded-2xl overflow-hidden shadow-2xl border border-green-300/40"
+              style={{ background: 'linear-gradient(135deg, #052e16 0%, #14532d 100%)' }}>
+              {/* Green flash bar at top */}
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 2.6, ease: 'linear' }}
+                style={{ transformOrigin: 'left' }}
+                className="h-1 bg-green-400 w-full"
+              />
+              <div className="px-5 py-4 flex items-start gap-4">
+                {/* Big checkmark */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 }}
+                  className="w-11 h-11 rounded-full bg-green-400 flex items-center justify-center flex-shrink-0 mt-0.5"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#052e16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </motion.div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-green-300 text-xs font-black uppercase tracking-widest mb-1">Note Saved</div>
+                  <div className="text-white font-semibold text-sm truncate">{savedConfirm.studentName}</div>
+                  {savedConfirm.content && (
+                    <div className="text-green-100/70 text-xs mt-1 line-clamp-2 leading-relaxed">
+                      &ldquo;{savedConfirm.content}&rdquo;
+                    </div>
+                  )}
+                  {savedConfirm.tags.length > 0 && (
+                    <div className="flex gap-1.5 flex-wrap mt-2">
+                      {savedConfirm.tags.slice(0, 3).map(tag => (
+                        <span key={tag} className="px-2 py-0.5 rounded-full bg-green-400/20 text-green-300 text-[10px] font-bold border border-green-400/30">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Getting Started Banner — shown until onboarding is complete */}
       <AnimatePresence>
