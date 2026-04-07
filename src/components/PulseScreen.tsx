@@ -950,13 +950,13 @@ const handleVoiceLog = async () => {
           <div className={cn(
             "flex-1 rounded-full transition-all",
             (noteContent.trim() || selectedTags.length > 0 || selectedStudent) && !isSaving
-              ? "animate-pulse ring-4 ring-orange-300/60"
+              ? "animate-pulse ring-4 ring-orange-400/70"
               : ""
           )}>
             <button
               onClick={handleSave}
               disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim() && !noteContent.trim())) || (!noteContent.trim() && !image && selectedTags.length === 0)}
-              className="w-full py-3.5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-40"
+              className="w-full py-3.5 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-full font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-orange-300/50 flex items-center justify-center gap-2 disabled:opacity-40"
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Save Note</>}
             </button>

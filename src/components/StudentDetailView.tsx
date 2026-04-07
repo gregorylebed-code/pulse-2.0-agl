@@ -1646,14 +1646,21 @@ export default function StudentDetailView({
               <Trash2 className="w-4 h-4" /> Clear
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleSaveNote}
-            disabled={isSavingNote || (!noteContent.trim() && !image && selectedTags.length === 0)}
-            className="py-1.5 px-8 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-xl hover:brightness-110 transition-all shadow-md shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isSavingNote ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Save Note</>}
-          </button>
+          <div className={cn(
+            "rounded-full transition-all",
+            (noteContent.trim() || selectedTags.length > 0) && !isSavingNote
+              ? "animate-pulse ring-4 ring-orange-400/70"
+              : ""
+          )}>
+            <button
+              type="button"
+              onClick={handleSaveNote}
+              disabled={isSavingNote || (!noteContent.trim() && !image && selectedTags.length === 0)}
+              className="py-1.5 px-8 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-full font-black text-xl hover:brightness-110 transition-all shadow-md shadow-orange-300/50 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSavingNote ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Save Note</>}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2067,7 +2074,7 @@ export default function StudentDetailView({
             <span className="text-[11px] font-bold text-blue-400">({[...shoutouts, ...notes.filter(n => !pendingDeleteNoteIds.has(n.id))].length} entries)</span>
             {shoutouts.length > 0 && <span className="text-[11px] font-bold text-amber-400">⭐ {shoutouts.length}</span>}
           </div>
-          <ChevronDown className={cn('w-4 h-4 text-blue-400 transition-transform', timelineVisible > 0 && 'rotate-180')} />
+          <ChevronDown className={cn('w-5 h-5 text-blue-700 transition-transform stroke-[3]', timelineVisible > 0 && 'rotate-180')} />
         </button>
         <AnimatePresence>
         {timelineVisible > 0 && (
