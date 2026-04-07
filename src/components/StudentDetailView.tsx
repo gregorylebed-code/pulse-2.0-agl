@@ -2074,7 +2074,12 @@ export default function StudentDetailView({
             <span className="text-[11px] font-bold text-blue-400">({[...shoutouts, ...notes.filter(n => !pendingDeleteNoteIds.has(n.id))].length} entries)</span>
             {shoutouts.length > 0 && <span className="text-[11px] font-bold text-amber-400">⭐ {shoutouts.length}</span>}
           </div>
-          <ChevronDown className={cn('w-5 h-5 text-blue-700 transition-transform stroke-[3]', timelineVisible > 0 && 'rotate-180')} />
+          <div className="flex flex-col items-center gap-0">
+            <span className="text-[9px] font-black text-blue-700 uppercase tracking-wide leading-none mb-0.5">
+              {timelineVisible > 0 ? 'Close' : 'Open'}
+            </span>
+            <ChevronDown className={cn('w-5 h-5 text-blue-700 transition-transform stroke-[3]', timelineVisible > 0 && 'rotate-180')} />
+          </div>
         </button>
         <AnimatePresence>
         {timelineVisible > 0 && (
