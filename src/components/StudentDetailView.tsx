@@ -1653,8 +1653,6 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
-
       <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex flex-col gap-1.5 no-print">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Move to section</p>
         {/* Row 1: student-focused */}
@@ -1666,7 +1664,7 @@ export default function StudentDetailView({
               activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
             )}
           >
-            Write Note
+            Write Report
           </button>
           <button
             onClick={() => scrollToSection('timeline')}
@@ -1721,13 +1719,15 @@ export default function StudentDetailView({
         </div>
       </div>
 
+      <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
+
       {/* ─── AI Compose Wizard (Quick Note + Detailed Report combined) ─────── */}
       <div id="quick-note" ref={quickNoteRef} className="scroll-mt-header">
         <div className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-5 no-print">
           {/* Header */}
           <div>
-            <h3 className="text-[15px] font-black text-slate-700 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-sage" /> Contact Parent with AI
+            <h3 className="text-[15px] font-black text-blue-600 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-500" /> Contact Parent with AI
             </h3>
             <p className="text-[11px] text-slate-400 mt-1">Answer two quick questions and we'll write it for you.</p>
           </div>

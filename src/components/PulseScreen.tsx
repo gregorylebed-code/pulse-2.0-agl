@@ -702,7 +702,7 @@ const handleVoiceLog = async () => {
         {/* Mode toggle — Student Note is default, Class Note is a secondary link */}
         <div className="flex items-center justify-between">
           <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
-            {noteMode === 'class' ? 'Class Note' : 'Student Note'}
+            {noteMode === 'class' ? 'Class Note' : 'Write a note about a student'}
           </span>
           {isFullMode && (
             <button
@@ -737,7 +737,7 @@ const handleVoiceLog = async () => {
         ) : (
           <>
             <div className="space-y-3 relative max-w-2xl">
-              <label className="text-[15px] font-black text-blue-600 ml-1">Select Student</label>
+              <label className="text-[15px] font-black text-blue-600 ml-1">Select Student <span className="text-slate-400 font-medium normal-case text-[13px]">(optional)</span></label>
               <div className="relative">
                 <input
                   type="text"
@@ -947,7 +947,12 @@ const handleVoiceLog = async () => {
           <button
             onClick={handleSave}
             disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim() && !noteContent.trim())) || (!noteContent.trim() && !image && selectedTags.length === 0)}
-            className="flex-1 py-3.5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-40"
+            className={cn(
+              "flex-1 py-3.5 text-white rounded-full font-black text-sm uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-40",
+              (noteContent.trim() || selectedTags.length > 0 || selectedStudent)
+                ? "bg-linear-to-r from-orange-400 to-orange-500 animate-pulse shadow-orange-300/60 hover:brightness-110"
+                : "bg-linear-to-r from-orange-400 to-orange-500 shadow-orange-200/50 hover:brightness-110"
+            )}
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Save Note</>}
           </button>
