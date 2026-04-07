@@ -1516,7 +1516,7 @@ export default function StudentDetailView({
       </div>
 
       <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6 no-print">
-        <div className="relative border border-slate-100/50 rounded-[32px] p-1 bg-white shadow-inner">
+        <div className="relative">
           <textarea
             id="quick_note"
             name="quick_note"
@@ -1527,9 +1527,9 @@ export default function StudentDetailView({
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            className="w-full min-h-[140px] p-6 bg-transparent border-0 focus:outline-none focus:ring-4 focus:ring-sage/5 rounded-[32px] transition-all text-base font-medium resize-none leading-relaxed"
+            className="w-full min-h-[130px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
-          <div className="absolute right-4 bottom-4">
+          <div className="absolute right-3 bottom-3">
             <button
               onClick={handleVoiceLog}
               className={cn(
@@ -1636,18 +1636,16 @@ export default function StudentDetailView({
           }))}
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-2">
-          {(noteContent || image || selectedTags.length > 0) && (
-            <button
-              type="button"
-              onClick={handleClearNote}
-              className="py-2.5 px-6 bg-slate-100 text-slate-500 rounded-xl font-black text-sm hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" /> Clear
-            </button>
-          )}
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={handleClearNote}
+            className="px-5 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all flex items-center gap-2"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
           <div className={cn(
-            "rounded-full transition-all",
+            "flex-1 rounded-full transition-all",
             (noteContent.trim() || selectedTags.length > 0) && !isSavingNote
               ? "animate-pulse ring-4 ring-orange-400/70"
               : ""
@@ -1656,9 +1654,9 @@ export default function StudentDetailView({
               type="button"
               onClick={handleSaveNote}
               disabled={isSavingNote || (!noteContent.trim() && !image && selectedTags.length === 0)}
-              className="py-1.5 px-8 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-full font-black text-xl hover:brightness-110 transition-all shadow-md shadow-orange-300/50 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-full font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-orange-300/50 flex items-center justify-center gap-2 disabled:opacity-40"
             >
-              {isSavingNote ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Save Note</>}
+              {isSavingNote ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Save Note</>}
             </button>
           </div>
         </div>
