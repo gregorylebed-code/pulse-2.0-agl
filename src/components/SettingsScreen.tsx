@@ -778,18 +778,6 @@ export default function SettingsScreen({
               </div>
             </div>
 
-            {!isFullMode && (
-              <div className="bg-linear-to-br from-violet-50 to-indigo-50 border border-violet-100 rounded-[32px] p-6 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">✨</span>
-                  <p className="text-sm font-black text-violet-700">More tools are on the way</p>
-                </div>
-                <p className="text-[11px] text-violet-500 font-medium leading-relaxed">
-                  As you build your documentation habit, advanced features unlock — including AI-generated reports, student goal tracking, behavior insights, and a full analytics dashboard.
-                </p>
-                <p className="text-[11px] text-violet-400 font-bold uppercase tracking-wide">Keep logging. Great things are coming.</p>
-              </div>
-            )}
 
             <StatsCard
               notesCreated={notes.length}
@@ -950,6 +938,19 @@ export default function SettingsScreen({
                 </button>
               </div>
             </div>
+
+            {!isFullMode && (
+              <div className="bg-linear-to-br from-violet-50 to-indigo-50 border border-violet-100 rounded-[32px] p-6 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">✨</span>
+                  <p className="text-sm font-black text-violet-700">More tools are on the way</p>
+                </div>
+                <p className="text-[11px] text-violet-500 font-medium leading-relaxed">
+                  As you build your documentation habit, advanced features unlock — including AI-generated reports, student goal tracking, behavior insights, and a full analytics dashboard.
+                </p>
+                <p className="text-[11px] text-violet-400 font-bold uppercase tracking-wide">Keep logging. Great things are coming.</p>
+              </div>
+            )}
 
             <div className="flex flex-col items-center gap-2 mt-4 pb-4">
               <img src="/icon-192.png" alt="ShortHand" className="w-12 h-12 rounded-2xl shadow-sm" />
