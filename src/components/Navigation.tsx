@@ -44,7 +44,7 @@ export default function Navigation({ activeTab, setActiveTab }: NavigationProps)
       className="fixed bottom-0 left-0 right-0 z-50 no-print flex items-center justify-around px-2"
       style={{ background: '#14B8A6', paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(72px + env(safe-area-inset-bottom))' }}
     >
-      <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Notes" />
+      <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Log Notes" />
       <NavButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users />} label="Students" />
       {isFullMode && <NavButton active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} icon={<BarChart2 />} label="Insights" />}
       {isFullMode && <NavButton active={activeTab === 'shoutouts'} onClick={() => setActiveTab('shoutouts')} icon={<Star />} label="Shoutouts" />}

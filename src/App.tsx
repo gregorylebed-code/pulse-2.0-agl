@@ -16,6 +16,7 @@ import SettingsScreen from './components/SettingsScreen';
 import ShoutoutsScreen from './components/ShoutoutsScreen';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
+import HelpButton from './components/HelpButton';
 import InstallBanner from './components/InstallBanner';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { cn } from './utils/cn';
@@ -554,6 +555,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         activeTab === 'students' ? 'Students Screen' : 'Settings'
       } />
 
+      <HelpButton />
       <Navigation activeTab={activeTab} setActiveTab={(tab) => {
         if (tab === activeTab) {
           // Tapping the current tab resets its sub-view
