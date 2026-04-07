@@ -463,16 +463,17 @@ function AddCommForm({
           value={form.notes}
           onChange={e => set('notes', e.target.value)}
           placeholder="What was discussed? Key points, next steps, tone of the conversation..."
-          rows={4}
-          className="w-full px-3 py-2 pr-11 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage resize-none leading-relaxed"
+          rows={7}
+          className="w-full px-3 py-2 pr-32 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage resize-none leading-relaxed"
         />
         <button
           type="button"
           onClick={handleVoice}
-          className={cn('absolute right-2 bottom-2 p-2.5 rounded-xl shadow-sm flex items-center justify-center transition-all', isListening ? 'bg-terracotta text-white animate-pulse border border-terracotta shadow-lg shadow-terracotta/30' : 'bg-white text-slate-400 border border-emerald-400 hover:text-emerald-600 hover:border-emerald-500')}
+          className={cn('absolute right-2 bottom-2 flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest', isListening ? 'bg-terracotta text-white border-terracotta animate-pulse shadow-lg shadow-terracotta/30' : 'bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40')}
           title={isListening ? 'Stop recording' : 'Tap to dictate your note'}
         >
           {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          <span>{isListening ? 'Stop' : 'Voice'}</span>
         </button>
       </div>
 

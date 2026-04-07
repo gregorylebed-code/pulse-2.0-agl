@@ -1526,15 +1526,16 @@ export default function StudentDetailView({
             data-lpignore="true"
             className="w-full min-h-[140px] p-6 bg-transparent border-0 focus:outline-none focus:ring-4 focus:ring-sage/5 rounded-[32px] transition-all text-base font-medium resize-none leading-relaxed"
           />
-          <div className="absolute flex flex-col gap-2 right-4 bottom-4">
+          <div className="absolute right-4 bottom-4">
             <button
               onClick={handleVoiceLog}
               className={cn(
-                "p-2.5 rounded-xl shadow-sm border border-slate-100 transition-all z-10",
-                isListening ? "bg-terracotta text-white animate-pulse" : "bg-white text-slate-400 hover:text-terracotta"
+                "flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest z-10",
+                isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
               )}
             >
-              <Mic className="w-4 h-4" />
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              <span>{isListening ? 'Stop' : 'Voice'}</span>
             </button>
           </div>
         </div>
@@ -1653,8 +1654,8 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex flex-col gap-1.5 no-print">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Move to section</p>
+      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border-2 border-blue-200 flex flex-col gap-1.5 no-print">
+        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest px-1">Move to section</p>
         {/* Row 1: student-focused */}
         <div className="flex items-center gap-1">
           <button
@@ -1828,7 +1829,7 @@ export default function StudentDetailView({
                 autoComplete="off"
                 data-1p-ignore
                 data-lpignore="true"
-                rows={2}
+                rows={3}
                 className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs focus:outline-none focus:border-sage/40 resize-none"
               />
               <button
