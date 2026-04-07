@@ -1171,9 +1171,7 @@ const handleVoiceLog = async () => {
         {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
           <div className="text-center py-10 space-y-3 bg-white rounded-[28px] border border-dashed border-slate-200 px-6">
             <p className="text-sm font-black text-slate-400">No notes yet today.</p>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              <span className="font-bold text-slate-500">How it works:</span> Pick a student → tap a behavior label below (like "Great focus" or "Needed redirection") → hit <span className="font-bold">Save Note</span>. The AI uses these labels to write parent reports for you.
-            </p>
+            <p className="text-xs text-slate-400">Pick a student and start tapping. ✌️</p>
           </div>
         )}
         {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, visibleNoteCount).map((note, i) => (
