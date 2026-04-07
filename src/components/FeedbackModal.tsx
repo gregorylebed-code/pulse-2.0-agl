@@ -112,7 +112,7 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 12 }}
             transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-            className="fixed bottom-28 right-4 z-50 w-56 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden no-print"
+            className="fixed bottom-28 left-4 z-50 w-56 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden no-print"
           >
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
               <span className="font-black text-slate-800 text-sm">How can we help?</span>
@@ -146,7 +146,7 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 12 }}
             transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-            className="fixed bottom-28 right-4 z-50 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden no-print"
+            className="fixed bottom-28 left-4 z-50 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden no-print"
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -261,7 +261,7 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
         whileTap={{ scale: 0.9 }}
         whileHover={{ scale: 1.08 }}
         transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-        className="fixed bottom-24 right-4 z-50 w-11 h-11 bg-white rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center text-slate-400 hover:text-teal-500 transition-colors no-print"
+        className="fixed bottom-24 left-4 z-50 w-11 h-11 bg-white rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center text-slate-400 hover:text-teal-500 transition-colors no-print"
         aria-label="Help and feedback"
       >
         <AnimatePresence mode="wait">
