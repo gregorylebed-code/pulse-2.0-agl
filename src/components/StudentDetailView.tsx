@@ -1731,7 +1731,7 @@ export default function StudentDetailView({
           {/* Header */}
           <div>
             <h3 className="text-[15px] font-black text-blue-600 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-500" /> Contact Parent with AI
+              <Sparkles className="w-4 h-4 text-blue-500" /> Write Report with AI
             </h3>
             <p className="text-[11px] text-slate-400 mt-1">Answer two quick questions and we'll write it for you.</p>
           </div>
