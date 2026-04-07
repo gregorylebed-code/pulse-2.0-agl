@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, X, Send, Loader2, CheckCircle2, Pencil, FileText, Map, MessageCircle } from 'lucide-react';
+import { HelpCircle, X, Send, Loader2, CheckCircle2, Pencil, FileText, Map, MessageCircle, GraduationCap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
@@ -26,12 +26,17 @@ const tips = [
   {
     icon: <FileText className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />,
     title: 'How to create a report',
-    body: 'Go to the Students tab, tap a student to open their profile, then tap "Write Notes." Choose Quick Note or Detailed.',
+    body: 'Go to the Students tab, tap a student to open their profile, then tap "Write Reports." Choose Quick Note or Detailed.',
   },
   {
     icon: <Map className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />,
     title: 'Where to find everything',
     body: 'Log Notes tab → log notes on students. Students tab → view profiles, write reports, see history. Settings → your roster and preferences.',
+  },
+  {
+    icon: <GraduationCap className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />,
+    title: 'Import from Google Classroom',
+    body: 'Go to Settings → tap "Connect Google Classroom" to import your roster automatically, including student photos.',
   },
 ];
 

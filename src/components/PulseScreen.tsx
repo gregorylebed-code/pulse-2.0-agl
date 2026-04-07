@@ -932,6 +932,7 @@ const handleVoiceLog = async () => {
                     }
                   }}
                   placeholder="Start typing a name..."
+                  autoFocus
                   className={cn(
                     "w-full px-6 py-4 bg-slate-50 border rounded-2xl focus:outline-none transition-all text-base pr-12 font-medium",
                     selectedStudent ? "border-sage ring-4 ring-sage/5" : "border-slate-100 focus:ring-4 focus:ring-sage/5 focus:border-sage"

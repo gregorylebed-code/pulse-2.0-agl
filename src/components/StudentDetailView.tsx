@@ -1819,7 +1819,7 @@ export default function StudentDetailView({
         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest text-center mb-1.5">Select a section</p>
         <div className="flex items-center gap-1">
           {([
-            { key: 'notes' as const,   label: '📝 Write Notes',      color: 'bg-terracotta' },
+            { key: 'notes' as const,   label: '📝 Write Reports',    color: 'bg-terracotta' },
             { key: 'parents' as const, label: '📬 Parent Log',         color: 'bg-blue-500'   },
             { key: 'goals' as const,   label: '🎯 Track Goals',       color: 'bg-violet-500' },
             { key: 'reports' as const, label: '📊 View Reports',      color: 'bg-sage'       },
