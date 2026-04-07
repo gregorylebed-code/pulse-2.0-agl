@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import imageCompression from 'browser-image-compression';
 import {
@@ -572,6 +573,77 @@ function StudentProgressChart({ student, notes, indicators }: {
   );
 }
 
+// ─── Sparkle Canvas ──────────────────────────────────────────────────────────
+
+function SparkleCanvas({ x, y, onDone }: { x: number; y: number; onDone: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const ox = x || window.innerWidth / 2;
+    const oy = y || window.innerHeight * 0.8;
+
+    const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fbbf24', '#fff', '#ea580c'];
+    const particles = Array.from({ length: 36 }, () => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 6 + Math.random() * 12;
+      return {
+        x: ox, y: oy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 5,
+        size: 5 + Math.random() * 8,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        alpha: 1,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.4,
+      };
+    });
+
+    let frame: number;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.35;
+        p.alpha -= 0.022;
+        p.rotation += p.rotSpeed;
+        if (p.alpha <= 0) continue;
+        alive = true;
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      }
+      if (alive) {
+        frame = requestAnimationFrame(animate);
+      } else {
+        onDone();
+      }
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [x, y, onDone]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 99999 }}
+    />
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function StudentDetailView({
@@ -635,6 +707,10 @@ export default function StudentDetailView({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedComm, setSelectedComm] = useState<string[]>([]);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [savedConfirm, setSavedConfirm] = useState<{ studentName: string; content: string; tags: string[] } | null>(null);
+  const [showSparkles, setShowSparkles] = useState(false);
+  const sparkleOrigin = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const saveNoteButtonRef = useRef<HTMLButtonElement>(null);
   const [isListening, setIsListening] = useState(false);
   const voiceRecognitionRef = useRef<any>(null);
   const [showTags, setShowTags] = useState(false);
@@ -876,8 +952,15 @@ export default function StudentDetailView({
       });
 
       handleClearNote();
-      toast.success('Note added successfully');
       onNoteUpdate();
+      setSavedConfirm({ studentName: student.name, content: expandedContent, tags: finalTags });
+      setTimeout(() => setSavedConfirm(null), 1800);
+      const btn = saveNoteButtonRef.current;
+      if (btn) {
+        const r = btn.getBoundingClientRect();
+        sparkleOrigin.current = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }
+      setShowSparkles(true);
     } catch (err) {
       console.error('Error saving note:', err);
       toast.error('Failed to save note');
@@ -1375,6 +1458,73 @@ export default function StudentDetailView({
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 pb-10 relative">
+
+      {/* NOTE SAVED BANNER */}
+      {createPortal(
+        <AnimatePresence>
+          {savedConfirm && (
+            <motion.div
+              initial={{ y: 120, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 120, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+              style={{ position: 'fixed', bottom: '96px', left: '16px', right: '16px', zIndex: 9999, pointerEvents: 'none' }}
+            >
+              <div className="rounded-2xl overflow-hidden shadow-2xl border border-green-300/40"
+                style={{ background: 'linear-gradient(135deg, #052e16 0%, #14532d 100%)' }}>
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 1.8, ease: 'linear' }}
+                  style={{ transformOrigin: 'left', height: '4px', background: '#4ade80', width: '100%' }}
+                />
+                <div className="px-5 py-4 flex items-start gap-4">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 }}
+                    style={{ width: 44, height: 44, borderRadius: '50%', background: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#052e16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </motion.div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: '#86efac', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Note Saved</div>
+                    <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{savedConfirm.studentName}</div>
+                    {savedConfirm.content && (
+                      <div style={{ color: 'rgba(220,252,231,0.7)', fontSize: '0.75rem', marginTop: 4, lineHeight: 1.5 }}>
+                        &ldquo;{savedConfirm.content}&rdquo;
+                      </div>
+                    )}
+                    {savedConfirm.tags.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                        {savedConfirm.tags.slice(0, 3).map(tag => (
+                          <span key={tag} style={{ padding: '2px 10px', borderRadius: 999, background: 'rgba(74,222,128,0.15)', color: '#86efac', fontSize: '0.65rem', fontWeight: 700, border: '1px solid rgba(74,222,128,0.3)' }}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* SPARKLES */}
+      {showSparkles && createPortal(
+        <SparkleCanvas
+          x={sparkleOrigin.current.x}
+          y={sparkleOrigin.current.y}
+          onDone={() => setShowSparkles(false)}
+        />,
+        document.body
+      )}
+
       {/* Print-Only Header */}
       <div className="hidden print:flex flex-col items-center justify-center py-8 border-b-2 border-slate-100 mb-8">
         <div className="flex items-center gap-4 mb-3">
@@ -1651,6 +1801,7 @@ export default function StudentDetailView({
               : ""
           )}>
             <button
+              ref={saveNoteButtonRef}
               type="button"
               onClick={handleSaveNote}
               disabled={isSavingNote || (!noteContent.trim() && !image && selectedTags.length === 0)}
