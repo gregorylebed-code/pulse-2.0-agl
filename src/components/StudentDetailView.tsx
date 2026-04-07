@@ -1815,19 +1815,20 @@ export default function StudentDetailView({
       </div>
 
       {/* ─── Tab Bar ──────────────────────────────────────────────────────── */}
-      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border-2 border-blue-200 no-print">
+      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border-2 border-blue-200 no-print">
+        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest text-center mb-1.5">Select a section</p>
         <div className="flex items-center gap-1">
           {([
-            { key: 'notes' as const,   label: '📝 Notes',   color: 'bg-terracotta' },
-            { key: 'parents' as const, label: '📬 Parents',  color: 'bg-blue-500'   },
-            { key: 'goals' as const,   label: '🎯 Goals',   color: 'bg-violet-500' },
-            { key: 'reports' as const, label: '📊 Reports', color: 'bg-sage'       },
+            { key: 'notes' as const,   label: '📝 Write Notes',      color: 'bg-terracotta' },
+            { key: 'parents' as const, label: '📬 Contact Parents',   color: 'bg-blue-500'   },
+            { key: 'goals' as const,   label: '🎯 Track Goals',       color: 'bg-violet-500' },
+            { key: 'reports' as const, label: '📊 View Reports',      color: 'bg-sage'       },
           ]).map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
+                "flex-1 py-2.5 rounded-xl text-[11px] font-black transition-all leading-tight text-center",
                 activeTab === tab.key
                   ? `${tab.color} text-white shadow-md`
                   : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
