@@ -1656,6 +1656,7 @@ export default function StudentDetailView({
       <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
 
       <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-100/50 flex flex-col gap-1.5 no-print">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Move to section</p>
         {/* Row 1: student-focused */}
         <div className="flex items-center gap-1">
           <button
@@ -1665,7 +1666,7 @@ export default function StudentDetailView({
               activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
             )}
           >
-            Note
+            Write Note
           </button>
           <button
             onClick={() => scrollToSection('timeline')}
@@ -1706,7 +1707,7 @@ export default function StudentDetailView({
               activeSection === 'history' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
             )}
           >
-            History
+            Saved Reports
           </button>
           <button
             onClick={() => scrollToSection('progress')}
@@ -2055,14 +2056,14 @@ export default function StudentDetailView({
         <button
           type="button"
           onClick={() => setTimelineVisible(v => v > 0 ? 0 : 5)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-2xl border border-slate-100 card-shadow hover:border-sage/30 transition-all"
+          className="w-full flex items-center justify-between px-4 py-3.5 bg-blue-50 rounded-2xl border-2 border-blue-400 hover:bg-blue-100 transition-all shadow-sm"
         >
           <div className="flex items-center gap-2">
-            <h3 className="text-[13px] font-black text-slate-600">Observation Timeline</h3>
-            <span className="text-[11px] font-bold text-slate-400">({[...shoutouts, ...notes.filter(n => !pendingDeleteNoteIds.has(n.id))].length} entries)</span>
+            <h3 className="text-[13px] font-black text-blue-700">Notes about {student.name.split(' ')[0]}</h3>
+            <span className="text-[11px] font-bold text-blue-400">({[...shoutouts, ...notes.filter(n => !pendingDeleteNoteIds.has(n.id))].length} entries)</span>
             {shoutouts.length > 0 && <span className="text-[11px] font-bold text-amber-400">⭐ {shoutouts.length}</span>}
           </div>
-          <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', timelineVisible > 0 && 'rotate-180')} />
+          <ChevronDown className={cn('w-4 h-4 text-blue-400 transition-transform', timelineVisible > 0 && 'rotate-180')} />
         </button>
         <AnimatePresence>
         {timelineVisible > 0 && (
@@ -2865,7 +2866,7 @@ export default function StudentDetailView({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-sage-dark flex items-center gap-2">
-                  <Archive className="w-4 h-4 text-sage" /> Report History & Export Station
+                  <Archive className="w-4 h-4 text-sage" /> Saved Reports
                 </h3>
                 <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
                   {student.archivedSummaries?.length || 0} Saved {(student.archivedSummaries?.length || 0) === 1 ? 'Record' : 'Records'}
