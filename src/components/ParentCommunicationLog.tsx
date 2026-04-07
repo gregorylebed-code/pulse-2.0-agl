@@ -469,7 +469,7 @@ function AddCommForm({
         <button
           type="button"
           onClick={handleVoice}
-          className={cn('absolute right-2 bottom-2 p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center transition-all', isListening ? 'bg-terracotta text-white animate-pulse border-terracotta shadow-lg shadow-terracotta/30' : 'bg-white text-slate-400 hover:text-terracotta hover:border-terracotta/30')}
+          className={cn('absolute right-2 bottom-2 p-2.5 rounded-xl shadow-sm flex items-center justify-center transition-all', isListening ? 'bg-terracotta text-white animate-pulse border border-terracotta shadow-lg shadow-terracotta/30' : 'bg-white text-slate-400 border border-emerald-400 hover:text-emerald-600 hover:border-emerald-500')}
           title={isListening ? 'Stop recording' : 'Tap to dictate your note'}
         >
           {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
@@ -718,16 +718,16 @@ export default function ParentCommunicationLog({
       {/* Header */}
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="min-w-0">
-          <h3 className="text-[15px] font-black text-slate-700">Parent Communication Log</h3>
+          <h3 className="text-[15px] font-black text-blue-600">Parent Communication Log</h3>
           <p className="text-[11px] text-slate-400 mt-0.5">Every contact, automatically timestamped</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={() => setShowForm(f => !f)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-sage text-white rounded-xl text-[13px] font-black hover:bg-sage-dark transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-sage text-white rounded-xl text-[13px] font-black hover:bg-sage-dark transition-colors shadow-sm"
           >
             {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            {showForm ? 'Cancel' : 'Log'}
+            {showForm ? 'Cancel' : 'Add Parent Communication'}
           </button>
         </div>
       </div>
