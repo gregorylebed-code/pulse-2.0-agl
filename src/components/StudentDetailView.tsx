@@ -726,6 +726,7 @@ export default function StudentDetailView({
   const [timelineVisible, setTimelineVisible] = useState(0);
   const [parentCommVisible, setParentCommVisible] = useState(5);
   const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'accommodations' | 'ai-report' | 'history' | 'quick-note' | 'parents'>('timeline');
+  const [activeTab, setActiveTab] = useState<'notes' | 'parents' | 'goals' | 'reports'>('notes');
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
   const [quickNoteDays, setQuickNoteDays] = useState<0 | 1 | 3 | 5 | 7>(0);
@@ -1624,7 +1625,7 @@ export default function StudentDetailView({
                   if (uniqueCategories.length === 0) return null;
                   return (
                     <button
-                      onClick={() => scrollToSection('accommodations')}
+                      onClick={() => { setActiveTab('goals'); scrollToSection('accommodations'); }}
                       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-violet-400/80 hover:bg-violet-400 text-white rounded-full backdrop-blur-sm transition-colors"
                       title={`${active.length} active accommodation${active.length !== 1 ? 's' : ''} — tap to view`}
                     >
@@ -1813,73 +1814,35 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-2 rounded-2xl shadow-sm border-2 border-blue-200 flex flex-col gap-1.5 no-print">
-        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest px-1">Move to section</p>
-        {/* Row 1: student-focused */}
+      {/* ─── Tab Bar ──────────────────────────────────────────────────────── */}
+      <div className="sticky top-4 z-40 bg-cream/90 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border-2 border-blue-200 no-print">
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => scrollToSection('quick-note')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'quick-note' ? "bg-terracotta text-white shadow-md shadow-terracotta/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Write Report
-          </button>
-          <button
-            onClick={() => scrollToSection('timeline')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'timeline' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Recorded Notes
-          </button>
-          {isFullMode && (
+          {([
+            { key: 'notes' as const,   label: '📝 Notes',   color: 'bg-terracotta' },
+            { key: 'parents' as const, label: '📬 Parents',  color: 'bg-blue-500'   },
+            { key: 'goals' as const,   label: '🎯 Goals',   color: 'bg-violet-500' },
+            { key: 'reports' as const, label: '📊 Reports', color: 'bg-sage'       },
+          ]).map(tab => (
             <button
-              onClick={() => scrollToSection('goals')}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-                activeSection === 'goals' ? "bg-violet-500 text-white shadow-md shadow-violet-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+                "flex-1 py-2.5 rounded-xl text-xs font-black transition-all",
+                activeTab === tab.key
+                  ? `${tab.color} text-white shadow-md`
+                  : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
               )}
             >
-              Goals
+              {tab.label}
             </button>
-          )}
-        </div>
-        {/* Row 2: communication-focused */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => scrollToSection('parents')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'parents' ? "bg-blue-500 text-white shadow-md shadow-blue-500/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Parent Comm
-          </button>
-          <button
-            onClick={() => scrollToSection('history')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              activeSection === 'history' ? "bg-sage text-white shadow-md shadow-sage/20" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Saved Reports
-          </button>
-          <button
-            onClick={() => scrollToSection('progress')}
-            className={cn(
-              "flex-1 py-2 rounded-xl text-xs font-black transition-all",
-              "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-            )}
-          >
-            Behavior Trends
-          </button>
+          ))}
         </div>
       </div>
 
       <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
+
+      {/* ─── NOTES TAB ────────────────────────────────────────────────────── */}
+      {activeTab === 'notes' && <>
 
       {/* ─── AI Compose Wizard (Quick Note + Detailed Report combined) ─────── */}
       <div id="quick-note" ref={quickNoteRef} className="scroll-mt-header">
@@ -2554,6 +2517,11 @@ export default function StudentDetailView({
         </div>
       </div>
 
+      </>}{/* end notes tab */}
+
+      {/* ─── PARENTS TAB ──────────────────────────────────────────────────── */}
+      {activeTab === 'parents' && <>
+
       {/* ─── Parent Communication Log ─────────────────────────────────── */}
       <div id="parents" ref={parentCommRef} className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-4 scroll-mt-header no-print">
         <ParentCommunicationLog
@@ -2566,7 +2534,12 @@ export default function StudentDetailView({
         />
       </div>
 
-      <div id="goals" ref={goalsRef} className={cn("space-y-4 scroll-mt-header", !isFullMode && "hidden")}>
+      </>}{/* end parents tab */}
+
+      {/* ─── GOALS TAB ────────────────────────────────────────────────────── */}
+      {activeTab === 'goals' && <>
+
+      <div id="goals" ref={goalsRef} className="space-y-4 scroll-mt-header">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-violet-600 flex items-center gap-2">
@@ -2818,7 +2791,7 @@ export default function StudentDetailView({
       <div className="pt-6 border-t border-slate-100" />
 
       {/* ─── Accommodations ─────────────────────────────────────────── */}
-      <div id="accommodations" ref={accommodationsRef} className={cn("space-y-4 scroll-mt-header", !isFullMode && "hidden")}>
+      <div id="accommodations" ref={accommodationsRef} className="space-y-4 scroll-mt-header">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-sky-600 flex items-center gap-2">
@@ -3025,6 +2998,11 @@ export default function StudentDetailView({
         </AnimatePresence>
       </div>
 
+      </>}{/* end goals tab */}
+
+      {/* ─── REPORTS TAB ──────────────────────────────────────────────────── */}
+      {activeTab === 'reports' && <>
+
       <div id="ai-report" ref={aiReportRef} className="scroll-mt-header" />
 
       <button
@@ -3173,6 +3151,8 @@ export default function StudentDetailView({
       <div ref={progressRef} id="progress" className="scroll-mt-header">
         <StudentProgressChart student={student} notes={notes} indicators={indicators} />
       </div>
+
+      </>}{/* end reports tab */}
 
       {/* Undo delete toast */}
       <AnimatePresence>
