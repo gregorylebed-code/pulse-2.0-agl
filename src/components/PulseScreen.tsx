@@ -114,6 +114,74 @@ function TodayAtAGlance({ notes, indicators }: { notes: Note[]; indicators: any[
   );
 }
 
+// ─── Sparkle Canvas ──────────────────────────────────────────────────────────
+
+function SparkleCanvas({ x, y, onDone }: { x: number; y: number; onDone: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fbbf24', '#fff'];
+    const particles = Array.from({ length: 28 }, () => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 4 + Math.random() * 7;
+      return {
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 3,
+        size: 3 + Math.random() * 5,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        alpha: 1,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.3,
+      };
+    });
+
+    let frame: number;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.35; // gravity
+        p.alpha -= 0.022;
+        p.rotation += p.rotSpeed;
+        if (p.alpha <= 0) continue;
+        alive = true;
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      }
+      if (alive) {
+        frame = requestAnimationFrame(animate);
+      } else {
+        onDone();
+      }
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ position: 'fixed', inset: 0, zIndex: 9998, pointerEvents: 'none' }}
+    />
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings }: PulseScreenProps) {
@@ -249,6 +317,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const calendarData = localStorage.getItem('school_calendar');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  const [showSparkles, setShowSparkles] = useState(false);
+  const sparkleOrigin = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const levenshtein = (a: string, b: string): number => {
     const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
@@ -438,6 +509,11 @@ const handleVoiceLog = async () => {
           toast(`Class note saved offline — will sync when reconnected`, { icon: '📶' });
         } else {
           setSavedConfirm({ studentName: selectedClass, content: expandedContent, tags: finalTags });
+          if (saveButtonRef.current) {
+            const r = saveButtonRef.current.getBoundingClientRect();
+            sparkleOrigin.current = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+          }
+          setShowSparkles(true);
           setTimeout(() => setSavedConfirm(null), 1800);
         }
         handleClear();
@@ -610,6 +686,16 @@ const handleVoiceLog = async () => {
             </motion.div>
           )}
         </AnimatePresence>,
+        document.body
+      )}
+
+      {/* SPARKLES */}
+      {showSparkles && createPortal(
+        <SparkleCanvas
+          x={sparkleOrigin.current.x}
+          y={sparkleOrigin.current.y}
+          onDone={() => setShowSparkles(false)}
+        />,
         document.body
       )}
 
@@ -1042,6 +1128,7 @@ const handleVoiceLog = async () => {
               : ""
           )}>
             <button
+              ref={saveButtonRef}
               onClick={handleSave}
               disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim() && !noteContent.trim())) || (!noteContent.trim() && !image && selectedTags.length === 0)}
               className="w-full py-3.5 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-full font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-orange-300/50 flex items-center justify-center gap-2 disabled:opacity-40"
