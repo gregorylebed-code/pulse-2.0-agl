@@ -205,20 +205,34 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
-  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Map of noteId → timer, so multiple pending deletes each have their own countdown
+  const pendingDeleteTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [pendingDeleteNoteIds, setPendingDeleteNoteIds] = useState<Set<string>>(new Set());
+
+  // On unmount, immediately flush any pending deletes so navigating away doesn't rescue notes
+  useEffect(() => {
+    return () => {
+      pendingDeleteTimers.current.forEach((timer, id) => {
+        clearTimeout(timer);
+        deleteNote(id);
+      });
+      pendingDeleteTimers.current.clear();
+    };
+  }, []);
 
   const softDeleteNote = (note: any) => {
     setPendingDeleteNoteIds(prev => new Set(prev).add(note.id));
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    // Each note gets its own timer — deleting a second note won't cancel the first
     const timer = setTimeout(() => {
       deleteNote(note.id);
+      pendingDeleteTimers.current.delete(note.id);
       setPendingDeleteNoteIds(prev => { const s = new Set(prev); s.delete(note.id); return s; });
       setUndoToast(null);
     }, 5000);
-    undoTimerRef.current = timer;
+    pendingDeleteTimers.current.set(note.id, timer);
     setUndoToast({ label: 'Note deleted', onUndo: () => {
       clearTimeout(timer);
+      pendingDeleteTimers.current.delete(note.id);
       setPendingDeleteNoteIds(prev => { const s = new Set(prev); s.delete(note.id); return s; });
       setUndoToast(null);
     }});
