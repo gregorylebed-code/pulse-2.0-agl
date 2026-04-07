@@ -952,9 +952,9 @@ export default function StudentsScreen({
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
               <Users className="w-8 h-8 text-slate-200" />
             </div>
-            <p className="text-sm font-black text-slate-400">Your roster is empty.</p>
+            <p className="text-sm font-black text-slate-600">No students yet</p>
             <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
-              Go to <span className="font-bold text-sage">Settings → Roster Management</span> to add students manually, or use <span className="font-bold text-sage">Data Management</span> to import a class list.
+              To get started, go to <span className="font-bold text-sage">Settings</span> (bottom right) → tap <span className="font-bold text-sage">Roster Management</span> → paste in your class list and the AI will sort it out. Takes about 30 seconds.
             </p>
           </div>
         )}

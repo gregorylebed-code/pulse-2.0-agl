@@ -141,11 +141,10 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
             {comm.comm_type}
           </span>
 
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400">
+          <span className={cn('inline-flex items-center gap-1 text-[11px] font-medium', comm.direction === 'outbound' ? 'text-slate-400' : 'text-emerald-600')}>
             {comm.direction === 'outbound'
-              ? <ArrowUpRight className="w-3 h-3 text-slate-300" />
-              : <ArrowDownLeft className="w-3 h-3 text-emerald-400" />}
-            {comm.direction}
+              ? <><ArrowUpRight className="w-3 h-3" /> You reached out</>
+              : <><ArrowDownLeft className="w-3 h-3" /> Parent contacted you</>}
           </span>
 
           {comm.is_iep_related && (

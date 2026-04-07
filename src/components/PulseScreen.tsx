@@ -702,20 +702,31 @@ const handleVoiceLog = async () => {
           </div>
         )}
 
-        {/* Mode toggle — Student Note is default, Class Note is a secondary link */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
-            {noteMode === 'class' ? 'Class Note' : 'Write a note about a student'}
-          </span>
-          {isFullMode && (
+        {/* Mode toggle — pill style so both options are discoverable */}
+        {isFullMode ? (
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-2xl self-start">
             <button
-              onClick={() => setNoteMode(noteMode === 'class' ? 'student' : 'class')}
-              className="text-[11px] font-bold text-slate-400 hover:text-blue-500 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50 flex items-center gap-1"
+              onClick={() => setNoteMode('student')}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-[12px] font-black transition-all",
+                noteMode === 'student' ? "bg-white text-slate-700 shadow-sm" : "text-slate-400 hover:text-slate-600"
+              )}
             >
-              {noteMode === 'class' ? '← Switch to Student Note' : 'Switch to Class Note →'}
+              Student Note
             </button>
-          )}
-        </div>
+            <button
+              onClick={() => setNoteMode('class')}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-[12px] font-black transition-all",
+                noteMode === 'class' ? "bg-white text-slate-700 shadow-sm" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Class Note
+            </button>
+          </div>
+        ) : (
+          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Write a note about a student</span>
+        )}
 
         {noteMode === 'class' ? (
           <div className="space-y-3">
@@ -807,7 +818,8 @@ const handleVoiceLog = async () => {
         )}
 
         {/* ── Indicators — accordion by category ── */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
+          <p className="text-[11px] text-slate-400 font-medium px-1">Tap a behavior label to tag this note — the AI uses these to write parent reports</p>
           {([
             { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive'), selectedCount: indicators.filter(b => b.type === 'positive' && selectedTags.includes(b.label)).length },
             { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral'), selectedCount: indicators.filter(b => b.type === 'neutral' && selectedTags.includes(b.label)).length },
@@ -935,9 +947,11 @@ const handleVoiceLog = async () => {
           </button>
           <button
             onClick={() => noteDateInputRef.current?.showPicker?.() ?? noteDateInputRef.current?.click()}
-            className="px-4 py-3.5 bg-slate-100 text-slate-500 hover:text-blue-500 rounded-2xl font-bold text-[11px] transition-all whitespace-nowrap flex items-center gap-1"
+            className="px-4 py-3.5 bg-slate-100 text-slate-500 hover:text-blue-500 hover:bg-blue-50 hover:border-blue-200 border border-slate-200 rounded-2xl font-bold text-[11px] transition-all whitespace-nowrap flex items-center gap-1"
+            title="Tap to change the date of this note"
           >
             📅 {noteDate === todayStr ? 'Today' : new Date(noteDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            <span className="text-[9px] text-slate-400 font-medium ml-0.5">▼</span>
           </button>
           <input
             ref={noteDateInputRef}
@@ -985,10 +999,10 @@ const handleVoiceLog = async () => {
           </AnimatePresence>
         </div>
         {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
-          <div className="text-center py-10 space-y-2 bg-white rounded-[28px] border border-dashed border-slate-200">
+          <div className="text-center py-10 space-y-3 bg-white rounded-[28px] border border-dashed border-slate-200 px-6">
             <p className="text-sm font-black text-slate-400">No notes yet today.</p>
-            <p className="text-xs text-slate-400 leading-relaxed px-6">
-              Select a student, tap an indicator, and hit <span className="font-bold">Save Note</span>. Done in seconds.
+            <p className="text-xs text-slate-400 leading-relaxed">
+              <span className="font-bold text-slate-500">How it works:</span> Pick a student → tap a behavior label below (like "Great focus" or "Needed redirection") → hit <span className="font-bold">Save Note</span>. The AI uses these labels to write parent reports for you.
             </p>
           </div>
         )}
