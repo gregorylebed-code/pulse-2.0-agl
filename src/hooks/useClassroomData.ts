@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import { Note, Student, CalendarEvent, Report, DeliveredLesson, StudentGoal, GoalCategory, GoalStatus, Shoutout, ParentCommunication, Accommodation, AttendanceRecord } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -436,6 +437,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       }));
     } catch (error) {
       console.error('Error updating note:', error);
+      toast.error('Failed to update note — please try again');
     }
   }, []);
 
@@ -446,6 +448,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       setState(prev => ({ ...prev, notes: prev.notes.filter(n => n.id !== id) }));
     } catch (error) {
       console.error('Error deleting note:', error);
+      toast.error('Failed to delete note — please try again');
     }
   }, []);
 
@@ -483,6 +486,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       }));
     } catch (error) {
       console.error('Error updating student:', error);
+      toast.error('Failed to update student — please try again');
     }
   }, []);
 
@@ -500,6 +504,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       }));
     } catch (error) {
       console.error('Error deleting student:', error);
+      toast.error('Failed to remove student — please try again');
     }
   }, []);
 
@@ -531,6 +536,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       }));
     } catch (error) {
       console.error('Error updating task:', error);
+      toast.error('Failed to update task — please try again');
     }
   }, []);
 
@@ -541,6 +547,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       setState(prev => ({ ...prev, tasks: prev.tasks.filter(t => t.id !== id) }));
     } catch (error) {
       console.error('Error deleting task:', error);
+      toast.error('Failed to delete task — please try again');
     }
   }, []);
 
@@ -553,6 +560,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       setState(prev => ({ ...prev, reports: prev.reports.filter(r => r.id !== id) }));
     } catch (error) {
       console.error('Error deleting report:', error);
+      toast.error('Failed to delete report — please try again');
     }
   }, []);
 

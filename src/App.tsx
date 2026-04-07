@@ -17,6 +17,7 @@ import ShoutoutsScreen from './components/ShoutoutsScreen';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import HelpButton from './components/HelpButton';
+import ErrorBoundary from './components/ErrorBoundary';
 import InstallBanner from './components/InstallBanner';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { cn } from './utils/cn';
@@ -385,6 +386,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
               )}
 
               {(pulseView === 'log' || !isFullMode) ? (
+                <ErrorBoundary label="Log Notes">
                 <PulseScreen
                   notes={notes}
                   students={students}
@@ -402,6 +404,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   onboardingComplete={onboardingComplete}
                   onGoToSettings={() => { setActiveTab('settings'); setSettingsView('main'); }}
                 />
+                </ErrorBoundary>
               ) : (
                 <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} summaries={classSummaries} setSummaries={setClassSummaries} />
               )}
@@ -409,6 +412,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           )}
           {activeTab === 'students' && (
             <motion.div key="students" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <ErrorBoundary label="Students">
               <StudentsScreen
                 students={students} notes={notes} reports={reports}
                 goals={goals}
@@ -436,10 +440,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 shoutouts={shoutouts}
                 addTask={addTask}
               />
+              </ErrorBoundary>
             </motion.div>
           )}
           {activeTab === 'insights' && (
             <motion.div key="insights" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <ErrorBoundary label="Insights">
               <InsightsScreen
                 notes={notes}
                 students={students}
@@ -449,10 +455,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   setActiveTab('students');
                 }}
               />
+              </ErrorBoundary>
             </motion.div>
           )}
           {activeTab === 'shoutouts' && (
             <motion.div key="shoutouts" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <ErrorBoundary label="Shoutouts">
               <ShoutoutsScreen
                 shoutouts={shoutouts}
                 students={students}
@@ -460,6 +468,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 deleteShoutout={deleteShoutout}
                 onCelebrate={() => confettiRef.current?.fire()}
               />
+              </ErrorBoundary>
             </motion.div>
           )}
           {activeTab === 'settings' && (
