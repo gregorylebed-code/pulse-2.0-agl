@@ -128,19 +128,23 @@ function SparkleCanvas({ x, y, onDone }: { x: number; y: number; onDone: () => v
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fbbf24', '#fff'];
-    const particles = Array.from({ length: 28 }, () => {
+    // Fallback to bottom-center if origin is (0,0)
+    const ox = x || window.innerWidth / 2;
+    const oy = y || window.innerHeight * 0.8;
+
+    const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fbbf24', '#fff', '#ea580c'];
+    const particles = Array.from({ length: 36 }, () => {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 4 + Math.random() * 7;
+      const speed = 6 + Math.random() * 12;
       return {
-        x, y,
+        x: ox, y: oy,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 3,
-        size: 3 + Math.random() * 5,
+        vy: Math.sin(angle) * speed - 5,
+        size: 5 + Math.random() * 8,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
         alpha: 1,
         rotation: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() - 0.5) * 0.3,
+        rotSpeed: (Math.random() - 0.5) * 0.4,
       };
     });
 
@@ -593,13 +597,18 @@ const handleVoiceLog = async () => {
         is_pinned: false,
       }, noteCreatedAt);
 
-      handleClear();
       if (!navigator.onLine) {
         toast('Note saved offline — will sync when reconnected', { icon: '📶' });
       } else {
         setSavedConfirm({ studentName: studentToUse, content: expandedContent, tags: finalTags });
+        if (saveButtonRef.current) {
+          const r = saveButtonRef.current.getBoundingClientRect();
+          sparkleOrigin.current = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+        setShowSparkles(true);
         setTimeout(() => setSavedConfirm(null), 1800);
       }
+      handleClear();
       onNoteAdded();
     } catch (err) {
       console.error('Error saving note:', err);
