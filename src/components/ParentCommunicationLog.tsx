@@ -49,9 +49,19 @@ const CommIcon = ({ type, size = 'sm' }: { type: string; size?: 'sm' | 'md' }) =
 
 // ─── Blank form state ─────────────────────────────────────────────────────────
 
+const detectDirection = (notes: string): 'outbound' | 'inbound' => {
+  const lower = notes.toLowerCase();
+  // Inbound signals: parent initiated
+  if (/\b(they called|she called|he called|parent called|mom called|dad called|guardian called|they reached out|they contacted|they emailed|received a call|got a call|they left a message|they texted|incoming)\b/.test(lower)) return 'inbound';
+  // Outbound signals: teacher initiated
+  if (/\b(i called|i emailed|i reached out|i texted|i contacted|i sent|i left a message|i left a voicemail|i messaged|called the|emailed the|reached out to)\b/.test(lower)) return 'outbound';
+  // Default to outbound (most common)
+  return 'outbound';
+};
+
 const blankForm = (student: Student) => ({
   comm_type: '' as string,
-  direction: 'outbound' as 'outbound' | 'inbound',
+  direction: '' as '' | 'outbound' | 'inbound',
   subject: '',
   notes: '',
   parent_name: student.parent_guardian_names?.[0] ?? '',
@@ -327,17 +337,21 @@ function AddCommForm({
     r.onend = () => setIsListening(false);
     r.onresult = (e: any) => {
       const t = e.results[0][0].transcript;
+      const detectedType = detectCommType(t);
+      const detectedDir = detectDirection(t);
       setForm(f => {
         const updatedNotes = f.notes ? f.notes + ' ' + t : t;
-        const detected = detectCommType(t);
         return {
           ...f,
           notes: updatedNotes,
-          comm_type: (!f.comm_type && detected) ? detected : f.comm_type,
+          comm_type: (!f.comm_type && detectedType) ? detectedType : f.comm_type,
+          direction: !f.direction ? detectedDir : f.direction,
         };
       });
-      const detected = detectCommType(t);
-      if (detected) toast.success(`Detected: ${detected} — type selected`);
+      const hints: string[] = [];
+      if (detectedType) hints.push(detectedType);
+      hints.push(detectedDir === 'outbound' ? 'I reached out' : 'They contacted me');
+      if (hints.length) toast.success(`Detected: ${hints.join(' · ')}`);
     };
     recognitionRef.current = r;
     r.start();
@@ -354,7 +368,7 @@ function AddCommForm({
         student_id: student.id,
         student_name: student.name,
         comm_type: form.comm_type,
-        direction: form.direction,
+        direction: form.direction || detectDirection(form.notes),
         subject: form.subject || null,
         notes: form.notes.trim(),
         parent_name: form.parent_name || null,
@@ -403,23 +417,26 @@ function AddCommForm({
       </div>
 
       {/* Direction */}
-      <div className="flex gap-2">
-        {(['outbound', 'inbound'] as const).map(d => (
-          <button
-            key={d}
-            onClick={() => set('direction', d)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all',
-              form.direction === d
-                ? 'bg-slate-700 border-slate-700 text-white'
-                : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'
-            )}
-          >
-            {d === 'outbound'
-              ? <><ArrowUpRight className="w-3.5 h-3.5" /> I reached out</>
-              : <><ArrowDownLeft className="w-3.5 h-3.5" /> They contacted me</>}
-          </button>
-        ))}
+      <div className="space-y-1">
+        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Who initiated? <span className="normal-case font-medium text-slate-300">(optional — AI will infer from your note)</span></p>
+        <div className="flex gap-2">
+          {(['outbound', 'inbound'] as const).map(d => (
+            <button
+              key={d}
+              onClick={() => set('direction', form.direction === d ? '' : d)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all',
+                form.direction === d
+                  ? 'bg-slate-700 border-slate-700 text-white'
+                  : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'
+              )}
+            >
+              {d === 'outbound'
+                ? <><ArrowUpRight className="w-3.5 h-3.5" /> I reached out</>
+                : <><ArrowDownLeft className="w-3.5 h-3.5" /> They contacted me</>}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Subject + Parent name */}
