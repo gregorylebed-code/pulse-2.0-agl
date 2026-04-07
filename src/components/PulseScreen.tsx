@@ -958,8 +958,15 @@ const handleVoiceLog = async () => {
                         <button
                           key={s.id}
                           onClick={() => selectStudent(s.name)}
-                          className="w-full text-left px-6 py-4 hover:bg-sage/5 transition-colors text-base font-bold border-b border-slate-50 last:border-0"
+                          className="w-full text-left px-6 py-4 hover:bg-sage/5 transition-colors text-base font-bold border-b border-slate-50 last:border-0 flex items-center gap-3"
                         >
+                          {s.photo_url ? (
+                            <img src={s.photo_url} alt={s.name} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-sage/20 flex items-center justify-center flex-shrink-0 text-[11px] font-black text-sage-dark">
+                              {s.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           {getDisplayName(s, aliasMode)}
                         </button>
                       ))}
@@ -977,7 +984,14 @@ const handleVoiceLog = async () => {
                   className="overflow-hidden"
                 >
                   <div className="bg-sage/10 border border-sage/20 rounded-2xl px-4 py-3 flex items-center gap-3">
-                    <div className="w-2 h-2 bg-sage rounded-full animate-pulse" />
+                    {(() => {
+                      const s = students.find(st => st.name === selectedStudent);
+                      return s?.photo_url ? (
+                        <img src={s.photo_url} alt={s.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-2 h-2 bg-sage rounded-full animate-pulse" />
+                      );
+                    })()}
                     <span className="text-[13px] font-bold text-sage-dark">Selected: <span className="text-slate-900">{(() => { const s = students.find(st => st.name === selectedStudent); return s ? getDisplayName(s, aliasMode) : selectedStudent; })()}</span></span>
                   </div>
                 </motion.div>
