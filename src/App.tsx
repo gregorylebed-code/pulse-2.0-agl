@@ -398,6 +398,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   abbreviations={abbreviations}
                   resetKey={pulseResetKey}
                   onStudentClick={(studentId) => { setSelectedStudentId(studentId); setActiveTab('students'); }}
+                  onboardingComplete={onboardingComplete}
+                  onGoToSettings={() => { setActiveTab('settings'); setSettingsView('main'); }}
                 />
               ) : (
                 <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} summaries={classSummaries} setSummaries={setClassSummaries} />

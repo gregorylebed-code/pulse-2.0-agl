@@ -1527,9 +1527,6 @@ export default function StudentDetailView({
             className="w-full min-h-[140px] p-6 bg-transparent border-0 focus:outline-none focus:ring-4 focus:ring-sage/5 rounded-[32px] transition-all text-base font-medium resize-none leading-relaxed"
           />
           <div className="absolute flex flex-col gap-2 right-4 bottom-4">
-            <button onClick={() => fileInputRef.current?.click()} className="p-2.5 bg-white text-slate-400 rounded-xl shadow-sm border border-slate-100 hover:text-sage transition-all z-10">
-              <ImageIcon className="w-4 h-4" />
-            </button>
             <button
               onClick={handleVoiceLog}
               className={cn(
@@ -1539,11 +1536,10 @@ export default function StudentDetailView({
             >
               <Mic className="w-4 h-4" />
             </button>
-            <input type="file" ref={fileInputRef} onChange={handleImageSelect} className="hidden" accept="image/*" />
           </div>
         </div>
 
-        {imagePreview && (
+        {false && imagePreview && (
           <div className="relative w-24 h-24 mt-2">
             <img src={imagePreview} className="w-full h-full object-cover rounded-2xl border-2 border-white shadow-md" />
             <button onClick={() => { setImage(null); setImagePreview(null); }} className="absolute -top-2 -right-2 bg-terracotta text-white p-1 rounded-full shadow-lg"><X className="w-3 h-3" /></button>

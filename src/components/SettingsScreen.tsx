@@ -218,7 +218,7 @@ export default function SettingsScreen({
   onGoToReport,
 }: SettingsScreenProps) {
   const { canInstallAndroid, showIosInstructions, triggerInstall } = useInstallPrompt();
-  const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
+  const [gettingStartedOpen, setGettingStartedOpen] = useState(!onboardingComplete);
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
   // Abbreviations state

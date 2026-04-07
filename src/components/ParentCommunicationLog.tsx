@@ -308,6 +308,15 @@ function AddCommForm({
   const set = <K extends keyof typeof form>(key: K, val: (typeof form)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
 
+  const detectCommType = (text: string): string | null => {
+    const lower = text.toLowerCase();
+    if (/\b(called|phone|phoned|spoke on the phone|talked on the phone|left a voicemail|voicemail|cell|rang)\b/.test(lower)) return 'Phone';
+    if (/\b(email|emailed|sent an email|wrote an email)\b/.test(lower)) return 'Email';
+    if (/\b(met|meeting|conference|in person|face to face|visited|sit down)\b/.test(lower)) return 'Meeting';
+    if (/\b(parentsquare|parent square|ps message|sent a ps)\b/.test(lower)) return 'ParentSquare';
+    return null;
+  };
+
   const handleVoice = () => {
     if (isListening) { recognitionRef.current?.stop(); return; }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -318,7 +327,17 @@ function AddCommForm({
     r.onend = () => setIsListening(false);
     r.onresult = (e: any) => {
       const t = e.results[0][0].transcript;
-      setForm(f => ({ ...f, notes: f.notes ? f.notes + ' ' + t : t }));
+      setForm(f => {
+        const updatedNotes = f.notes ? f.notes + ' ' + t : t;
+        const detected = detectCommType(t);
+        return {
+          ...f,
+          notes: updatedNotes,
+          comm_type: (!f.comm_type && detected) ? detected : f.comm_type,
+        };
+      });
+      const detected = detectCommType(t);
+      if (detected) toast.success(`Detected: ${detected} — type selected`);
     };
     recognitionRef.current = r;
     r.start();
@@ -433,7 +452,8 @@ function AddCommForm({
         <button
           type="button"
           onClick={handleVoice}
-          className={cn('absolute right-2 bottom-2 w-8 h-8 rounded-xl flex items-center justify-center transition-all', isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 text-slate-500 hover:bg-sage/20 hover:text-sage')}
+          className={cn('absolute right-2 bottom-2 p-2.5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center transition-all', isListening ? 'bg-terracotta text-white animate-pulse border-terracotta shadow-lg shadow-terracotta/30' : 'bg-white text-slate-400 hover:text-terracotta hover:border-terracotta/30')}
+          title={isListening ? 'Stop recording' : 'Tap to dictate your note'}
         >
           {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
         </button>
@@ -685,29 +705,6 @@ export default function ParentCommunicationLog({
           <p className="text-[11px] text-slate-400 mt-0.5">Every contact, automatically timestamped</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {allComms.length > 0 && (
-            <>
-              <button
-                onClick={handleCopyAll}
-                title="Copy full communication log"
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-violet-50 border border-violet-100 text-violet-600 rounded-xl text-[11px] font-black hover:bg-violet-100 transition-colors"
-              >
-                <ClipboardList className="w-3.5 h-3.5" />
-                Copy
-              </button>
-              <button
-                onClick={() => {
-                  const body = buildFullLog(student, allComms);
-                  window.location.href = `mailto:?subject=${encodeURIComponent(`Parent Communication Log — ${student.name}`)}&body=${encodeURIComponent(body)}`;
-                }}
-                title="Email full communication log"
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl text-[11px] font-black hover:bg-blue-100 transition-colors"
-              >
-                <Mail className="w-3.5 h-3.5" />
-                Email
-              </button>
-            </>
-          )}
           <button
             onClick={() => setShowForm(f => !f)}
             className="flex items-center gap-1.5 px-4 py-2 bg-sage text-white rounded-xl text-[13px] font-black hover:bg-sage-dark transition-colors shadow-sm"
@@ -728,9 +725,36 @@ export default function ParentCommunicationLog({
       {/* Summary stats */}
       <CommSummary communications={allComms} />
 
+      {/* Copy / Email full log */}
+      {allComms.length > 0 && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopyAll}
+            title="Copy full communication log"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 border border-violet-100 text-violet-600 rounded-xl text-[11px] font-black hover:bg-violet-100 transition-colors"
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+            Copy Full Log
+          </button>
+          <button
+            onClick={() => {
+              const body = buildFullLog(student, allComms);
+              window.location.href = `mailto:?subject=${encodeURIComponent(`Parent Communication Log — ${student.name}`)}&body=${encodeURIComponent(body)}`;
+            }}
+            title="Email full communication log"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl text-[11px] font-black hover:bg-blue-100 transition-colors"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            Email Full Log
+          </button>
+        </div>
+      )}
+
       {/* Filters */}
       {allComms.length > 2 && (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Filter saved logs by type <span className="normal-case font-medium">(optional)</span></p>
+          <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
           {COMM_TYPES.map(t => (
             <button
@@ -759,6 +783,7 @@ export default function ParentCommunicationLog({
             <BookOpen className="w-3.5 h-3.5" />
             IEP Only
           </button>
+          </div>
         </div>
       )}
 

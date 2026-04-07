@@ -29,6 +29,8 @@ interface PulseScreenProps {
   abbreviations: Abbreviation[];
   resetKey?: number;
   onStudentClick?: (studentId: string) => void;
+  onboardingComplete?: boolean;
+  onGoToSettings?: () => void;
 }
 
 // ─── Today at a Glance ───────────────────────────────────────────────────────
@@ -113,7 +115,7 @@ function TodayAtAGlance({ notes, indicators }: { notes: Note[]; indicators: any[
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick }: PulseScreenProps) {
+function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings }: PulseScreenProps) {
   const { aliasMode } = useAliasMode();
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [studentInput, setStudentInput] = useState('');
@@ -533,6 +535,28 @@ const handleVoiceLog = async () => {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
+
+      {/* Getting Started Banner — shown until onboarding is complete */}
+      <AnimatePresence>
+        {!onboardingComplete && (
+          <motion.button
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            onClick={onGoToSettings}
+            className="w-full flex items-center gap-3 px-5 py-4 bg-sage/10 border border-sage/25 rounded-[24px] text-left hover:bg-sage/15 transition-all shadow-sm"
+          >
+            <div className="w-9 h-9 rounded-2xl bg-sage/20 border border-sage/30 flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">✨</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-black text-sage">New here? Start the setup guide →</p>
+              <p className="text-[11px] text-sage/70 font-medium mt-0.5">Takes 2 minutes · tap to open Getting Started in Settings</p>
+            </div>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isFullMode && nextEvent && (
           <motion.div
@@ -879,9 +903,6 @@ const handleVoiceLog = async () => {
             className="w-full min-h-[80px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
           <div className="absolute right-3 bottom-3 flex gap-2 items-center">
-            <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-white text-slate-400 rounded-xl shadow-sm border border-slate-100 hover:text-sage transition-all">
-              <ImageIcon className="w-3.5 h-3.5" />
-            </button>
             <button
               onClick={handleVoiceLog}
               className={cn(
@@ -892,11 +913,10 @@ const handleVoiceLog = async () => {
               {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               <span>{isListening ? 'Stop' : 'Voice'}</span>
             </button>
-            <input type="file" ref={fileInputRef} onChange={handleImageSelect} className="hidden" accept="image/*" />
           </div>
         </div>
 
-        {imagePreview && (
+        {false && imagePreview && (
           <div className="relative w-24 h-24">
             <img src={imagePreview} className="w-full h-full object-cover rounded-2xl border-2 border-white shadow-md" />
             <button onClick={() => { setImage(null); setImagePreview(null); }} className="absolute -top-2 -right-2 bg-terracotta text-white p-1 rounded-full shadow-lg"><X className="w-3 h-3" /></button>
