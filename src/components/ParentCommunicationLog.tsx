@@ -24,10 +24,10 @@ interface ParentCommunicationLogProps {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const COMM_TYPES = [
-  { label: 'Email',        icon: Mail,           color: 'text-blue-500',    bg: 'bg-blue-50',   border: 'border-blue-100' },
-  { label: 'Phone',        icon: Phone,          color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-  { label: 'Meeting',      icon: Users,          color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-100' },
-  { label: 'ParentSquare', icon: MessageSquare,  color: 'text-sky-500',     bg: 'bg-sky-50',     border: 'border-sky-100' },
+  { label: 'Email',        icon: Mail,           color: 'text-blue-500',    bg: 'bg-blue-50',    border: 'border-blue-100',   accent: 'bg-blue-400'    },
+  { label: 'Phone',        icon: Phone,          color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', accent: 'bg-emerald-400' },
+  { label: 'Meeting',      icon: Users,          color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-100', accent: 'bg-violet-400'  },
+  { label: 'ParentSquare', icon: MessageSquare,  color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-100',  accent: 'bg-amber-400'   },
 ];
 
 const getCommMeta = (label: string) =>
@@ -38,7 +38,7 @@ const CommIcon = ({ type, size = 'sm' }: { type: string; size?: 'sm' | 'md' }) =
   const sz = size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4';
   if (type === 'ParentSquare') {
     return (
-      <span className={cn('inline-flex items-center justify-center rounded-sm bg-sky-500 text-white font-black leading-none', size === 'sm' ? 'w-3.5 h-3.5 text-[8px]' : 'w-4 h-4 text-[9px]')}>
+      <span className={cn('inline-flex items-center justify-center rounded-sm bg-amber-400 text-white font-black leading-none', size === 'sm' ? 'w-3.5 h-3.5 text-[8px]' : 'w-4 h-4 text-[9px]')}>
         PS
       </span>
     );
@@ -131,7 +131,7 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
       )}
     >
       {/* Left accent bar */}
-      <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl', meta.bg.replace('bg-', 'bg-').replace('-50', '-400'))} />
+      <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl', meta.accent)} />
 
       <div className="pl-4 pr-4 py-3">
         {/* Row 1: type badge + date + badges */}
@@ -636,6 +636,7 @@ export default function ParentCommunicationLog({
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState<string | null>(null);
   const [showIepOnly, setShowIepOnly] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(4);
 
   // Filter to this student only, sorted newest first
   const allComms = useMemo(() =>
@@ -698,21 +699,10 @@ export default function ParentCommunicationLog({
     toast.success(`Copied full log (${allComms.length} entries)`);
   };
 
-  // Group by month for timeline rendering
-  const grouped = useMemo(() => {
-    const groups: { label: string; items: ParentCommunication[] }[] = [];
-    filtered.forEach(c => {
-      const d = new Date(c.comm_date);
-      const label = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-      const last = groups[groups.length - 1];
-      if (last && last.label === label) {
-        last.items.push(c);
-      } else {
-        groups.push({ label, items: [c] });
-      }
-    });
-    return groups;
-  }, [filtered]);
+  // Reset pagination when filters change
+  React.useEffect(() => { setVisibleCount(4); }, [filterType, showIepOnly]);
+
+  const visibleFiltered = filtered.slice(0, visibleCount);
 
   return (
     <div className="space-y-4">
@@ -817,30 +807,25 @@ export default function ParentCommunicationLog({
           <p className="text-[13px] font-medium">No entries match your filter</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {grouped.map(group => (
-            <div key={group.label}>
-              {/* Month divider */}
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-px flex-1 bg-slate-100" />
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{group.label}</span>
-                <div className="h-px flex-1 bg-slate-100" />
-              </div>
-
-              <div className="space-y-2">
-                <AnimatePresence mode="popLayout">
-                  {group.items.map(comm => (
-                    <TimelineEntry
-                      key={comm.id}
-                      comm={comm}
-                      onDelete={handleDelete}
-                      onUpdate={onUpdate}
-                    />
-                  ))}
-                </AnimatePresence>
-              </div>
-            </div>
-          ))}
+        <div className="space-y-2">
+          <AnimatePresence mode="popLayout">
+            {visibleFiltered.map(comm => (
+              <TimelineEntry
+                key={comm.id}
+                comm={comm}
+                onDelete={handleDelete}
+                onUpdate={onUpdate}
+              />
+            ))}
+          </AnimatePresence>
+          {filtered.length > visibleCount && (
+            <button
+              onClick={() => setVisibleCount(v => v + 10)}
+              className="w-full py-2.5 text-[12px] font-black text-blue-500 border border-blue-100 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
+            >
+              Load {Math.min(10, filtered.length - visibleCount)} more ({filtered.length - visibleCount} remaining)
+            </button>
+          )}
         </div>
       )}
     </div>

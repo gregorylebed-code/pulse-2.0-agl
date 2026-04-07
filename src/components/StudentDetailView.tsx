@@ -636,6 +636,7 @@ export default function StudentDetailView({
   const [selectedComm, setSelectedComm] = useState<string[]>([]);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const voiceRecognitionRef = useRef<any>(null);
   const [showTags, setShowTags] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<'positive' | 'neutral' | 'growth' | 'comm' | null>(null);
   const [showReportOptions, setShowReportOptions] = useState(false);
@@ -772,6 +773,7 @@ export default function StudentDetailView({
   };
 
   const handleVoiceLog = async () => {
+    if (isListening) { voiceRecognitionRef.current?.abort(); setIsListening(false); return; }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Voice recognition not supported in this browser.");
@@ -779,6 +781,7 @@ export default function StudentDetailView({
     }
 
     const recognition = new SpeechRecognition();
+    voiceRecognitionRef.current = recognition;
     recognition.lang = 'en-US';
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
@@ -1606,7 +1609,7 @@ export default function StudentDetailView({
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="flex flex-wrap gap-2 pt-3 pb-1 px-1">
+                      <div className="flex flex-wrap gap-1.5 pt-3 pb-1 px-1">
                         {cat.items.map((b: any) => {
                           const isSelected = (cat.key as string) === 'comm' ? selectedComm.includes(b.label) : selectedTags.includes(b.label);
                           return (
@@ -1616,11 +1619,11 @@ export default function StudentDetailView({
                               whileTap={{ scale: 0.88 }}
                               transition={{ type: 'spring', stiffness: 500, damping: 20 }}
                               className={cn(
-                                "px-3.5 py-2 rounded-2xl text-sm font-bold flex items-center gap-1.5 transition-colors border-2",
+                                "px-2.5 py-1.5 rounded-2xl text-xs font-bold flex items-center gap-1 transition-colors border-2",
                                 isSelected ? activeItemColors[cat.color] : inactiveItemColors[cat.color]
                               )}
                             >
-                              <span className="text-base leading-none">{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
+                              <span className="text-sm leading-none">{b.icon ?? getIconForName(b.icon_name, b.type)}</span> {b.label}
                             </motion.button>
                           );
                         })}
@@ -2862,6 +2865,13 @@ export default function StudentDetailView({
       </div>
 
       <div id="ai-report" ref={aiReportRef} className="scroll-mt-header" />
+
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="flex items-center gap-1.5 text-[11px] font-black text-blue-500 hover:text-blue-700 transition-colors mx-auto no-print"
+      >
+        ↑ Back to top
+      </button>
 
       <div id="history" ref={historyRef} className="space-y-4 scroll-mt-header">
             <div className="flex items-center justify-between">

@@ -755,15 +755,7 @@ export default function StudentsScreen({
         )}
       </AnimatePresence>
 
-      {/* Attendance history banner */}
-      {!attendanceMode && (
-        <AttendanceBanner
-          attendanceRecords={attendanceRecords}
-          students={students}
-          onStudentClick={setSelectedStudentId}
-          onDelete={deleteAttendanceRecord}
-        />
-      )}
+      {/* Attendance history banner — hidden in public version */}
 
       {/* Pending Follow-ups Banner */}
       <PendingFollowUpsBanner
@@ -948,7 +940,7 @@ export default function StudentsScreen({
                   );
                 })}
               </div>
-              <p className="text-center text-[11px] text-slate-300 pt-1 pb-2 flex items-center justify-center gap-1">
+              <p className="text-center text-[11px] text-red-400 font-medium pt-1 pb-2 flex items-center justify-center gap-1">
                 <Pin className="w-2.5 h-2.5 inline" /> Hold a student card for 2 seconds to pin to top
               </p>
             </div>

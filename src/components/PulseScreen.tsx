@@ -202,6 +202,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [selectedClass, setSelectedClass] = useState<string>('');
 
   const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingDeleteNoteIds, setPendingDeleteNoteIds] = useState<Set<string>>(new Set());
@@ -323,6 +324,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   };
 
 const handleVoiceLog = async () => {
+    if (isListening) { recognitionRef.current?.abort(); setIsListening(false); return; }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Voice recognition not supported in this browser.");
@@ -330,6 +332,7 @@ const handleVoiceLog = async () => {
     }
 
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
     recognition.lang = 'en-US';
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
@@ -944,18 +947,20 @@ const handleVoiceLog = async () => {
             onChange={e => setNoteDate(e.target.value || todayStr)}
             className="sr-only"
           />
-          <button
-            onClick={handleSave}
-            disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim() && !noteContent.trim())) || (!noteContent.trim() && !image && selectedTags.length === 0)}
-            className={cn(
-              "flex-1 py-3.5 text-white rounded-full font-black text-sm uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-40",
-              (noteContent.trim() || selectedTags.length > 0 || selectedStudent)
-                ? "bg-linear-to-r from-orange-400 to-orange-500 animate-pulse shadow-orange-300/60 hover:brightness-110"
-                : "bg-linear-to-r from-orange-400 to-orange-500 shadow-orange-200/50 hover:brightness-110"
-            )}
-          >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Save Note</>}
-          </button>
+          <div className={cn(
+            "flex-1 rounded-full transition-all",
+            (noteContent.trim() || selectedTags.length > 0 || selectedStudent) && !isSaving
+              ? "animate-pulse ring-4 ring-orange-300/60"
+              : ""
+          )}>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || (noteMode === 'class' ? !selectedClass : (!selectedStudent && !studentInput.trim() && !noteContent.trim())) || (!noteContent.trim() && !image && selectedTags.length === 0)}
+              className="w-full py-3.5 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 flex items-center justify-center gap-2 disabled:opacity-40"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Save Note</>}
+            </button>
+          </div>
         </div>
       </div>
 
