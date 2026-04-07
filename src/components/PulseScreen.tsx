@@ -419,13 +419,13 @@ const handleVoiceLog = async () => {
           image_url: null,
           is_pinned: false,
         }, noteCreatedAt);
-        handleClear();
         if (!navigator.onLine) {
           toast(`Class note saved offline — will sync when reconnected`, { icon: '📶' });
         } else {
           setSavedConfirm({ studentName: selectedClass, content: expandedContent, tags: finalTags });
-          setTimeout(() => setSavedConfirm(null), 2800);
+          setTimeout(() => setSavedConfirm(null), 1400);
         }
+        handleClear();
         onNoteAdded();
       } catch (err) {
         console.error('Error saving class note:', err);
@@ -507,7 +507,7 @@ const handleVoiceLog = async () => {
         toast('Note saved offline — will sync when reconnected', { icon: '📶' });
       } else {
         setSavedConfirm({ studentName: studentToUse, content: expandedContent, tags: finalTags });
-        setTimeout(() => setSavedConfirm(null), 2800);
+        setTimeout(() => setSavedConfirm(null), 1400);
       }
       onNoteAdded();
     } catch (err) {
@@ -558,7 +558,7 @@ const handleVoiceLog = async () => {
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
-                transition={{ duration: 2.6, ease: 'linear' }}
+                transition={{ duration: 1.4, ease: 'linear' }}
                 style={{ transformOrigin: 'left' }}
                 className="h-1 bg-green-400 w-full"
               />
