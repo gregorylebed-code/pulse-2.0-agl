@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Note, Student, CalendarEvent } from '../types';
 import { parseVoiceLog, categorizeNote } from '../lib/gemini';
 import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations';
@@ -437,7 +438,7 @@ const handleVoiceLog = async () => {
           toast(`Class note saved offline — will sync when reconnected`, { icon: '📶' });
         } else {
           setSavedConfirm({ studentName: selectedClass, content: expandedContent, tags: finalTags });
-          setTimeout(() => setSavedConfirm(null), 1400);
+          setTimeout(() => setSavedConfirm(null), 1800);
         }
         handleClear();
         onNoteAdded();
@@ -521,7 +522,7 @@ const handleVoiceLog = async () => {
         toast('Note saved offline — will sync when reconnected', { icon: '📶' });
       } else {
         setSavedConfirm({ studentName: studentToUse, content: expandedContent, tags: finalTags });
-        setTimeout(() => setSavedConfirm(null), 1400);
+        setTimeout(() => setSavedConfirm(null), 1800);
       }
       onNoteAdded();
     } catch (err) {
@@ -556,61 +557,61 @@ const handleVoiceLog = async () => {
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
 
-      {/* NOTE SAVED CONFIRMATION OVERLAY */}
-      <AnimatePresence>
-        {savedConfirm && (
-          <motion.div
-            initial={{ y: 120, opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 120, opacity: 0, scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-            className="fixed bottom-24 left-4 right-4 z-50 pointer-events-none"
-          >
-            <div className="rounded-2xl overflow-hidden shadow-2xl border border-green-300/40"
-              style={{ background: 'linear-gradient(135deg, #052e16 0%, #14532d 100%)' }}>
-              {/* Green flash bar at top */}
-              <motion.div
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 1.4, ease: 'linear' }}
-                style={{ transformOrigin: 'left' }}
-                className="h-1 bg-green-400 w-full"
-              />
-              <div className="px-5 py-4 flex items-start gap-4">
-                {/* Big checkmark */}
+      {/* NOTE SAVED CONFIRMATION OVERLAY — rendered via portal to escape transform stacking context */}
+      {createPortal(
+        <AnimatePresence>
+          {savedConfirm && (
+            <motion.div
+              initial={{ y: 120, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 120, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+              style={{ position: 'fixed', bottom: '96px', left: '16px', right: '16px', zIndex: 9999, pointerEvents: 'none' }}
+            >
+              <div className="rounded-2xl overflow-hidden shadow-2xl border border-green-300/40"
+                style={{ background: 'linear-gradient(135deg, #052e16 0%, #14532d 100%)' }}>
                 <motion.div
-                  initial={{ scale: 0, rotate: -20 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 }}
-                  className="w-11 h-11 rounded-full bg-green-400 flex items-center justify-center flex-shrink-0 mt-0.5"
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#052e16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </motion.div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-green-300 text-xs font-black uppercase tracking-widest mb-1">Note Saved</div>
-                  <div className="text-white font-semibold text-sm truncate">{savedConfirm.studentName}</div>
-                  {savedConfirm.content && (
-                    <div className="text-green-100/70 text-xs mt-1 line-clamp-2 leading-relaxed">
-                      &ldquo;{savedConfirm.content}&rdquo;
-                    </div>
-                  )}
-                  {savedConfirm.tags.length > 0 && (
-                    <div className="flex gap-1.5 flex-wrap mt-2">
-                      {savedConfirm.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="px-2 py-0.5 rounded-full bg-green-400/20 text-green-300 text-[10px] font-bold border border-green-400/30">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 1.8, ease: 'linear' }}
+                  style={{ transformOrigin: 'left', height: '4px', background: '#4ade80', width: '100%' }}
+                />
+                <div className="px-5 py-4 flex items-start gap-4">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 }}
+                    style={{ width: 44, height: 44, borderRadius: '50%', background: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#052e16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </motion.div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: '#86efac', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Note Saved</div>
+                    <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{savedConfirm.studentName}</div>
+                    {savedConfirm.content && (
+                      <div style={{ color: 'rgba(220,252,231,0.7)', fontSize: '0.75rem', marginTop: 4, lineHeight: 1.5 }}>
+                        &ldquo;{savedConfirm.content}&rdquo;
+                      </div>
+                    )}
+                    {savedConfirm.tags.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                        {savedConfirm.tags.slice(0, 3).map(tag => (
+                          <span key={tag} style={{ padding: '2px 10px', borderRadius: 999, background: 'rgba(74,222,128,0.15)', color: '#86efac', fontSize: '0.65rem', fontWeight: 700, border: '1px solid rgba(74,222,128,0.3)' }}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Getting Started Banner — shown until onboarding is complete */}
       <AnimatePresence>
