@@ -2420,6 +2420,11 @@ export default function StudentDetailView({
         </AnimatePresence>
       </div>
 
+      </>}{/* end notes tab */}
+
+      {/* ─── PARENTS TAB ──────────────────────────────────────────────────── */}
+      {activeTab === 'parents' && <>
+
       {/* ─── Parent Contact Info ─────────────────────────────────────── */}
       <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100 no-print">
         <div className="flex items-center justify-between mb-3">
@@ -2517,11 +2522,6 @@ export default function StudentDetailView({
           </select>
         </div>
       </div>
-
-      </>}{/* end notes tab */}
-
-      {/* ─── PARENTS TAB ──────────────────────────────────────────────────── */}
-      {activeTab === 'parents' && <>
 
       {/* ─── Parent Communication Log ─────────────────────────────────── */}
       <div id="parents" ref={parentCommRef} className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-4 scroll-mt-header no-print">
