@@ -1820,7 +1820,7 @@ export default function StudentDetailView({
         <div className="flex items-center gap-1">
           {([
             { key: 'notes' as const,   label: '📝 Write Notes',      color: 'bg-terracotta' },
-            { key: 'parents' as const, label: '📬 Contact Parents',   color: 'bg-blue-500'   },
+            { key: 'parents' as const, label: '📬 Parent Log',         color: 'bg-blue-500'   },
             { key: 'goals' as const,   label: '🎯 Track Goals',       color: 'bg-violet-500' },
             { key: 'reports' as const, label: '📊 View Reports',      color: 'bg-sage'       },
           ]).map(tab => (
