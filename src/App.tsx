@@ -600,7 +600,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       <FeedbackModal currentView={
         activeTab === 'pulse' ? 'Pulse Screen' :
         activeTab === 'students' ? 'Students Screen' : 'Settings'
-      } onNavigate={(action) => {
+      } onSwitchToRealClass={students.length > 0 ? handleSwitchFromDemo : undefined} onNavigate={(action) => {
         if (action === 'pulse') { setActiveTab('pulse'); }
         else if (action === 'students') { setActiveTab('students'); }
         else if (action === 'settings-import') { setActiveTab('settings'); setSettingsView('data-management'); }

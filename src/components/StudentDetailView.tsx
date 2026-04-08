@@ -3007,13 +3007,6 @@ export default function StudentDetailView({
 
       <div id="ai-report" ref={aiReportRef} className="scroll-mt-header" />
 
-      <button
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className="flex items-center gap-1.5 text-[11px] font-black text-blue-500 hover:text-blue-700 transition-colors mx-auto no-print"
-      >
-        ↑ Back to top
-      </button>
-
       <div id="history" ref={historyRef} className="space-y-4 scroll-mt-header">
             <div className="flex items-center justify-between">
               <div>

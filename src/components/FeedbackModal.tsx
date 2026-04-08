@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, X, Send, Loader2, CheckCircle2, Pencil, FileText, Map, MessageCircle, GraduationCap, ChevronRight, BookOpen } from 'lucide-react';
+import { HelpCircle, X, Send, Loader2, CheckCircle2, Pencil, FileText, Map, MessageCircle, GraduationCap, ChevronRight, BookOpen, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
@@ -15,7 +15,7 @@ const CATEGORIES = [
 ] as const;
 
 type Category = typeof CATEGORIES[number]['value'];
-type Panel = 'menu' | 'help' | 'feedback';
+type Panel = 'menu' | 'help' | 'feedback' | 'switch-confirm';
 
 type NavAction = 'pulse' | 'students' | 'settings-import' | 'settings-getting-started' | null;
 
@@ -55,9 +55,10 @@ const tips: { icon: React.ReactNode; title: string; body: string; action: NavAct
 interface FeedbackModalProps {
   currentView: string;
   onNavigate: (action: NonNullable<NavAction>) => void;
+  onSwitchToRealClass?: () => void;
 }
 
-export default function FeedbackModal({ currentView, onNavigate }: FeedbackModalProps) {
+export default function FeedbackModal({ currentView, onNavigate, onSwitchToRealClass }: FeedbackModalProps) {
   const [panel, setPanel]              = useState<Panel | null>(null);
   const [category, setCategory]        = useState<Category>('Feature');
   const [message, setMessage]          = useState('');
@@ -152,6 +153,47 @@ export default function FeedbackModal({ currentView, onNavigate }: FeedbackModal
               >
                 <MessageCircle className="w-4 h-4 text-sage flex-shrink-0" />
                 <span className="text-sm font-bold text-slate-700">Send feedback</span>
+              </button>
+              {onSwitchToRealClass && (
+                <button
+                  onClick={() => setPanel('switch-confirm')}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-violet-50 transition-colors text-left w-full"
+                >
+                  <RefreshCw className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                  <span className="text-sm font-bold text-violet-600">Switch to my real class</span>
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {panel === 'switch-confirm' && (
+          <motion.div
+            key="switch-confirm"
+            initial={{ opacity: 0, scale: 0.92, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 12 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+            className="fixed bottom-28 left-4 z-50 w-64 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden no-print"
+          >
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+              <button onClick={() => setPanel('menu')} className="text-slate-300 hover:text-slate-500 transition-colors text-sm">←</button>
+              <span className="font-black text-slate-800 text-sm">Switch class</span>
+              <button onClick={close} className="text-slate-300 hover:text-slate-500 transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-5">
+              <p className="text-xs text-slate-600 font-medium leading-relaxed mb-4">This will remove your current students and notes so you can start fresh with your real class. This can't be undone.</p>
+              <button
+                onClick={() => { onSwitchToRealClass!(); close(); }}
+                className="w-full py-2.5 bg-violet-500 hover:bg-violet-600 text-white text-xs font-black rounded-2xl transition-colors mb-2"
+              >
+                Yes, switch to my real class
+              </button>
+              <button
+                onClick={() => setPanel('menu')}
+                className="w-full py-2 text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </motion.div>
@@ -283,21 +325,24 @@ export default function FeedbackModal({ currentView, onNavigate }: FeedbackModal
       </AnimatePresence>
 
       {/* Single floating trigger */}
-      <motion.button
-        onClick={() => setPanel(v => v ? null : 'menu')}
-        whileTap={{ scale: 0.9 }}
-        whileHover={{ scale: 1.08 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-        className="fixed bottom-24 left-4 z-50 w-11 h-11 bg-white rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center text-slate-400 hover:text-teal-500 transition-colors no-print"
-        aria-label="Help and feedback"
-      >
-        <AnimatePresence mode="wait">
-          {panel
-            ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}><X className="w-5 h-5" /></motion.span>
-            : <motion.span key="q" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}><HelpCircle className="w-5 h-5" /></motion.span>
-          }
-        </AnimatePresence>
-      </motion.button>
+      <div className="fixed bottom-24 left-4 z-50 flex flex-col items-center gap-0.5 no-print">
+        <motion.button
+          onClick={() => setPanel(v => v ? null : 'menu')}
+          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.08 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+          className="w-11 h-11 bg-white rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center text-slate-400 hover:text-teal-500 transition-colors"
+          aria-label="Help and feedback"
+        >
+          <AnimatePresence mode="wait">
+            {panel
+              ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}><X className="w-5 h-5" /></motion.span>
+              : <motion.span key="q" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}><HelpCircle className="w-5 h-5" /></motion.span>
+            }
+          </AnimatePresence>
+        </motion.button>
+        <span className="text-[10px] font-black text-teal-500 tracking-wide pointer-events-none">Help</span>
+      </div>
     </>
   );
 }
