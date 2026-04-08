@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AliasModeProvider } from './context/AliasModeContext';
 
 import { useClassroomData } from './hooks/useClassroomData';
-import { useAuth, signOut } from './lib/auth';
+import { useAuth, signOut, signInAnonymously } from './lib/auth';
 import { supabase } from './lib/supabase';
 import AuthScreen from './components/AuthScreen';
 import { migrateLocalDataToUser } from './utils/migrateLocalData';
@@ -737,13 +737,28 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
 export default function App() {
   const { user, loading } = useAuth();
+  const [signingInAnon, setSigningInAnon] = useState(false);
 
-  if (loading) {
+  const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true'
+    || localStorage.getItem('cp_launch_demo') === 'true';
+
+  useEffect(() => {
+    if (!isDemo || loading || user || signingInAnon) return;
+    setSigningInAnon(true);
+    localStorage.removeItem('cp_launch_demo');
+    window.history.replaceState({}, '', window.location.pathname);
+    signInAnonymously().then(({ error: e }) => {
+      if (e) { console.error('Anonymous sign-in failed', e); setSigningInAnon(false); }
+      else { localStorage.setItem('cp_seed_demo', 'true'); }
+    });
+  }, [isDemo, loading, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading || signingInAnon) {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-full border-4 border-sage border-t-transparent animate-spin" />
-          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading</span>
+          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{signingInAnon ? 'Loading demo…' : 'Loading'}</span>
         </div>
       </div>
     );
