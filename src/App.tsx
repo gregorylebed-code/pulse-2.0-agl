@@ -754,11 +754,18 @@ export default function App() {
     setSigningInAnon(true);
     localStorage.removeItem('cp_launch_demo');
     window.history.replaceState({}, '', window.location.pathname);
+    const timeout = setTimeout(() => setSigningInAnon(false), 8000);
     signInAnonymously().then(({ error: e }) => {
-      if (e) { console.error('Anonymous sign-in failed', e); setSigningInAnon(false); }
+      if (e) { console.error('Anonymous sign-in failed', e); setSigningInAnon(false); clearTimeout(timeout); }
       else { localStorage.setItem('cp_seed_demo', 'true'); }
     });
+    return () => clearTimeout(timeout);
   }, [isDemo, loading, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear signingInAnon once auth resolves
+  useEffect(() => {
+    if (user && signingInAnon) setSigningInAnon(false);
+  }, [user, signingInAnon]);
 
   if (loading || signingInAnon) {
     return (
