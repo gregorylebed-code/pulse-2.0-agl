@@ -205,24 +205,24 @@ export default function WelcomeModal({
 
                 {/* Profile + other steps */}
                 <div className="px-6 pb-3">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 mt-4">Also worth doing</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 mt-4">Finish setup first →</p>
                   <div className="space-y-2">
                     {[profileStep, ...otherSteps.filter(s => isFullMode || s.action !== 'onGoToCalendar')].map((step) => (
                       <button
                         key={step.title}
                         type="button"
                         onClick={() => handlers[step.action]()}
-                        className="w-full flex items-center gap-4 p-3 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group"
+                        className="w-full flex items-center gap-4 p-3 rounded-2xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all text-left group"
                       >
                         <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${step.color}`}>
                           {step.icon}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-slate-700">{step.title}</span>
+                            <span className="text-sm font-black text-slate-800">{step.title}</span>
                             {step.badge && (
                               <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                                step.badge === 'Start here' ? 'bg-sage/10 text-sage' : 'bg-slate-100 text-slate-400'
+                                step.badge === 'Start here' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                               }`}>
                                 {step.badge}
                               </span>
@@ -233,6 +233,9 @@ export default function WelcomeModal({
                       </button>
                     ))}
                   </div>
+                  <p className="text-xs text-slate-500 font-medium mt-3 leading-relaxed">
+                    💡 Find the full <span className="font-black text-slate-700">Getting Started</span> guide at the top of the Settings screen anytime.
+                  </p>
                 </div>
 
                 <div className="px-6 pb-6 pt-2 flex justify-center">
@@ -252,8 +255,8 @@ export default function WelcomeModal({
                       </div>
                       <span className="text-white/80 text-xs font-bold uppercase tracking-widest">Quick Start</span>
                     </div>
-                    <button type="button" onClick={() => setScreen('main')} className="text-white/60 hover:text-white transition-colors">
-                      <X className="w-5 h-5" />
+                    <button type="button" onClick={() => setScreen('main')} className="flex items-center gap-1 text-white/70 hover:text-white transition-colors text-xs font-bold">
+                      <X className="w-4 h-4" /> Back
                     </button>
                   </div>
                   <h1 className="text-white font-black text-2xl leading-tight">Add your students</h1>
@@ -296,7 +299,7 @@ export default function WelcomeModal({
                     {saving ? 'Adding students…' : `Add ${filledNicknames.length || ''}${filledNicknames.length ? ' ' : ''}Students & Start →`}
                   </button>
                   <button type="button" onClick={() => setScreen('main')} className="text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors text-center">
-                    ← Back
+                    ← Choose a different option
                   </button>
                 </div>
               </>
