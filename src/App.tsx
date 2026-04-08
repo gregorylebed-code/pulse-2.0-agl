@@ -127,8 +127,10 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       const added: { name: string; id: string }[] = [];
       for (const name of DEMO_NAMES) {
         const s = await addStudent({ name, class_id: null });
+        console.log('addStudent result for', name, s);
         if (s) added.push({ name, id: s.id });
       }
+      console.log('Demo students added:', added);
 
       // Helper: date string N days ago
       const daysAgo = (n: number) => {
@@ -160,7 +162,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
       const noteDates = [2, 3, 5, 5, 6, 7, 9, 10, 12, 14, 16, 18, 20, 22, 25];
       for (let i = 0; i < demoNotes.length; i++) {
-        await addNote(demoNotes[i], daysAgo(noteDates[i]));
+        try {
+          const result = await addNote(demoNotes[i], daysAgo(noteDates[i]));
+          if (!result) console.warn('addNote returned null for', demoNotes[i].student_name);
+        } catch (e) {
+          console.error('addNote failed for', demoNotes[i].student_name, e);
+        }
       }
 
       // Seed parent communications
