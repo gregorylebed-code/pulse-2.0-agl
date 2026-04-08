@@ -110,6 +110,13 @@ html.dark {
 .dark .border-slate-200 { border-color: #334155; }
 .dark .border-slate-100 { border-color: #253347; }
 
+.dark input[type="date"] {
+  background-color: #1e293b;
+  color: #cbd5e1;
+  border-color: #334155;
+  color-scheme: dark;
+}
+
 .dark .hover\:bg-slate-50:hover { background-color: #334155; }
 .dark .hover\:bg-slate-100:hover { background-color: #475569; }
 .dark .hover\:bg-white:hover { background-color: #2c3f58; }

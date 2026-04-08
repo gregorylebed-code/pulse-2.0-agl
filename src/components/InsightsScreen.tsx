@@ -9,7 +9,7 @@ import { cn } from '../utils/cn';
 import { useAliasMode } from '../context/AliasModeContext';
 import { getDisplayName } from '../utils/getDisplayName';
 
-type Period = 'week' | 'lastWeek' | 'month';
+type Period = 'week' | 'lastWeek' | 'month' | 'custom';
 type ExpandedCard = 'indicators' | 'streak' | 'perStudent' | 'classBreakdown' | 'heatmap' | 'trendGrid' | null;
 
 interface InsightsScreenProps {
@@ -599,6 +599,8 @@ function ClassTrendGridContent({ studentTrends, onStudentClick, expanded = false
 export default function InsightsScreen({ notes, students, indicators, onStudentClick }: InsightsScreenProps) {
   const { aliasMode } = useAliasMode();
   const [period, setPeriod] = useState<Period>('week');
+  const [customStart, setCustomStart] = useState<string>('');
+  const [customEnd, setCustomEnd] = useState<string>('');
   const [expandedCard, setExpandedCard] = useState<ExpandedCard>(null);
   const [alertOpen, setAlertOpen] = useState(false);
 
@@ -663,12 +665,30 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
       prevStart: new Date(lastWeekStart.getTime() - 7 * 86400000), prevEnd: lastWeekStart,
       label: 'Last Week', prevLabel: 'week before',
     };
+    if (period === 'custom' && customStart && customEnd) {
+      const [sy, sm, sd] = customStart.split('-').map(Number);
+      const [ey, em, ed] = customEnd.split('-').map(Number);
+      const start = new Date(sy, sm - 1, sd);
+      const end = new Date(ey, em - 1, ed, 23, 59, 59);
+      const rangeMs = end.getTime() - start.getTime();
+      return {
+        start, end,
+        prevStart: new Date(start.getTime() - rangeMs), prevEnd: start,
+        label: `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`,
+        prevLabel: 'prior period',
+      };
+    }
+    if (period === 'custom') return {
+      start: today, end: now,
+      prevStart: today, prevEnd: today,
+      label: 'Custom', prevLabel: 'prior',
+    };
     return {
       start: thisMonthStart, end: now,
       prevStart: lastMonthStart, prevEnd: thisMonthStart,
       label: 'This Month', prevLabel: 'last month',
     };
-  }, [period]);
+  }, [period, customStart, customEnd]);
 
   const filteredNotes = useMemo(() =>
     notes.filter(n => { const d = new Date(n.created_at); return d >= bounds.start && d <= bounds.end; }),
@@ -983,7 +1003,7 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
 
         {/* Period picker — below summary */}
         <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl">
-          {(['week', 'lastWeek', 'month'] as Period[]).map(p => (
+          {(['week', 'lastWeek', 'month', 'custom'] as Period[]).map(p => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
@@ -992,10 +1012,35 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
                 period === p ? 'bg-white text-sage shadow-sm' : 'text-slate-400 hover:text-slate-600'
               )}
             >
-              {p === 'week' ? 'This Week' : p === 'lastWeek' ? 'Last Week' : 'Month'}
+              {p === 'week' ? 'Week' : p === 'lastWeek' ? 'Last Wk' : p === 'month' ? 'Month' : 'Custom'}
             </button>
           ))}
         </div>
+
+        {/* Custom date range inputs */}
+        {period === 'custom' && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18 }}
+            className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm"
+          >
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">From</span>
+            <input
+              type="date"
+              value={customStart}
+              onChange={e => setCustomStart(e.target.value)}
+              className="flex-1 text-[12px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30"
+            />
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">To</span>
+            <input
+              type="date"
+              value={customEnd}
+              onChange={e => setCustomEnd(e.target.value)}
+              className="flex-1 text-[12px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30"
+            />
+          </motion.div>
+        )}
 
         {/* Section nav bar */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
