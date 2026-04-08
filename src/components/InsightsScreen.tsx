@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 // @ts-ignore
 import domtoimage from 'dom-to-image-more';
-import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown, Share2, BarChart2, Grid, Activity, ThermometerSun } from 'lucide-react';
+import { AlertTriangle, Users, FileText, Flame, TrendingUp, TrendingDown, Minus, ArrowLeft, Maximize2, ChevronDown, Share2, BarChart2, Grid, Activity, ThermometerSun, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Note, Student } from '../types';
@@ -603,6 +604,8 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
   const [customEnd, setCustomEnd] = useState<string>('');
   const [expandedCard, setExpandedCard] = useState<ExpandedCard>(null);
   const [alertOpen, setAlertOpen] = useState(false);
+  const [reportStudentId, setReportStudentId] = useState<string>('all');
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   // Section refs for nav bar
   const sectionRefs = {
@@ -840,6 +843,74 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
       : undefined,
   };
 
+  const handleGenerateReport = () => {
+    const targetStudents = reportStudentId === 'all' ? students : students.filter(s => s.id === reportStudentId);
+    if (targetStudents.length === 0) return;
+
+    setGeneratingReport(true);
+    try {
+      const doc = new jsPDF();
+      const periodLabel = bounds.label;
+
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      const title = reportStudentId === 'all'
+        ? `Class Report · ${periodLabel}`
+        : `${targetStudents[0].name} · ${periodLabel}`;
+      doc.text(title, 20, 20);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated ${new Date().toLocaleDateString()}`, 20, 28);
+
+      let yPos = 38;
+
+      targetStudents.forEach((student, si) => {
+        const studentNotes = filteredNotes.filter(n => n.student_name === student.name);
+        if (studentNotes.length === 0) return;
+
+        if (si > 0 && yPos > 240) { doc.addPage(); yPos = 20; }
+
+        if (yPos > 20) yPos += 4;
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        if (yPos > 270) { doc.addPage(); yPos = 20; }
+        doc.text(student.name, 20, yPos);
+        yPos += 6;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100);
+        doc.text(`${studentNotes.length} note${studentNotes.length !== 1 ? 's' : ''} this period`, 20, yPos);
+        doc.setTextColor(0);
+        yPos += 7;
+
+        studentNotes
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+          .forEach(note => {
+            if (yPos > 270) { doc.addPage(); yPos = 20; }
+            const dateStr = new Date(note.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const tags = note.tags?.length ? ` [${note.tags.join(', ')}]` : '';
+            const line = `${dateStr}${tags}: ${note.content || ''}`;
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            const wrapped = doc.splitTextToSize(line, 170);
+            doc.text(wrapped, 22, yPos);
+            yPos += wrapped.length * 4.5 + 3;
+          });
+      });
+
+      const filename = reportStudentId === 'all'
+        ? `Class_Report_${periodLabel.replace(/\s/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}.pdf`
+        : `${targetStudents[0].name.replace(/\s+/g, '_')}_Report_${periodLabel.replace(/\s/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}.pdf`;
+      doc.save(filename);
+      toast.success('Report downloaded');
+    } catch {
+      toast.error('Failed to generate report');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -1023,22 +1094,55 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18 }}
-            className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm"
+            className="space-y-2"
           >
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">From</span>
-            <input
-              type="date"
-              value={customStart}
-              onChange={e => setCustomStart(e.target.value)}
-              className="flex-1 text-[12px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30"
-            />
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">To</span>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={e => setCustomEnd(e.target.value)}
-              className="flex-1 text-[12px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30"
-            />
+            {/* Quick presets */}
+            <div className="flex gap-1.5">
+              {[
+                { label: '7 days', apply: () => {
+                  const end = new Date(); const start = new Date(); start.setDate(end.getDate() - 6);
+                  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                  setCustomStart(fmt(start)); setCustomEnd(fmt(end));
+                }},
+                { label: 'This wk', apply: () => {
+                  const today = new Date(); const start = new Date(today); start.setDate(today.getDate() - today.getDay());
+                  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                  setCustomStart(fmt(start)); setCustomEnd(fmt(today));
+                }},
+                { label: 'Last wk', apply: () => {
+                  const today = new Date(); const end = new Date(today); end.setDate(today.getDate() - today.getDay() - 1); const start = new Date(end); start.setDate(end.getDate() - 6);
+                  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                  setCustomStart(fmt(start)); setCustomEnd(fmt(end));
+                }},
+                { label: 'This mo', apply: () => {
+                  const today = new Date(); const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                  setCustomStart(fmt(start)); setCustomEnd(fmt(today));
+                }},
+              ].map(({ label, apply }) => (
+                <button key={label} onClick={apply}
+                  className="flex-1 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-black text-slate-500 hover:text-sage hover:border-sage/40 transition-all">
+                  {label}
+                </button>
+              ))}
+            </div>
+            {/* Date inputs */}
+            <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm">
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">From</span>
+              <input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="flex-1 text-[12px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30"
+              />
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">To</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="flex-1 text-[12px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30"
+              />
+            </div>
           </motion.div>
         )}
 
@@ -1291,6 +1395,33 @@ export default function InsightsScreen({ notes, students, indicators, onStudentC
             )}
           </div>
         )}
+
+        {/* Generate Report */}
+        <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <FileText className="w-4 h-4 text-sage" />
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Generate Report</p>
+          </div>
+          <p className="text-[12px] text-slate-400">Export a PDF of notes for the selected period — great for parent conferences.</p>
+          <select
+            value={reportStudentId}
+            onChange={e => setReportStudentId(e.target.value)}
+            className="w-full text-[13px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30"
+          >
+            <option value="all">All students</option>
+            {[...students].sort((a, b) => a.name.localeCompare(b.name)).map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleGenerateReport}
+            disabled={generatingReport || filteredNotes.length === 0}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-sage text-white rounded-2xl text-[13px] font-black tracking-wide hover:bg-sage-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            {generatingReport ? 'Generating…' : `Download PDF · ${bounds.label}`}
+          </button>
+        </div>
       </div>
     </>
   );
