@@ -742,13 +742,7 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    if (new URLSearchParams(window.location.search).get('demo') === 'true') {
-      localStorage.setItem('cp_launch_demo', 'true');
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-    return <AuthScreen />;
-  }
+  if (!user) return <AuthScreen />;
   return (
     <AliasModeProvider>
       <AuthenticatedApp userId={user.id} userEmail={user.email ?? ''} />

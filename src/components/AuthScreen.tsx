@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { signIn, signUp } from '../lib/auth';
+import { signIn, signUp, signInAnonymously } from '../lib/auth';
 import { cn } from '../utils/cn';
 
 export default function AuthScreen() {
@@ -11,6 +11,19 @@ export default function AuthScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true'
+    || localStorage.getItem('cp_launch_demo') === 'true';
+
+  useEffect(() => {
+    if (!isDemo) return;
+    localStorage.removeItem('cp_launch_demo');
+    setLoading(true);
+    signInAnonymously().then(({ error: e }) => {
+      if (e) { setError(e.message); setLoading(false); }
+      // on success, useAuth in App.tsx picks up the new session automatically
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
