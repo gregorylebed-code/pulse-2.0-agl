@@ -343,22 +343,22 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="mx-4 mb-2 px-4 py-2.5 bg-sage/10 border border-sage/20 rounded-2xl flex items-center justify-between gap-3 no-print"
+            className="mx-4 mb-2 px-4 py-2.5 bg-white border border-blue-200 rounded-2xl flex items-center justify-between gap-3 no-print shadow-sm"
           >
-            <p className="text-[11px] font-medium text-sage-dark leading-snug">
+            <p className="text-[11px] font-medium text-slate-600 leading-snug">
               Hey! I'm Greg, a 3rd-grade teacher who built this because I kept forgetting to follow up with parents.{' '}
               <a
                 href="https://www.tiktok.com/@shorthandapp"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-bold underline underline-offset-2"
+                className="font-bold text-blue-600 underline underline-offset-2"
               >
                 Follow along on TikTok 👉
               </a>
             </p>
             <button
               onClick={() => setShowGreetingBanner(false)}
-              className="text-sage/50 hover:text-sage transition-colors flex-shrink-0 text-base leading-none"
+              className="text-slate-300 hover:text-slate-500 transition-colors flex-shrink-0 text-base leading-none"
               aria-label="Dismiss"
             >
               ✕
