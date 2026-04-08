@@ -32,6 +32,7 @@ interface PulseScreenProps {
   onStudentClick?: (studentId: string) => void;
   onboardingComplete?: boolean;
   onGoToSettings?: () => void;
+  onSwitchToRealClass?: () => void;
 }
 
 // ─── Today at a Glance ───────────────────────────────────────────────────────
@@ -188,8 +189,18 @@ function SparkleCanvas({ x, y, onDone }: { x: number; y: number; onDone: () => v
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings }: PulseScreenProps) {
+function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings, onSwitchToRealClass }: PulseScreenProps) {
   const { aliasMode } = useAliasMode();
+  const [onboardingBannerDismissed, setOnboardingBannerDismissed] = useState(() =>
+    localStorage.getItem('cp_onboarding_banner_dismissed') === 'true'
+  );
+  const showOnboardingBanner = !onboardingBannerDismissed && students.length > 0 && notes.length < 3;
+
+  const dismissOnboardingBanner = () => {
+    localStorage.setItem('cp_onboarding_banner_dismissed', 'true');
+    setOnboardingBannerDismissed(true);
+  };
+
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [studentInput, setStudentInput] = useState('');
   const [suggestions, setSuggestions] = useState<Student[]>([]);
@@ -641,6 +652,30 @@ const handleVoiceLog = async () => {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
+
+      {/* ONBOARDING BANNER */}
+      {showOnboardingBanner && (
+        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 flex items-start gap-3">
+          <span className="text-lg leading-none mt-0.5">👋</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black text-teal-800">Welcome to ShortHand!</p>
+            <p className="text-[11px] text-teal-600 font-medium mt-0.5 leading-relaxed">
+              Tap a student's name below to log your first note. The <span className="font-black">Help</span> button on the left has tips if you get stuck.
+            </p>
+            {onSwitchToRealClass && (
+              <button
+                onClick={onSwitchToRealClass}
+                className="text-[11px] font-black text-violet-500 hover:text-violet-700 transition-colors mt-1.5"
+              >
+                Using fake students? Switch to your real class →
+              </button>
+            )}
+          </div>
+          <button onClick={dismissOnboardingBanner} className="text-teal-300 hover:text-teal-500 transition-colors flex-shrink-0 mt-0.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
 
       {/* NOTE SAVED CONFIRMATION OVERLAY — rendered via portal to escape transform stacking context */}
       {createPortal(

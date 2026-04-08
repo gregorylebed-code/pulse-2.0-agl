@@ -331,7 +331,7 @@ export default function FeedbackModal({ currentView, onNavigate, onSwitchToRealC
           whileTap={{ scale: 0.9 }}
           whileHover={{ scale: 1.08 }}
           transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-          className="w-11 h-11 bg-white rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center text-slate-400 hover:text-teal-500 transition-colors"
+          className="w-11 h-11 bg-teal-500 rounded-2xl shadow-lg flex items-center justify-center text-white hover:bg-teal-600 transition-colors"
           aria-label="Help and feedback"
         >
           <AnimatePresence mode="wait">
@@ -341,7 +341,7 @@ export default function FeedbackModal({ currentView, onNavigate, onSwitchToRealC
             }
           </AnimatePresence>
         </motion.button>
-        <span className="text-[10px] font-black text-teal-500 tracking-wide pointer-events-none">Help</span>
+        <span className="text-[10px] font-black text-teal-600 tracking-wide pointer-events-none">Help</span>
       </div>
     </>
   );

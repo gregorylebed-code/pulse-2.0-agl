@@ -414,6 +414,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   onStudentClick={(studentId) => { setSelectedStudentId(studentId); setActiveTab('students'); }}
                   onboardingComplete={onboardingComplete}
                   onGoToSettings={() => { setActiveTab('settings'); setSettingsView('main'); }}
+                  onSwitchToRealClass={students.length > 0 ? handleSwitchFromDemo : undefined}
                 />
                 </ErrorBoundary>
               ) : (
