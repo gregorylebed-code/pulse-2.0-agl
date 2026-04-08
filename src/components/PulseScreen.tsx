@@ -655,7 +655,7 @@ const handleVoiceLog = async () => {
 
       {/* ONBOARDING BANNER */}
       {showOnboardingBanner && (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 flex items-start gap-3">
+        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 flex items-start gap-3 relative">
           <span className="text-lg leading-none mt-0.5">👋</span>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-black text-teal-800">Welcome to ShortHand!</p>
@@ -674,6 +674,9 @@ const handleVoiceLog = async () => {
               Don't show this again
             </button>
           </div>
+          <button onClick={dismissOnboardingBanner} className="absolute top-2 right-2 text-teal-300 hover:text-teal-500 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
       )}
 
