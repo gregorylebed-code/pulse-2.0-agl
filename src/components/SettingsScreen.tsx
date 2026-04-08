@@ -153,6 +153,7 @@ interface SettingsScreenProps {
   onGoToPulse: () => void;
   onGoToCalendar: () => void;
   onGoToReport: () => void;
+  forceOpenGettingStarted?: boolean;
 }
 
 export default function SettingsScreen({
@@ -216,9 +217,14 @@ export default function SettingsScreen({
   onGoToPulse,
   onGoToCalendar,
   onGoToReport,
+  forceOpenGettingStarted,
 }: SettingsScreenProps) {
   const { canInstallAndroid, showIosInstructions, triggerInstall } = useInstallPrompt();
   const [gettingStartedOpen, setGettingStartedOpen] = useState(!onboardingComplete);
+
+  useEffect(() => {
+    if (forceOpenGettingStarted) setGettingStartedOpen(true);
+  }, [forceOpenGettingStarted]);
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
   // Abbreviations state

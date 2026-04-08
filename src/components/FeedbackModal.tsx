@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, X, Send, Loader2, CheckCircle2, Pencil, FileText, Map, MessageCircle, GraduationCap } from 'lucide-react';
+import { HelpCircle, X, Send, Loader2, CheckCircle2, Pencil, FileText, Map, MessageCircle, GraduationCap, ChevronRight, BookOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
@@ -17,34 +17,47 @@ const CATEGORIES = [
 type Category = typeof CATEGORIES[number]['value'];
 type Panel = 'menu' | 'help' | 'feedback';
 
-const tips = [
+type NavAction = 'pulse' | 'students' | 'settings-import' | 'settings-getting-started' | null;
+
+const tips: { icon: React.ReactNode; title: string; body: string; action: NavAction }[] = [
   {
-    icon: <Pencil className="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" />,
+    icon: <Pencil className="w-5 h-5 text-teal-500 flex-shrink-0" />,
     title: 'How to log a note',
-    body: 'Tap the Log Notes tab at the bottom. Then tap any student — speak or type your note and hit Save. Done in under 5 seconds.',
+    body: 'Tap the Log Notes tab at the bottom. Speak or type your note and hit Save.',
+    action: 'pulse',
   },
   {
-    icon: <FileText className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />,
+    icon: <FileText className="w-5 h-5 text-purple-500 flex-shrink-0" />,
     title: 'How to create a report',
-    body: 'Go to the Students tab, tap a student to open their profile, then tap "Write Reports." Choose Quick Note or Detailed.',
+    body: 'Go to the Students tab, tap a student, then tap "Write Reports."',
+    action: 'students',
   },
   {
-    icon: <Map className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />,
+    icon: <Map className="w-5 h-5 text-orange-400 flex-shrink-0" />,
     title: 'Where to find everything',
-    body: 'Log Notes tab → log notes on students. Students tab → view profiles, write reports, see history. Settings → your roster and preferences.',
+    body: 'Log Notes → students. Students → profiles & reports. Settings → roster & preferences.',
+    action: null,
   },
   {
-    icon: <GraduationCap className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />,
+    icon: <GraduationCap className="w-5 h-5 text-blue-500 flex-shrink-0" />,
     title: 'Import from Google Classroom',
-    body: 'Go to Settings → tap "Connect Google Classroom" to import your roster automatically, including student photos.',
+    body: 'Connect Google Classroom in Settings to import your roster and student photos automatically.',
+    action: 'settings-import',
+  },
+  {
+    icon: <BookOpen className="w-5 h-5 text-sage flex-shrink-0" />,
+    title: 'Getting Started checklist',
+    body: 'Find the Getting Started guide at the top of Settings to walk through setup step by step.',
+    action: 'settings-getting-started',
   },
 ];
 
 interface FeedbackModalProps {
   currentView: string;
+  onNavigate: (action: NonNullable<NavAction>) => void;
 }
 
-export default function FeedbackModal({ currentView }: FeedbackModalProps) {
+export default function FeedbackModal({ currentView, onNavigate }: FeedbackModalProps) {
   const [panel, setPanel]              = useState<Panel | null>(null);
   const [category, setCategory]        = useState<Category>('Feature');
   const [message, setMessage]          = useState('');
@@ -166,13 +179,23 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {tips.map((tip) => (
-                <div key={tip.title} className="bg-slate-50 rounded-2xl p-4 flex flex-col gap-2">
-                  {tip.icon}
-                  <div className="font-black text-slate-800 text-xs">{tip.title}</div>
-                  <div className="text-slate-500 text-[11px] leading-relaxed">{tip.body}</div>
-                </div>
-              ))}
+              {tips.map((tip) => {
+                const Tag = tip.action ? 'button' : 'div';
+                return (
+                  <Tag
+                    key={tip.title}
+                    onClick={tip.action ? () => { onNavigate(tip.action!); close(); } : undefined}
+                    className={`bg-slate-50 rounded-2xl p-4 flex flex-col gap-2 text-left ${tip.action ? 'hover:bg-slate-100 transition-colors cursor-pointer' : ''}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      {tip.icon}
+                      {tip.action && <ChevronRight className="w-3 h-3 text-slate-300" />}
+                    </div>
+                    <div className="font-black text-slate-800 text-xs">{tip.title}</div>
+                    <div className="text-slate-500 text-[11px] leading-relaxed">{tip.body}</div>
+                  </Tag>
+                );
+              })}
             </div>
           </motion.div>
         )}

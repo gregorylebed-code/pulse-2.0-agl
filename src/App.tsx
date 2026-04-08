@@ -97,6 +97,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const [showRotationForecast, setShowRotationForecast] = useState(false);
   const [welcomeHidden, setWelcomeHidden] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
+  const [openGettingStarted, setOpenGettingStarted] = useState(false);
 
   const DEMO_NAMES = ['Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet'];
   const isInDemoMode = students.length > 0 && students.every(s => DEMO_NAMES.includes(s.name));
@@ -542,6 +543,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                     toast('Write a note about a student first, then come back to compose a report.');
                   }
                 }}
+                forceOpenGettingStarted={openGettingStarted}
                 calendarEvents={calendarEvents} setCalendarEvents={updateCalendarEvents}
                 rotationMapping={rotationMapping} setRotationMapping={saveRotationMapping}
                 specialsNames={specialsNames} setSpecialsNames={saveSpecialsNames}
@@ -598,7 +600,17 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       <FeedbackModal currentView={
         activeTab === 'pulse' ? 'Pulse Screen' :
         activeTab === 'students' ? 'Students Screen' : 'Settings'
-      } />
+      } onNavigate={(action) => {
+        if (action === 'pulse') { setActiveTab('pulse'); }
+        else if (action === 'students') { setActiveTab('students'); }
+        else if (action === 'settings-import') { setActiveTab('settings'); setSettingsView('data-management'); }
+        else if (action === 'settings-getting-started') {
+          setActiveTab('settings');
+          setSettingsView('main');
+          setOpenGettingStarted(true);
+          setTimeout(() => setOpenGettingStarted(false), 500);
+        }
+      }} />
 
       <Navigation activeTab={activeTab} setActiveTab={(tab) => {
         if (tab === activeTab) {
