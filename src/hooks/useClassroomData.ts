@@ -388,9 +388,11 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const addNote = useCallback(async (note: Omit<Note, 'id' | 'created_at' | 'user_id'>, createdAt?: string) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { student_name, is_checklist, checklist_data, deadline, ...dbNote } = note as any;
       const { data, error } = await supabase
         .from('notes')
-        .insert([{ ...note, user_id: userId, created_at: createdAt ?? new Date().toISOString() }])
+        .insert([{ ...dbNote, user_id: userId, created_at: createdAt ?? new Date().toISOString() }])
         .select()
         .single();
       if (error) throw error;
