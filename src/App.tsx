@@ -119,9 +119,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   useEffect(() => {
     if (loading || students.length > 0) return;
     const params = new URLSearchParams(window.location.search);
-    const fromStorage = localStorage.getItem('cp_launch_demo') === 'true';
-    if (params.get('demo') !== 'true' && !fromStorage) return;
-    localStorage.removeItem('cp_launch_demo');
+    const fromSeed = localStorage.getItem('cp_seed_demo') === 'true';
+    if (params.get('demo') !== 'true' && !fromSeed) return;
+    localStorage.removeItem('cp_seed_demo');
     (async () => {
       // Add demo students and collect their IDs
       const added: { name: string; id: string }[] = [];

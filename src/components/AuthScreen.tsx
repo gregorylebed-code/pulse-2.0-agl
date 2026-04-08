@@ -21,6 +21,7 @@ export default function AuthScreen() {
     setLoading(true);
     signInAnonymously().then(({ error: e }) => {
       if (e) { setError(e.message); setLoading(false); }
+      else { localStorage.setItem('cp_seed_demo', 'true'); }
       // on success, useAuth in App.tsx picks up the new session automatically
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
