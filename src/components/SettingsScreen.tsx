@@ -146,7 +146,7 @@ interface SettingsScreenProps {
   saveNotificationPrefs: (prefs: import('../utils/notifications').NotificationPrefs) => Promise<void>;
   saveProfile: (profile: import('../hooks/useClassroomData').Profile) => Promise<void>;
   profile: import('../hooks/useClassroomData').Profile;
-  onboardingComplete: boolean;
+  onboardingComplete: boolean | null;
   markOnboardingComplete: () => Promise<void>;
   onGoToProfile: () => void;
   onGoToRoster: () => void;
@@ -220,7 +220,7 @@ export default function SettingsScreen({
   forceOpenGettingStarted,
 }: SettingsScreenProps) {
   const { canInstallAndroid, showIosInstructions, triggerInstall } = useInstallPrompt();
-  const [gettingStartedOpen, setGettingStartedOpen] = useState(!onboardingComplete);
+  const [gettingStartedOpen, setGettingStartedOpen] = useState(onboardingComplete === false);
 
   useEffect(() => {
     if (forceOpenGettingStarted) setGettingStartedOpen(true);

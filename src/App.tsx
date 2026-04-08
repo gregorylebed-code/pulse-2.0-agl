@@ -116,7 +116,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   // Re-show welcome when user navigates back to the pulse tab
   useEffect(() => {
-    if (!onboardingComplete && activeTab === 'pulse') {
+    if (onboardingComplete === false && activeTab === 'pulse') {
       setWelcomeHidden(false);
     }
   }, [activeTab, onboardingComplete]);

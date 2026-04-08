@@ -118,7 +118,7 @@ interface ClassroomDataState {
   stats: Stats;
   lessonHistory: DeliveredLesson[];
   notificationPrefs: NotificationPrefs;
-  onboardingComplete: boolean;
+  onboardingComplete: boolean | null;
   loading: boolean;
   error: string | null;
 }
@@ -193,7 +193,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     stats: { notes_created: 0, reports_generated: 0 },
     lessonHistory: [],
     notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
-    onboardingComplete: false,
+    onboardingComplete: null,
     loading: true,
     error: null,
   });

@@ -1819,22 +1819,23 @@ export default function StudentDetailView({
         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest text-center mb-1.5">Select a section</p>
         <div className="flex items-center gap-1">
           {([
-            { key: 'notes' as const,   label: '📝 Write Reports',    color: 'bg-terracotta' },
-            { key: 'parents' as const, label: '📬 Parent Log',         color: 'bg-blue-500'   },
-            { key: 'goals' as const,   label: '🎯 Track Goals',       color: 'bg-violet-500' },
-            { key: 'reports' as const, label: '📊 View Reports',      color: 'bg-sage'       },
+            { key: 'notes' as const,   line1: '📝 Write',   line2: 'Reports',  color: 'bg-terracotta' },
+            { key: 'parents' as const, line1: '📬 Parent',  line2: 'Log',      color: 'bg-blue-500'   },
+            { key: 'goals' as const,   line1: '🎯 Track',   line2: 'Goals',    color: 'bg-violet-500' },
+            { key: 'reports' as const, line1: '📊 View',    line2: 'Reports',  color: 'bg-sage'       },
           ]).map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "flex-1 py-2.5 rounded-xl text-[11px] font-black transition-all leading-tight text-center whitespace-nowrap",
+                "flex-1 py-4 rounded-xl text-[11px] font-black transition-all leading-tight text-center flex flex-col items-center gap-0.5",
                 activeTab === tab.key
                   ? `${tab.color} text-white shadow-md`
                   : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
               )}
             >
-              {tab.label}
+              <span>{tab.line1}</span>
+              <span>{tab.line2}</span>
             </button>
           ))}
         </div>
