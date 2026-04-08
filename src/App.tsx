@@ -127,10 +127,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       const added: { name: string; id: string }[] = [];
       for (const name of DEMO_NAMES) {
         const s = await addStudent({ name, class_id: null });
-        console.log('addStudent result for', name, s);
         if (s) added.push({ name, id: s.id });
       }
-      console.log('Demo students added:', added);
 
       // Helper: date string N days ago
       const daysAgo = (n: number) => {

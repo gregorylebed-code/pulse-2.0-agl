@@ -267,7 +267,6 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       // Map student IDs to names for note display
       const studentMap = new Map((studentsData || []).map((s: any) => [s.id, s.name]));
 
-      console.log('[loadAllData] notesData count:', notesData?.length, 'studentsData count:', studentsData?.length);
       const notesWithNames = (notesData || []).map((note: any) => ({
         ...note,
         student_name: studentMap.get(note.student_id) || 'Unknown',
@@ -392,13 +391,11 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { student_name, is_checklist, checklist_data, deadline, ...dbNote } = note as any;
-      console.log('[addNote] inserting:', { ...dbNote, user_id: userId });
       const { data, error } = await supabase
         .from('notes')
         .insert([{ ...dbNote, user_id: userId, created_at: createdAt ?? new Date().toISOString() }])
         .select()
         .single();
-      console.log('[addNote] result:', { data, error });
       if (error) throw error;
 
       setState(prev => {
