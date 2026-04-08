@@ -325,24 +325,22 @@ export default function FeedbackModal({ currentView, onNavigate, onSwitchToRealC
       </AnimatePresence>
 
       {/* Single floating trigger */}
-      <div className="fixed bottom-24 left-4 z-50 flex flex-col items-center gap-0.5 no-print">
-        <motion.button
-          onClick={() => setPanel(v => v ? null : 'menu')}
-          whileTap={{ scale: 0.9 }}
-          whileHover={{ scale: 1.08 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-          className="w-11 h-11 bg-teal-500 rounded-2xl shadow-lg flex items-center justify-center text-white hover:bg-teal-600 transition-colors"
-          aria-label="Help and feedback"
-        >
-          <AnimatePresence mode="wait">
-            {panel
-              ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}><X className="w-5 h-5" /></motion.span>
-              : <motion.span key="q" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}><HelpCircle className="w-5 h-5" /></motion.span>
-            }
-          </AnimatePresence>
-        </motion.button>
-        <span className="text-[11px] font-black text-teal-600 tracking-wide pointer-events-none select-none">Help</span>
-      </div>
+      <motion.button
+        onClick={() => setPanel(v => v ? null : 'menu')}
+        whileTap={{ scale: 0.9 }}
+        whileHover={{ scale: 1.08 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+        className="fixed bottom-24 left-4 z-50 flex flex-col items-center justify-center gap-0.5 w-14 h-14 bg-teal-500 rounded-2xl shadow-lg text-white hover:bg-teal-600 transition-colors no-print"
+        aria-label="Help and feedback"
+      >
+        <AnimatePresence mode="wait">
+          {panel
+            ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}><X className="w-5 h-5" /></motion.span>
+            : <motion.span key="q" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}><HelpCircle className="w-5 h-5" /></motion.span>
+          }
+        </AnimatePresence>
+        <span className="text-[10px] font-black tracking-wide select-none">Help</span>
+      </motion.button>
     </>
   );
 }
