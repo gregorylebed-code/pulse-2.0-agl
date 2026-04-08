@@ -296,9 +296,13 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   useEffect(() => {
     let pushCount = 0;
     const pushEntry = () => history.pushState({ id: ++pushCount }, '');
-    // Push enough entries to cover max navigation depth (sub-menu → settings → pulse → exit warning)
-    // Android PWA ignores pushState during popstate, so we pre-load the back stack at startup.
-    for (let i = 0; i < 6; i++) pushEntry();
+    // Pre-load back stack only for Android PWA — iOS Safari (browser) treats these as real
+    // history entries and the user ends up pressing back 6 times to leave, which is confusing.
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    const isAndroid = /android/i.test(navigator.userAgent);
+    if (isStandalone || isAndroid) {
+      for (let i = 0; i < 6; i++) pushEntry();
+    }
 
     const handlePopState = () => {
       // Let InsightsScreen's own handler close fullscreen cards first
