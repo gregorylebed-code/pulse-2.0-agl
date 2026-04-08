@@ -26,6 +26,7 @@ import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notific
 import WelcomeModal from './components/WelcomeModal';
 import Confetti, { ConfettiHandle } from './components/Confetti';
 
+import type { Note } from './types';
 import { Sparkles, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'sonner';
@@ -120,7 +121,62 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     const params = new URLSearchParams(window.location.search);
     if (params.get('demo') !== 'true') return;
     (async () => {
-      for (const name of DEMO_NAMES) await addStudent({ name, class_id: null });
+      // Add demo students and collect their IDs
+      const added: { name: string; id: string }[] = [];
+      for (const name of DEMO_NAMES) {
+        const s = await addStudent({ name, class_id: null });
+        if (s) added.push({ name, id: s.id });
+      }
+
+      // Helper: date string N days ago
+      const daysAgo = (n: number) => {
+        const d = new Date();
+        d.setDate(d.getDate() - n);
+        return d.toISOString();
+      };
+
+      const sid = (name: string) => added.find(s => s.name === name)?.id ?? null;
+
+      // Seed notes spread over ~4 weeks
+      const demoNotes: Omit<Note, 'id' | 'created_at' | 'user_id'>[] = [
+        { student_name: 'Rocket',      student_id: sid('Rocket'),      content: 'Helped a classmate without being asked. Great moment of leadership.', tags: ['Kindness', 'Leadership'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Panda',       student_id: sid('Panda'),       content: 'Struggled to stay on task during independent work. Kept getting up.', tags: ['Focus'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Falcon',      student_id: sid('Falcon'),      content: 'Excellent participation in group discussion. Asked insightful questions.', tags: ['Participation', 'Academic'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Blueberry',   student_id: sid('Blueberry'),   content: 'Had a hard morning — came in upset and needed 10 min to settle before joining group.', tags: ['Emotional', 'Behavior'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Thunderbolt', student_id: sid('Thunderbolt'), content: 'Finished math early and helped others. Super positive energy all day.', tags: ['Kindness', 'Academic'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Math-Wiz',    student_id: sid('Math-Wiz'),    content: 'Refused to participate in reading. Sat with arms crossed for most of the period.', tags: ['Behavior', 'Engagement'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Zigzag',      student_id: sid('Zigzag'),      content: 'Made a mean comment toward Blueberry at lunch. Addressed it privately — apologized.', tags: ['Behavior', 'Social'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Comet',       student_id: sid('Comet'),       content: 'Reading fluency is improving noticeably. Finished the chapter book independently.', tags: ['Academic', 'Growth'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Rocket',      student_id: sid('Rocket'),      content: 'Off task most of the afternoon. Seems tired — asked if everything is okay at home.', tags: ['Focus', 'Wellbeing'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Panda',       student_id: sid('Panda'),       content: 'Much better focus today compared to last week. Completed all tasks independently.', tags: ['Focus', 'Growth'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Falcon',      student_id: sid('Falcon'),      content: 'Forgot homework again — third time this month. Need to follow up with parent.', tags: ['Academic', 'Follow-up'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Blueberry',   student_id: sid('Blueberry'),   content: 'Big improvement today. Stayed regulated all morning, contributed to class discussion.', tags: ['Emotional', 'Growth', 'Participation'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Thunderbolt', student_id: sid('Thunderbolt'), content: 'Scored 94% on the math assessment. Consistently one of the strongest in the group.', tags: ['Academic'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Math-Wiz',    student_id: sid('Math-Wiz'),    content: 'Showed real effort during writing today. Completed two full paragraphs unprompted.', tags: ['Academic', 'Growth'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+        { student_name: 'Comet',       student_id: sid('Comet'),       content: 'Seemed withdrawn today. Not engaging with peers. Will keep an eye on this.', tags: ['Wellbeing', 'Social'], deadline: null, image_url: null, is_pinned: false, is_checklist: false, checklist_data: [], is_parent_communication: false, parent_communication_type: '', class_name: null },
+      ];
+
+      const noteDates = [2, 3, 5, 5, 6, 7, 9, 10, 12, 14, 16, 18, 20, 22, 25];
+      for (let i = 0; i < demoNotes.length; i++) {
+        await addNote(demoNotes[i], daysAgo(noteDates[i]));
+      }
+
+      // Seed parent communications
+      const falconId = sid('Falcon');
+      const blueberryId = sid('Blueberry');
+      if (falconId) {
+        await addParentCommunication({ student_id: falconId, student_name: 'Falcon', comm_type: 'Phone', direction: 'outbound', subject: 'Missing homework', notes: 'Left voicemail for mom about the three missing assignments. Waiting to hear back.', parent_name: null, comm_date: daysAgo(11).slice(0, 10), follow_up_date: null, follow_up_done: false, is_iep_related: false, is_urgent: false });
+      }
+      if (blueberryId) {
+        await addParentCommunication({ student_id: blueberryId, student_name: 'Blueberry', comm_type: 'Email', direction: 'outbound', subject: 'Check-in on morning routines', notes: 'Emailed dad to share that Blueberry has been having a hard time settling in the mornings. Asked if anything has changed at home. Dad replied — mentioned some family stress. Will keep an eye on it.', parent_name: null, comm_date: daysAgo(8).slice(0, 10), follow_up_date: null, follow_up_done: true, is_iep_related: false, is_urgent: false });
+      }
+
+      // Seed a shoutout
+      const rocketId = sid('Rocket');
+      if (rocketId) {
+        await addShoutout({ student_id: rocketId, student_name: 'Rocket', content: 'Went out of their way to include a new student at lunch. Just a genuinely kind kid.', category: 'Kindness' });
+      }
+
       markOnboardingComplete();
       window.history.replaceState({}, '', window.location.pathname);
     })();
