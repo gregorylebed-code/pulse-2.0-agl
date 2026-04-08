@@ -281,7 +281,13 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     activeTabRef.current = activeTab;
   }, [activeTab]);
   useEffect(() => { pulseViewRef.current = pulseView; }, [pulseView]);
-  useEffect(() => { selectedStudentIdRef.current = selectedStudentId; }, [selectedStudentId]);
+  useEffect(() => {
+    // Push a history entry when opening a student so browser back closes the detail view
+    if (selectedStudentId && !selectedStudentIdRef.current) {
+      history.pushState({ studentDetail: true }, '');
+    }
+    selectedStudentIdRef.current = selectedStudentId;
+  }, [selectedStudentId]);
   useEffect(() => { settingsViewRef.current = settingsView; }, [settingsView]);
 
   // Android back button — navigate one level deeper → shallower instead of closing the app
@@ -392,13 +398,15 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       return;
     }
     const prev = prevStatsRef.current;
-    if (prev.notes_created === 0 && stats.notes_created === 1) {
-      confettiRef.current?.fire();
-      toast.success('🎉 First note saved! You\'re on your way.');
-    }
-    if (prev.reports_generated === 0 && stats.reports_generated === 1) {
-      setTimeout(() => confettiRef.current?.fire(), 300);
-      toast.success('🎉 First report generated!');
+    if (!isInDemoMode) {
+      if (prev.notes_created === 0 && stats.notes_created === 1) {
+        confettiRef.current?.fire();
+        toast.success('🎉 First note saved! You\'re on your way.');
+      }
+      if (prev.reports_generated === 0 && stats.reports_generated === 1) {
+        setTimeout(() => confettiRef.current?.fire(), 300);
+        toast.success('🎉 First report generated!');
+      }
     }
     prevStatsRef.current = { notes_created: stats.notes_created, reports_generated: stats.reports_generated };
   }, [loading, stats.notes_created, stats.reports_generated]);
