@@ -655,11 +655,11 @@ const handleVoiceLog = async () => {
 
       {/* ONBOARDING BANNER */}
       {showOnboardingBanner && (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 flex items-start gap-3 relative">
+        <div className="rounded-2xl border border-blue-200 bg-white px-4 py-3 flex items-start gap-3 relative shadow-sm">
           <span className="text-lg leading-none mt-0.5">👋</span>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-teal-800">Welcome to ShortHand!</p>
-            <p className="text-[11px] text-teal-600 font-medium mt-0.5 leading-relaxed">
+            <p className="text-sm font-black text-blue-700">Welcome to ShortHand!</p>
+            <p className="text-[11px] text-slate-600 font-medium mt-0.5 leading-relaxed">
               Tap a student's name below to log your first note. The <span className="font-black">Help</span> button on the left has tips if you get stuck.
             </p>
             {onSwitchToRealClass && (
@@ -670,11 +670,11 @@ const handleVoiceLog = async () => {
                 Using fake students? Switch to your real class →
               </button>
             )}
-            <button onClick={dismissOnboardingBanner} className="text-[10px] text-teal-400 hover:text-teal-600 transition-colors mt-2 font-medium">
+            <button onClick={dismissOnboardingBanner} className="text-[10px] text-slate-400 hover:text-slate-600 transition-colors mt-2 font-medium">
               Don't show this again
             </button>
           </div>
-          <button onClick={dismissOnboardingBanner} className="absolute top-2 right-2 text-teal-300 hover:text-teal-500 transition-colors">
+          <button onClick={dismissOnboardingBanner} className="absolute top-2 right-2 text-slate-300 hover:text-slate-500 transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -754,14 +754,14 @@ const handleVoiceLog = async () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             onClick={onGoToSettings}
-            className="w-full flex items-center gap-3 px-5 py-4 bg-sage/10 border border-sage/25 rounded-[24px] text-left hover:bg-sage/15 transition-all shadow-sm"
+            className="w-full flex items-center gap-3 px-5 py-4 bg-blue-50 border border-blue-200 rounded-[24px] text-left hover:bg-blue-100 transition-all shadow-sm"
           >
-            <div className="w-9 h-9 rounded-2xl bg-sage/20 border border-sage/30 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-2xl bg-blue-100 border border-blue-200 flex items-center justify-center flex-shrink-0">
               <span className="text-lg">✨</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-black text-sage">New here? Start the setup guide →</p>
-              <p className="text-[11px] text-sage/70 font-medium mt-0.5">Takes 2 minutes · tap to open Getting Started in Settings</p>
+              <p className="text-[13px] font-black text-blue-700">New here? Start the setup guide →</p>
+              <p className="text-[11px] text-blue-500 font-medium mt-0.5">Takes 2 minutes · tap to open Getting Started in Settings</p>
             </div>
           </motion.button>
         )}
