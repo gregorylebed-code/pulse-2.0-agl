@@ -128,17 +128,17 @@ export default function WelcomeModal({
             {screen === 'main' ? (
               <>
                 {/* Header */}
-                <div className="bg-sage px-8 pt-8 pb-6">
+                <div className="bg-white px-8 pt-8 pb-6 border-b border-slate-100">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-blue-500" />
                     </div>
-                    <span className="text-white/80 text-xs font-bold uppercase tracking-widest">ShortHand</span>
+                    <span className="text-blue-400 text-xs font-bold uppercase tracking-widest">ShortHand</span>
                   </div>
-                  <h1 className="text-white font-black text-2xl leading-tight">
+                  <h1 className="text-blue-700 font-black text-2xl leading-tight">
                     Welcome{teacherName ? `, ${teacherName}` : ''}! 👋
                   </h1>
-                  <p className="text-white/75 text-sm mt-2 leading-relaxed">
+                  <p className="text-slate-500 text-sm mt-2 leading-relaxed">
                     You're all set up. Let's get your students in here.
                   </p>
                 </div>
