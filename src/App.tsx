@@ -96,6 +96,17 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const [isUsingBackup, setIsUsingBackup] = useState(false);
   const [showRotationForecast, setShowRotationForecast] = useState(false);
   const [welcomeHidden, setWelcomeHidden] = useState(false);
+  const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
+
+  const DEMO_NAMES = ['Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet'];
+  const isInDemoMode = students.length > 0 && students.every(s => DEMO_NAMES.includes(s.name));
+
+  const handleSwitchFromDemo = async () => {
+    for (const s of students) await deleteStudent(s.id);
+    setDemoBannerDismissed(false);
+    setWelcomeHidden(false);
+    setActiveTab('pulse');
+  };
   const [showGreetingBanner, setShowGreetingBanner] = useState(() => {
     const count = parseInt(localStorage.getItem('cp_login_count') || '0', 10) + 1;
     localStorage.setItem('cp_login_count', String(count));
@@ -409,6 +420,32 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
               )}
             </motion.div>
           )}
+          {activeTab === 'students' && isInDemoMode && !demoBannerDismissed && (
+            <motion.div
+              key="demo-banner"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="fixed top-16 left-0 right-0 z-40 mx-4 mt-2"
+            >
+              <div className="bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+                <span className="text-lg">🧪</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-black text-violet-800">You're in demo mode</p>
+                  <p className="text-[11px] text-violet-500 font-medium">Ready to add your real class?</p>
+                </div>
+                <button
+                  onClick={handleSwitchFromDemo}
+                  className="text-[11px] font-black text-white bg-violet-500 hover:bg-violet-600 transition-colors px-3 py-1.5 rounded-xl flex-shrink-0"
+                >
+                  Switch →
+                </button>
+                <button onClick={() => setDemoBannerDismissed(true)} className="text-violet-300 hover:text-violet-500 transition-colors flex-shrink-0">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'students' && (
             <motion.div key="students" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
               <ErrorBoundary label="Students">

@@ -147,31 +147,30 @@ export default function FeedbackModal({ currentView }: FeedbackModalProps) {
         {panel === 'help' && (
           <motion.div
             key="help"
-            initial={{ opacity: 0, scale: 0.92, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 12 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-            className="fixed bottom-28 left-4 z-50 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden no-print"
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+            className="fixed bottom-28 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 bg-white rounded-[32px] shadow-2xl z-50 p-8 border border-slate-100 no-print"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-2">
-                <button onClick={() => setPanel('menu')} className="text-slate-300 hover:text-slate-500 transition-colors">
-                  ←
-                </button>
-                <span className="font-black text-slate-800 text-sm">Quick Help</span>
+                <button onClick={() => setPanel('menu')} className="text-slate-300 hover:text-slate-500 transition-colors text-sm">←</button>
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg">Quick Help</h3>
+                  <p className="text-[11px] text-slate-400 font-bold mt-0.5 tracking-wide">How things work</p>
+                </div>
               </div>
-              <button onClick={close} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <button onClick={close} className="p-2 text-slate-300 hover:text-slate-500 rounded-xl hover:bg-slate-50 transition-all">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="grid grid-cols-2 gap-2">
               {tips.map((tip) => (
-                <div key={tip.title} className="flex gap-3 px-5 py-4">
+                <div key={tip.title} className="bg-slate-50 rounded-2xl p-4 flex flex-col gap-2">
                   {tip.icon}
-                  <div>
-                    <div className="font-bold text-slate-800 text-sm mb-1">{tip.title}</div>
-                    <div className="text-slate-500 text-xs leading-relaxed">{tip.body}</div>
-                  </div>
+                  <div className="font-black text-slate-800 text-xs">{tip.title}</div>
+                  <div className="text-slate-500 text-[11px] leading-relaxed">{tip.body}</div>
                 </div>
               ))}
             </div>
