@@ -670,10 +670,10 @@ const handleVoiceLog = async () => {
                 Using fake students? Switch to your real class →
               </button>
             )}
+            <button onClick={dismissOnboardingBanner} className="text-[10px] text-teal-400 hover:text-teal-600 transition-colors mt-2 font-medium">
+              Don't show this again
+            </button>
           </div>
-          <button onClick={dismissOnboardingBanner} className="text-teal-300 hover:text-teal-500 transition-colors flex-shrink-0 mt-0.5">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
         </div>
       )}
 

@@ -341,7 +341,7 @@ export default function FeedbackModal({ currentView, onNavigate, onSwitchToRealC
             }
           </AnimatePresence>
         </motion.button>
-        <span className="text-[10px] font-black text-teal-600 tracking-wide pointer-events-none">Help</span>
+        <span className="text-[11px] font-black text-teal-600 tracking-wide pointer-events-none select-none">Help</span>
       </div>
     </>
   );
