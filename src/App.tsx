@@ -119,7 +119,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   useEffect(() => {
     if (loading || students.length > 0) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('demo') !== 'true') return;
+    const fromStorage = localStorage.getItem('cp_launch_demo') === 'true';
+    if (params.get('demo') !== 'true' && !fromStorage) return;
+    localStorage.removeItem('cp_launch_demo');
     (async () => {
       // Add demo students and collect their IDs
       const added: { name: string; id: string }[] = [];
@@ -740,7 +742,13 @@ export default function App() {
     );
   }
 
-  if (!user) return <AuthScreen />;
+  if (!user) {
+    if (new URLSearchParams(window.location.search).get('demo') === 'true') {
+      localStorage.setItem('cp_launch_demo', 'true');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    return <AuthScreen />;
+  }
   return (
     <AliasModeProvider>
       <AuthenticatedApp userId={user.id} userEmail={user.email ?? ''} />
