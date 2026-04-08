@@ -114,6 +114,18 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     return count <= 3;
   });
 
+  // Auto-launch demo mode when ?demo=true is in the URL
+  useEffect(() => {
+    if (loading || students.length > 0) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('demo') !== 'true') return;
+    (async () => {
+      for (const name of DEMO_NAMES) await addStudent({ name, class_id: null });
+      markOnboardingComplete();
+      window.history.replaceState({}, '', window.location.pathname);
+    })();
+  }, [loading, students.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Re-show welcome when user navigates back to the pulse tab
   useEffect(() => {
     if (onboardingComplete === false && activeTab === 'pulse') {
