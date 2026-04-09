@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp, ClipboardCheck } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout, Accommodation, AttendanceRecord } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -462,6 +462,22 @@ export default function StudentsScreen({
     recognition.onend = () => setIsListening(false);
   };
 
+  const handleEmailAllParents = () => {
+    const emails: string[] = [];
+    filteredStudents.forEach(s => {
+      (s.parent_emails ?? []).forEach(e => {
+        const val = typeof e === 'object' ? (e as any).value : String(e);
+        if (val && !emails.includes(val)) emails.push(val);
+      });
+    });
+    if (emails.length === 0) {
+      toast.error('No parent emails found for the current class filter.');
+      return;
+    }
+    const subject = encodeURIComponent(filter === 'All' ? 'A note from your teacher' : `A note from your ${filter} teacher`);
+    window.location.href = `mailto:?bcc=${encodeURIComponent(emails.join(','))}&subject=${subject}`;
+  };
+
   const handleAskAI = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiQuery.trim() || isAiLoading) return;
@@ -674,6 +690,13 @@ export default function StudentsScreen({
             title="Import Birthdays"
           >
             <Cake className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleEmailAllParents}
+            className="p-1.5 bg-blue-50 text-blue-400 rounded-lg hover:bg-blue-100 hover:text-blue-500 transition-colors"
+            title="Email All Parents"
+          >
+            <Mail className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsCleanupModalOpen(true)}
