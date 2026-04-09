@@ -748,7 +748,7 @@ const handleVoiceLog = async () => {
 
       {/* Getting Started Banner — shown until onboarding is complete */}
       <AnimatePresence>
-        {onboardingComplete === false && (
+        {onboardingComplete === false && students.length === 0 && (
           <motion.button
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}

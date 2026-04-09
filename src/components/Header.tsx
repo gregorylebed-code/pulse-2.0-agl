@@ -131,7 +131,7 @@ export default function Header({
             <button
               onClick={() => setShowRotationForecast(!showRotationForecast)}
               className={cn(
-                'px-2.5 py-1.5 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 transition-all hover:border-sage/30 group max-w-[130px]',
+                'px-2.5 py-1.5 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center gap-2 transition-all hover:border-sage/30 group',
                 showRotationForecast && 'ring-2 ring-sage/20 border-sage/40'
               )}
             >
