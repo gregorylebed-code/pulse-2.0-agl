@@ -330,6 +330,14 @@ export default function StudentsScreen({
     toast.success(`Attendance saved for ${dateLabel} · ${parts.join(', ')}`);
   };
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
+  const [showStudentHint, setShowStudentHint] = useState(() => {
+    return localStorage.getItem('pulse_dismissed_student_hint') !== '1';
+  });
+  const dismissStudentHint = () => {
+    localStorage.setItem('pulse_dismissed_student_hint', '1');
+    setShowStudentHint(false);
+  };
+
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem('pulse_pinned_students');
@@ -856,6 +864,25 @@ export default function StudentsScreen({
           )}
         </AnimatePresence>
       </div>}
+
+      {/* Tap a student hint banner */}
+      <AnimatePresence>
+        {showStudentHint && students.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="px-2"
+          >
+            <div className="flex items-center gap-3 bg-teal-500 text-white rounded-2xl px-4 py-3">
+              <span className="flex-1 text-[13px] font-semibold">Tap any student to see their full profile →</span>
+              <button onClick={dismissStudentHint} className="p-1 rounded-full hover:bg-teal-400 transition-colors flex-shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="space-y-8">
         {sections.map((section, sIdx) => {
