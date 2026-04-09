@@ -7,7 +7,7 @@ import {
   Trash2, Copy, Mail, MessageSquare, CheckCircle2, Archive,
   X, Sparkles, ClipboardList, FileText, Download,
   Smile, Meh, Frown, Users, Phone, Tag, ChevronDown, Settings2,
-  Target, Plus, Printer, Cake,
+  Target, Plus, Printer, Cake, CalendarDays,
   History, Armchair, ClipboardCheck, Scissors, Activity, Monitor
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -707,6 +707,9 @@ export default function StudentDetailView({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedComm, setSelectedComm] = useState<string[]>([]);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const noteTodayStr = new Date().toISOString().split('T')[0];
+  const [noteDate, setNoteDate] = useState(noteTodayStr);
+  const noteDateInputRef = useRef<HTMLInputElement>(null);
   const [savedConfirm, setSavedConfirm] = useState<{ studentName: string; content: string; tags: string[] } | null>(null);
   const [showSparkles, setShowSparkles] = useState(false);
   const sparkleOrigin = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -723,7 +726,7 @@ export default function StudentDetailView({
 
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<string[]>([]);
   const [expandedArchiveIds, setExpandedArchiveIds] = useState<string[]>([]);
-  const [timelineVisible, setTimelineVisible] = useState(0);
+  const [timelineVisible, setTimelineVisible] = useState(5);
   const [parentCommVisible, setParentCommVisible] = useState(5);
   const [activeSection, setActiveSection] = useState<'timeline' | 'goals' | 'accommodations' | 'ai-report' | 'history' | 'quick-note' | 'parents'>('timeline');
   const [activeTab, setActiveTab] = useState<'notes' | 'parents' | 'goals' | 'reports'>('notes');
@@ -780,6 +783,7 @@ export default function StudentDetailView({
     setSelectedComm([]);
     setImage(null);
     setImagePreview(null);
+    setNoteDate(noteTodayStr);
   };
 
   const showUndo = (label: string, onUndo: () => void) => {
@@ -919,11 +923,12 @@ export default function StudentDetailView({
         }
       }
 
-      const today = new Date().toISOString().split('T')[0];
-      const todayEvent = calendarEvents?.find(e => e.date === today);
-      if (todayEvent) {
-        finalTags.push(`[${todayEvent.title}]`);
+      const noteDateEvent = calendarEvents?.find(e => e.date === noteDate);
+      if (noteDateEvent) {
+        finalTags.push(`[${noteDateEvent.title}]`);
       }
+
+      const noteCreatedAt = noteDate !== noteTodayStr ? `${noteDate}T12:00:00.000Z` : undefined;
 
       const newNote: Note = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2),
@@ -938,7 +943,7 @@ export default function StudentDetailView({
         is_checklist: false,
         checklist_data: [],
         deadline: null,
-        created_at: new Date().toISOString()
+        created_at: noteCreatedAt ?? new Date().toISOString()
       };
 
       // Save to Supabase
@@ -950,6 +955,7 @@ export default function StudentDetailView({
         parent_communication_type: commType || null,
         image_url: imageUrl,
         is_pinned: false,
+        ...(noteCreatedAt ? { created_at: noteCreatedAt } : {}),
       });
 
       handleClearNote();
@@ -1790,7 +1796,33 @@ export default function StudentDetailView({
           }))}
         </div>
 
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => noteDateInputRef.current?.showPicker?.() ?? noteDateInputRef.current?.click()}
+            className={cn(
+              "px-3 py-2 rounded-2xl text-[11px] font-black transition-all flex items-center gap-1.5 border",
+              noteDate !== noteTodayStr
+                ? "bg-amber-50 text-amber-600 border-amber-200"
+                : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+            )}
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            {noteDate !== noteTodayStr
+              ? new Date(noteDate + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+              : 'Today'}
+          </button>
+          <input
+            ref={noteDateInputRef}
+            type="date"
+            value={noteDate}
+            max={noteTodayStr}
+            onChange={e => setNoteDate(e.target.value || noteTodayStr)}
+            className="sr-only"
+          />
+        </div>
+
+        <div className="flex items-center gap-3 pt-1">
           <button
             type="button"
             onClick={handleClearNote}
@@ -1822,10 +1854,10 @@ export default function StudentDetailView({
         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest text-center mb-1.5">Select a section</p>
         <div className="flex items-center gap-1">
           {([
-            { key: 'notes' as const,   line1: '📝 Write',   line2: 'Reports',  active: 'bg-terracotta text-white',        inactive: 'bg-terracotta/15 text-terracotta border-terracotta/20'  },
-            { key: 'parents' as const, line1: '📬 Parent',  line2: 'Log',      active: 'bg-blue-500 text-white',          inactive: 'bg-blue-100 text-blue-500 border-blue-200'              },
-            { key: 'goals' as const,   line1: '🎯 Track',   line2: 'Goals',    active: 'bg-violet-500 text-white',        inactive: 'bg-violet-100 text-violet-500 border-violet-200'        },
-            { key: 'reports' as const, line1: '📊 View',    line2: 'Reports',  active: 'bg-sage text-white',              inactive: 'bg-sage/15 text-sage border-sage/20'                    },
+            { key: 'notes' as const,   line1: '📝 Student', line2: 'Notes',    active: 'bg-terracotta text-white',        inactive: 'bg-terracotta/15 text-terracotta border-terracotta/20'  },
+            { key: 'reports' as const, line1: '📊 Write &', line2: 'Reports',  active: 'bg-sage text-white',              inactive: 'bg-sage/15 text-sage border-sage/20'                    },
+            { key: 'parents' as const, line1: '📬 Parent',  line2: 'Comm',     active: 'bg-blue-500 text-white',          inactive: 'bg-blue-100 text-blue-500 border-blue-200'              },
+            { key: 'goals' as const,   line1: '🎯 Goals &', line2: 'Accom',    active: 'bg-violet-500 text-white',        inactive: 'bg-violet-100 text-violet-500 border-violet-200'        },
           ]).map(tab => (
             <button
               key={tab.key}
@@ -2177,26 +2209,12 @@ export default function StudentDetailView({
       </div>
 
       <div id="timeline" ref={timelineRef} className="space-y-4 scroll-mt-header">
-        <button
-          type="button"
-          onClick={() => setTimelineVisible(v => v > 0 ? 0 : 5)}
-          className="w-full flex items-center justify-between px-4 py-3.5 bg-blue-50 rounded-2xl border-2 border-blue-400 hover:bg-blue-100 transition-all shadow-sm"
-        >
-          <div className="flex items-center gap-2">
-            <h3 className="text-[13px] font-black text-blue-700">Notes about {student.name.split(' ')[0]}</h3>
-            <span className="text-[11px] font-bold text-blue-400">({[...shoutouts, ...notes.filter(n => !pendingDeleteNoteIds.has(n.id))].length} entries)</span>
-            {shoutouts.length > 0 && <span className="text-[11px] font-bold text-amber-400">⭐ {shoutouts.length}</span>}
-          </div>
-          <div className="flex flex-col items-center gap-0">
-            <span className="text-[9px] font-black text-blue-700 uppercase tracking-wide leading-none mb-0.5">
-              {timelineVisible > 0 ? 'Close' : 'Open'}
-            </span>
-            <ChevronDown className={cn('w-5 h-5 text-blue-700 transition-transform stroke-[3]', timelineVisible > 0 && 'rotate-180')} />
-          </div>
-        </button>
-        <AnimatePresence>
-        {timelineVisible > 0 && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <h3 className="text-[13px] font-black text-blue-700">Notes about {student.name.split(' ')[0]}</h3>
+          <span className="text-[11px] font-bold text-blue-400">({[...shoutouts, ...notes.filter(n => !pendingDeleteNoteIds.has(n.id))].length} entries)</span>
+          {shoutouts.length > 0 && <span className="text-[11px] font-bold text-amber-400">⭐ {shoutouts.length}</span>}
+        </div>
+        <div className="space-y-4">
         {shoutouts.length > 0 && (
           <div className="flex items-center gap-1 px-1">
             <span className="text-[11px] font-bold text-amber-400 mr-1">⭐ Shoutouts</span>
@@ -2415,9 +2433,7 @@ export default function StudentDetailView({
             Show less
           </button>
         )}
-          </motion.div>
-        )}
-        </AnimatePresence>
+        </div>
       </div>
 
       </>}{/* end notes tab */}
