@@ -739,7 +739,7 @@ export default function SettingsScreen({
               <h3 className="text-[15px] font-black text-blue-600 uppercase tracking-widest">Account</h3>
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
-                <p className="text-sm font-bold text-slate-700">{userEmail}</p>
+                <p className="text-sm font-bold text-slate-700">{userEmail || 'Guest'}</p>
               </div>
               <button
                 onClick={async () => { await onSignOut(); }}
