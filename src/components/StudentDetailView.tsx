@@ -1877,336 +1877,6 @@ export default function StudentDetailView({
       {/* ─── NOTES TAB ────────────────────────────────────────────────────── */}
       {activeTab === 'notes' && <>
 
-      {/* ─── AI Compose Wizard (Quick Note + Detailed Report combined) ─────── */}
-      <div id="quick-note" ref={quickNoteRef} className="scroll-mt-header">
-        <div className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-5 no-print">
-          {/* Header */}
-          <div>
-            <h3 className="text-[15px] font-black text-blue-600 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-500" /> Write Report with AI
-            </h3>
-            <p className="text-[11px] text-slate-400 mt-1">Answer two quick questions and we'll write it for you.</p>
-          </div>
-
-          {/* Step 1: Report type */}
-          <div className="space-y-2">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sage text-white text-[9px] font-black mr-1.5">1</span>
-              What kind of message would you like?
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {([
-                { key: 'Quick Note' as const, label: 'Quick Note Home', desc: 'A short, friendly update for parents', icon: '✉️' },
-                { key: 'Detailed' as const, label: 'Detailed Report', desc: 'Full Glow/Grow/Goal breakdown', icon: '📋' },
-              ]).map(opt => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => { setReportLength(opt.key); setQuickNote(null); setCurrentReport(null); }}
-                  className={cn(
-                    "flex flex-col items-start text-left p-4 rounded-2xl border-2 transition-all",
-                    reportLength === opt.key
-                      ? "bg-sage/10 border-sage shadow-sm"
-                      : "bg-white border-slate-100 hover:border-sage/40"
-                  )}
-                >
-                  <span className="text-xl mb-1">{opt.icon}</span>
-                  <span className={cn("text-xs font-black", reportLength === opt.key ? "text-sage-dark" : "text-slate-700")}>{opt.label}</span>
-                  <span className="text-[10px] text-slate-400 mt-0.5 leading-snug">{opt.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Step 2: Days of notes */}
-          <div className="space-y-2">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sage text-white text-[9px] font-black mr-1.5">2</span>
-              How many days of notes should be included?
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {([
-                { label: 'Today', value: 'today' },
-                { label: '5 Days', value: 'Last 7 Days' },
-                { label: '14 Days', value: '15 Days' },
-                { label: '30 Days', value: 'Last 30 Days' },
-                { label: 'Custom', value: 'Custom Range' },
-              ]).map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    setTimeRange(opt.value === 'today' ? 'Today' : opt.value);
-                    if (reportLength === 'Quick Note') {
-                      // map to quickNoteDays
-                      const map: Record<string, 0 | 1 | 3 | 5 | 7> = { today: 0, 'Last 7 Days': 7, '15 Days': 7, 'Last 30 Days': 7 };
-                      const d = map[opt.value];
-                      if (d !== undefined) setQuickNoteDays(d);
-                    }
-                    setQuickNote(null); setCurrentReport(null);
-                  }}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest border-2 transition-all",
-                    (timeRange === (opt.value === 'today' ? 'Today' : opt.value))
-                      ? "bg-terracotta text-white border-terracotta shadow-md"
-                      : "bg-white text-slate-400 border-slate-100 hover:border-terracotta/40"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            {timeRange === 'Custom Range' && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1">
-                  <label htmlFor="wizard_start_date" className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Start Date</label>
-                  <input id="wizard_start_date" name="wizard_start_date" type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="wizard_end_date" className="text-[9px] font-bold uppercase tracking-widest text-slate-400">End Date</label>
-                  <input id="wizard_end_date" name="wizard_end_date" type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
-                </div>
-              </motion.div>
-            )}
-          </div>
-
-          {/* Optional tone hint */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-[9px] font-black mr-1.5">3</span>
-              Any special instructions? <span className="font-normal text-slate-300 normal-case tracking-normal">(optional)</span>
-            </p>
-            <div className="flex gap-2">
-              <textarea
-                value={refineInstructions}
-                onChange={(e) => setRefineInstructions(e.target.value)}
-                placeholder={`e.g. "Focus on math progress", "Mention we're planning a meeting", "Keep it under 3 sentences"…`}
-                autoComplete="off"
-                data-1p-ignore
-                data-lpignore="true"
-                rows={3}
-                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs focus:outline-none focus:border-sage/40 resize-none"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (isListeningWizardInstructions) { (window as any)._wizardInstRec?.stop(); return; }
-                  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-                  if (!SR) { toast.error('Voice not supported on this browser.'); return; }
-                  const r = new SR();
-                  r.lang = 'en-US';
-                  r.onstart = () => setIsListeningWizardInstructions(true);
-                  r.onend = () => setIsListeningWizardInstructions(false);
-                  r.onresult = (e: any) => { const t = e.results[0][0].transcript; setRefineInstructions(prev => prev ? prev + ' ' + t : t); };
-                  (window as any)._wizardInstRec = r; r.start();
-                }}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1 px-3 rounded-2xl border transition-all self-stretch',
-                  isListeningWizardInstructions ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-400 border-slate-100 hover:text-terracotta hover:border-terracotta/40'
-                )}
-              >
-                {isListeningWizardInstructions ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                <span className="text-[9px] font-bold uppercase tracking-wide">{isListeningWizardInstructions ? 'Stop' : 'Voice'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Generate button */}
-          {notes.length === 0 && shoutouts.length === 0 ? (
-            <p className="text-[11px] text-center text-slate-400 italic py-2">No notes yet — add some observations above first.</p>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                if (reportLength === 'Quick Note') {
-                  handleGenerateQuickNote();
-                } else {
-                  handleGenerate();
-                }
-              }}
-              disabled={isGenerating || isGeneratingQuickNote}
-              className="w-full py-4 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-orange-200/50 flex items-center justify-center gap-3 disabled:opacity-50"
-            >
-              {(isGenerating || isGeneratingQuickNote)
-                ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing…</>
-                : <><Sparkles className="w-4 h-4" /> Generate {reportLength === 'Quick Note' ? 'Quick Note' : 'Detailed Report'}</>
-              }
-            </button>
-          )}
-
-          {/* Quick Note result */}
-          <AnimatePresence>
-            {quickNote && reportLength === 'Quick Note' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-terracotta">
-                    {quickNoteDays === 0 ? "Today's Note" : quickNoteDays === 1 ? "Yesterday's Note" : `Last ${quickNoteDays} Days`}
-                  </span>
-                  <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
-                </div>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
-
-                {/* Refine */}
-                <div className="space-y-2 pt-1">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-terracotta" /> Refine this note
-                  </p>
-                  <div className="flex gap-2">
-                    <textarea
-                      value={quickNoteRefineInstructions}
-                      onChange={(e) => setQuickNoteRefineInstructions(e.target.value)}
-                      placeholder="e.g. 'Make it shorter', 'More positive tone'…"
-                      autoComplete="off" data-1p-ignore data-lpignore="true"
-                      rows={2}
-                      className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-terracotta/40 resize-none"
-                    />
-                    <div className="flex flex-col gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isListeningQuickNoteRefine) { (window as any)._qnRefineRec?.stop(); return; }
-                          const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-                          if (!SR) { toast.error('Voice not supported on this browser.'); return; }
-                          const r = new SR();
-                          r.lang = 'en-US';
-                          r.onstart = () => setIsListeningQuickNoteRefine(true);
-                          r.onend = () => setIsListeningQuickNoteRefine(false);
-                          r.onresult = (e: any) => { const t = e.results[0][0].transcript; setQuickNoteRefineInstructions(prev => prev ? prev + ' ' + t : t); };
-                          (window as any)._qnRefineRec = r; r.start();
-                        }}
-                        className={cn('p-2.5 rounded-xl border transition-all', isListeningQuickNoteRefine ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-400 border-slate-100 hover:text-terracotta')}
-                      >
-                        {isListeningQuickNoteRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRefineQuickNote}
-                        disabled={isRefiningQuickNote || !quickNoteRefineInstructions.trim()}
-                        className="px-3 py-2 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1 whitespace-nowrap"
-                      >
-                        {isRefiningQuickNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                        {isRefiningQuickNote ? '…' : 'Rewrite'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <button type="button" onClick={() => { navigator.clipboard.writeText(quickNote); toast.success('Copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all">
-                    <Copy className="w-3.5 h-3.5" /> Copy
-                  </button>
-                  <button type="button" onClick={() => triggerEmail(quickNote, `Note about ${student.name}`)} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
-                    <Mail className="w-3.5 h-3.5" /> Email
-                  </button>
-                  <button type="button" onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all">
-                    <MessageSquare className="w-3.5 h-3.5" /> Text
-                  </button>
-                  <button type="button" onClick={async () => { const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() }; await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] }); toast.success('Saved!'); onNoteUpdate(); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all shadow-sm shadow-sage/20">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Save Note
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Detailed Report result */}
-          <AnimatePresence>
-            {currentReport && reportLength !== 'Quick Note' && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-cream border border-cream-dark shadow-md rounded-[28px] overflow-hidden">
-                <div className="border-b-4 border-sage/30 px-6 pt-6 pb-4 flex items-start justify-between">
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sage/60 mb-1">Detailed Report · {timeRange}</p>
-                    <p className="text-base font-black text-slate-800">{student.name}</p>
-                  </div>
-                  <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta mt-1"><X className="w-4 h-4" /></button>
-                </div>
-                <div className="px-6 py-5 space-y-4">
-                  <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.opening}</p>
-                  <div className="border-l-4 border-emerald-400 pl-4 space-y-1">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-600">Glow</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.glow}</p>
-                  </div>
-                  <div className="border-l-4 border-amber-400 pl-4 space-y-1">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-600">Grow</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.grow}</p>
-                  </div>
-                  <div className="border-l-4 border-blue-400 pl-4 space-y-1">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">Goal</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.goal}</p>
-                  </div>
-                  <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.closing}</p>
-                </div>
-                {/* Refinement */}
-                <div className="space-y-3 px-6 pb-5 border-t border-cream-dark pt-4">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-sage" /> Refine this report
-                  </p>
-                  <div className="flex gap-2">
-                    <textarea
-                      value={refineInstructions}
-                      onChange={(e) => setRefineInstructions(e.target.value)}
-                      placeholder="e.g. 'Make it more formal', 'Shorter', 'More encouraging tone'…"
-                      autoComplete="off" data-1p-ignore data-lpignore="true"
-                      rows={2}
-                      className="flex-1 px-4 py-3 bg-white/70 border border-cream-dark rounded-xl text-xs focus:outline-none focus:border-sage resize-none"
-                    />
-                    <div className="flex flex-col gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isListeningReportRefine) { (window as any)._reportRefineRec?.stop(); return; }
-                          const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-                          if (!SR) { toast.error('Voice not supported on this browser.'); return; }
-                          const r = new SR();
-                          r.lang = 'en-US';
-                          r.onstart = () => setIsListeningReportRefine(true);
-                          r.onend = () => setIsListeningReportRefine(false);
-                          r.onresult = (e: any) => { const t = e.results[0][0].transcript; setRefineInstructions(prev => prev ? prev + ' ' + t : t); };
-                          (window as any)._reportRefineRec = r; r.start();
-                        }}
-                        className={cn('p-2.5 rounded-xl border transition-all', isListeningReportRefine ? 'bg-sage text-white border-sage animate-pulse' : 'bg-white text-slate-400 border-cream-dark hover:text-sage')}
-                      >
-                        {isListeningReportRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRefine}
-                        disabled={isRefining || !refineInstructions.trim()}
-                        className="px-3 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50 flex items-center gap-1 justify-center shadow-md shadow-sage/10 whitespace-nowrap"
-                      >
-                        {isRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Sparkles className="w-3 h-3" /> Rewrite</>}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                {/* Send actions — separated from Refine by a clear divider */}
-                <div className="border-t-2 border-dashed border-slate-200 mx-6 mt-1" />
-                <div className="px-6 pb-2 pt-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-3">Send this report</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); navigator.clipboard.writeText(text); toast.success('Report copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all">
-                      <Copy className="w-3.5 h-3.5" /> Copy
-                    </button>
-                    <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); triggerEmail(text, `Progress Report — ${student.name}`); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
-                      <Mail className="w-3.5 h-3.5" /> Email
-                    </button>
-                    <button type="button" onClick={handleCopyParentSquare} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
-                      <ClipboardList className="w-3.5 h-3.5" /> ParentSquare
-                    </button>
-                  </div>
-                  <button type="button" onClick={archiveAndKeepNotes} className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all shadow-sm shadow-sage/20">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Save Note
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
 
       <div id="timeline" ref={timelineRef} className="space-y-4 scroll-mt-header">
         <div className="flex items-center gap-2 px-1">
@@ -3019,6 +2689,338 @@ export default function StudentDetailView({
 
       {/* ─── REPORTS TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'reports' && <>
+
+
+      {/* ─── AI Compose Wizard (Quick Note + Detailed Report combined) ─────── */}
+      <div id="quick-note" ref={quickNoteRef} className="scroll-mt-header">
+        <div className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-5 no-print">
+          {/* Header */}
+          <div>
+            <h3 className="text-[15px] font-black text-blue-600 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-500" /> Write Report with AI
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-1">Answer two quick questions and we'll write it for you.</p>
+          </div>
+
+          {/* Step 1: Report type */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sage text-white text-[9px] font-black mr-1.5">1</span>
+              What kind of message would you like?
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { key: 'Quick Note' as const, label: 'Quick Note Home', desc: 'A short, friendly update for parents', icon: '✉️' },
+                { key: 'Detailed' as const, label: 'Detailed Report', desc: 'Full Glow/Grow/Goal breakdown', icon: '📋' },
+              ]).map(opt => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => { setReportLength(opt.key); setQuickNote(null); setCurrentReport(null); }}
+                  className={cn(
+                    "flex flex-col items-start text-left p-4 rounded-2xl border-2 transition-all",
+                    reportLength === opt.key
+                      ? "bg-sage/10 border-sage shadow-sm"
+                      : "bg-white border-slate-100 hover:border-sage/40"
+                  )}
+                >
+                  <span className="text-xl mb-1">{opt.icon}</span>
+                  <span className={cn("text-xs font-black", reportLength === opt.key ? "text-sage-dark" : "text-slate-700")}>{opt.label}</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 leading-snug">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Step 2: Days of notes */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sage text-white text-[9px] font-black mr-1.5">2</span>
+              How many days of notes should be included?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { label: 'Today', value: 'today' },
+                { label: '5 Days', value: 'Last 7 Days' },
+                { label: '14 Days', value: '15 Days' },
+                { label: '30 Days', value: 'Last 30 Days' },
+                { label: 'Custom', value: 'Custom Range' },
+              ]).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setTimeRange(opt.value === 'today' ? 'Today' : opt.value);
+                    if (reportLength === 'Quick Note') {
+                      // map to quickNoteDays
+                      const map: Record<string, 0 | 1 | 3 | 5 | 7> = { today: 0, 'Last 7 Days': 7, '15 Days': 7, 'Last 30 Days': 7 };
+                      const d = map[opt.value];
+                      if (d !== undefined) setQuickNoteDays(d);
+                    }
+                    setQuickNote(null); setCurrentReport(null);
+                  }}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest border-2 transition-all",
+                    (timeRange === (opt.value === 'today' ? 'Today' : opt.value))
+                      ? "bg-terracotta text-white border-terracotta shadow-md"
+                      : "bg-white text-slate-400 border-slate-100 hover:border-terracotta/40"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {timeRange === 'Custom Range' && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <label htmlFor="wizard_start_date" className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Start Date</label>
+                  <input id="wizard_start_date" name="wizard_start_date" type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="wizard_end_date" className="text-[9px] font-bold uppercase tracking-widest text-slate-400">End Date</label>
+                  <input id="wizard_end_date" name="wizard_end_date" type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} autoComplete="off" data-1p-ignore data-lpignore="true" className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] focus:outline-none focus:ring-2 focus:ring-sage/20" />
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Optional tone hint */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-[9px] font-black mr-1.5">3</span>
+              Any special instructions? <span className="font-normal text-slate-300 normal-case tracking-normal">(optional)</span>
+            </p>
+            <div className="flex gap-2">
+              <textarea
+                value={refineInstructions}
+                onChange={(e) => setRefineInstructions(e.target.value)}
+                placeholder={`e.g. "Focus on math progress", "Mention we're planning a meeting", "Keep it under 3 sentences"…`}
+                autoComplete="off"
+                data-1p-ignore
+                data-lpignore="true"
+                rows={3}
+                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs focus:outline-none focus:border-sage/40 resize-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (isListeningWizardInstructions) { (window as any)._wizardInstRec?.stop(); return; }
+                  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                  if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+                  const r = new SR();
+                  r.lang = 'en-US';
+                  r.onstart = () => setIsListeningWizardInstructions(true);
+                  r.onend = () => setIsListeningWizardInstructions(false);
+                  r.onresult = (e: any) => { const t = e.results[0][0].transcript; setRefineInstructions(prev => prev ? prev + ' ' + t : t); };
+                  (window as any)._wizardInstRec = r; r.start();
+                }}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 px-3 rounded-2xl border transition-all self-stretch',
+                  isListeningWizardInstructions ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-400 border-slate-100 hover:text-terracotta hover:border-terracotta/40'
+                )}
+              >
+                {isListeningWizardInstructions ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                <span className="text-[9px] font-bold uppercase tracking-wide">{isListeningWizardInstructions ? 'Stop' : 'Voice'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Generate button */}
+          {notes.length === 0 && shoutouts.length === 0 ? (
+            <p className="text-[11px] text-center text-slate-400 italic py-2">No notes yet — add some observations above first.</p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (reportLength === 'Quick Note') {
+                  handleGenerateQuickNote();
+                } else {
+                  handleGenerate();
+                }
+              }}
+              disabled={isGenerating || isGeneratingQuickNote}
+              className="w-full py-4 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-orange-200/50 flex items-center justify-center gap-3 disabled:opacity-50"
+            >
+              {(isGenerating || isGeneratingQuickNote)
+                ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing…</>
+                : <><Sparkles className="w-4 h-4" /> Generate {reportLength === 'Quick Note' ? 'Quick Note' : 'Detailed Report'}</>
+              }
+            </button>
+          )}
+
+          {/* Quick Note result */}
+          <AnimatePresence>
+            {quickNote && reportLength === 'Quick Note' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-6 rounded-[28px] border border-terracotta/10 shadow-sm space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-terracotta">
+                    {quickNoteDays === 0 ? "Today's Note" : quickNoteDays === 1 ? "Yesterday's Note" : `Last ${quickNoteDays} Days`}
+                  </span>
+                  <button onClick={() => setQuickNote(null)} className="text-slate-300 hover:text-terracotta"><X className="w-4 h-4" /></button>
+                </div>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
+
+                {/* Refine */}
+                <div className="space-y-2 pt-1">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-terracotta" /> Refine this note
+                  </p>
+                  <div className="flex gap-2">
+                    <textarea
+                      value={quickNoteRefineInstructions}
+                      onChange={(e) => setQuickNoteRefineInstructions(e.target.value)}
+                      placeholder="e.g. 'Make it shorter', 'More positive tone'…"
+                      autoComplete="off" data-1p-ignore data-lpignore="true"
+                      rows={2}
+                      className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:border-terracotta/40 resize-none"
+                    />
+                    <div className="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isListeningQuickNoteRefine) { (window as any)._qnRefineRec?.stop(); return; }
+                          const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                          if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+                          const r = new SR();
+                          r.lang = 'en-US';
+                          r.onstart = () => setIsListeningQuickNoteRefine(true);
+                          r.onend = () => setIsListeningQuickNoteRefine(false);
+                          r.onresult = (e: any) => { const t = e.results[0][0].transcript; setQuickNoteRefineInstructions(prev => prev ? prev + ' ' + t : t); };
+                          (window as any)._qnRefineRec = r; r.start();
+                        }}
+                        className={cn('p-2.5 rounded-xl border transition-all', isListeningQuickNoteRefine ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-400 border-slate-100 hover:text-terracotta')}
+                      >
+                        {isListeningQuickNoteRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRefineQuickNote}
+                        disabled={isRefiningQuickNote || !quickNoteRefineInstructions.trim()}
+                        className="px-3 py-2 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-40 flex items-center gap-1 whitespace-nowrap"
+                      >
+                        {isRefiningQuickNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        {isRefiningQuickNote ? '…' : 'Rewrite'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <button type="button" onClick={() => { navigator.clipboard.writeText(quickNote); toast.success('Copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all">
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                  </button>
+                  <button type="button" onClick={() => triggerEmail(quickNote, `Note about ${student.name}`)} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
+                    <Mail className="w-3.5 h-3.5" /> Email
+                  </button>
+                  <button type="button" onClick={() => { window.location.href = `sms:${parentPhone}?body=${encodeURIComponent(quickNote)}`; }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-green-600 transition-all">
+                    <MessageSquare className="w-3.5 h-3.5" /> Text
+                  </button>
+                  <button type="button" onClick={async () => { const archived = { id: Date.now().toString(), content: `Quick Note to Parent\n\n${quickNote}`, date: new Date().toISOString() }; await updateStudent(student.id, { archivedSummaries: [...(student.archivedSummaries || []), archived] }); toast.success('Saved!'); onNoteUpdate(); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all shadow-sm shadow-sage/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Save Note
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Detailed Report result */}
+          <AnimatePresence>
+            {currentReport && reportLength !== 'Quick Note' && (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-cream border border-cream-dark shadow-md rounded-[28px] overflow-hidden">
+                <div className="border-b-4 border-sage/30 px-6 pt-6 pb-4 flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sage/60 mb-1">Detailed Report · {timeRange}</p>
+                    <p className="text-base font-black text-slate-800">{student.name}</p>
+                  </div>
+                  <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta mt-1"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="px-6 py-5 space-y-4">
+                  <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.opening}</p>
+                  <div className="border-l-4 border-emerald-400 pl-4 space-y-1">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-600">Glow</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.glow}</p>
+                  </div>
+                  <div className="border-l-4 border-amber-400 pl-4 space-y-1">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-600">Grow</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.grow}</p>
+                  </div>
+                  <div className="border-l-4 border-blue-400 pl-4 space-y-1">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">Goal</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{currentReport.goal}</p>
+                  </div>
+                  <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.closing}</p>
+                </div>
+                {/* Refinement */}
+                <div className="space-y-3 px-6 pb-5 border-t border-cream-dark pt-4">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-sage" /> Refine this report
+                  </p>
+                  <div className="flex gap-2">
+                    <textarea
+                      value={refineInstructions}
+                      onChange={(e) => setRefineInstructions(e.target.value)}
+                      placeholder="e.g. 'Make it more formal', 'Shorter', 'More encouraging tone'…"
+                      autoComplete="off" data-1p-ignore data-lpignore="true"
+                      rows={2}
+                      className="flex-1 px-4 py-3 bg-white/70 border border-cream-dark rounded-xl text-xs focus:outline-none focus:border-sage resize-none"
+                    />
+                    <div className="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isListeningReportRefine) { (window as any)._reportRefineRec?.stop(); return; }
+                          const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                          if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+                          const r = new SR();
+                          r.lang = 'en-US';
+                          r.onstart = () => setIsListeningReportRefine(true);
+                          r.onend = () => setIsListeningReportRefine(false);
+                          r.onresult = (e: any) => { const t = e.results[0][0].transcript; setRefineInstructions(prev => prev ? prev + ' ' + t : t); };
+                          (window as any)._reportRefineRec = r; r.start();
+                        }}
+                        className={cn('p-2.5 rounded-xl border transition-all', isListeningReportRefine ? 'bg-sage text-white border-sage animate-pulse' : 'bg-white text-slate-400 border-cream-dark hover:text-sage')}
+                      >
+                        {isListeningReportRefine ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRefine}
+                        disabled={isRefining || !refineInstructions.trim()}
+                        className="px-3 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50 flex items-center gap-1 justify-center shadow-md shadow-sage/10 whitespace-nowrap"
+                      >
+                        {isRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Sparkles className="w-3 h-3" /> Rewrite</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {/* Send actions — separated from Refine by a clear divider */}
+                <div className="border-t-2 border-dashed border-slate-200 mx-6 mt-1" />
+                <div className="px-6 pb-2 pt-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-3">Send this report</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); navigator.clipboard.writeText(text); toast.success('Report copied!'); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all">
+                      <Copy className="w-3.5 h-3.5" /> Copy
+                    </button>
+                    <button type="button" onClick={() => { const text = [currentReport.opening, `Glow: ${currentReport.glow}`, `Grow: ${currentReport.grow}`, `Goal: ${currentReport.goal}`, currentReport.closing].join('\n\n'); triggerEmail(text, `Progress Report — ${student.name}`); }} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
+                      <Mail className="w-3.5 h-3.5" /> Email
+                    </button>
+                    <button type="button" onClick={handleCopyParentSquare} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all">
+                      <ClipboardList className="w-3.5 h-3.5" /> ParentSquare
+                    </button>
+                  </div>
+                  <button type="button" onClick={archiveAndKeepNotes} className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-all shadow-sm shadow-sage/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Save Note
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
       <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
 
