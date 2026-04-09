@@ -1822,19 +1822,17 @@ export default function StudentDetailView({
         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest text-center mb-1.5">Select a section</p>
         <div className="flex items-center gap-1">
           {([
-            { key: 'notes' as const,   line1: '📝 Write',   line2: 'Reports',  color: 'bg-terracotta' },
-            { key: 'parents' as const, line1: '📬 Parent',  line2: 'Log',      color: 'bg-blue-500'   },
-            { key: 'goals' as const,   line1: '🎯 Track',   line2: 'Goals',    color: 'bg-violet-500' },
-            { key: 'reports' as const, line1: '📊 View',    line2: 'Reports',  color: 'bg-sage'       },
+            { key: 'notes' as const,   line1: '📝 Write',   line2: 'Reports',  active: 'bg-terracotta text-white',        inactive: 'bg-terracotta/15 text-terracotta border-terracotta/20'  },
+            { key: 'parents' as const, line1: '📬 Parent',  line2: 'Log',      active: 'bg-blue-500 text-white',          inactive: 'bg-blue-100 text-blue-500 border-blue-200'              },
+            { key: 'goals' as const,   line1: '🎯 Track',   line2: 'Goals',    active: 'bg-violet-500 text-white',        inactive: 'bg-violet-100 text-violet-500 border-violet-200'        },
+            { key: 'reports' as const, line1: '📊 View',    line2: 'Reports',  active: 'bg-sage text-white',              inactive: 'bg-sage/15 text-sage border-sage/20'                    },
           ]).map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "flex-1 py-4 rounded-xl text-[11px] font-black transition-all leading-tight text-center flex flex-col items-center gap-0.5",
-                activeTab === tab.key
-                  ? `${tab.color} text-white shadow-md`
-                  : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+                "flex-1 py-4 rounded-xl text-[11px] font-black transition-all leading-tight text-center flex flex-col items-center gap-0.5 border",
+                activeTab === tab.key ? `${tab.active} shadow-md` : tab.inactive
               )}
             >
               <span>{tab.line1}</span>
