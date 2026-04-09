@@ -875,7 +875,7 @@ export default function StudentsScreen({
             className="px-2"
           >
             <div className="flex items-center gap-3 bg-teal-500 text-white rounded-2xl px-4 py-3">
-              <span className="flex-1 text-[13px] font-semibold">Tap any student to see their full profile →</span>
+              <span className="flex-1 text-[17px] font-semibold">Tap any student to see their full profile →</span>
               <button onClick={dismissStudentHint} className="p-1 rounded-full hover:bg-teal-400 transition-colors flex-shrink-0">
                 <X className="w-4 h-4" />
               </button>
