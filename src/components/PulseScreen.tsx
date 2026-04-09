@@ -1082,7 +1082,10 @@ const handleVoiceLog = async () => {
                     headerColors[cat.color]
                   )}
                 >
-                  <span className="uppercase tracking-widest text-[11px]">{cat.label}</span>
+                  <span className="flex flex-col items-start">
+                    <span className="uppercase tracking-widest text-[11px] font-black">{cat.label}</span>
+                    {!isOpen && <span className="text-[10px] font-normal normal-case tracking-normal opacity-60">tap to expand</span>}
+                  </span>
                   <div className="flex items-center gap-2">
                     {cat.selectedCount > 0 && (
                       <span className={cn("text-[11px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
