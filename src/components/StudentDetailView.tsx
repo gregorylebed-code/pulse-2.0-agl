@@ -1844,8 +1844,6 @@ export default function StudentDetailView({
         </div>
       </div>
 
-      <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
-
       {/* ─── NOTES TAB ────────────────────────────────────────────────────── */}
       {activeTab === 'notes' && <>
 
@@ -2429,6 +2427,18 @@ export default function StudentDetailView({
       {/* ─── PARENTS TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'parents' && <>
 
+      {/* ─── Parent Communication Log ─────────────────────────────────── */}
+      <div id="parents" ref={parentCommRef} className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-4 scroll-mt-header no-print">
+        <ParentCommunicationLog
+          student={student}
+          communications={parentCommunications}
+          onAdd={addParentCommunication}
+          onUpdate={updateParentCommunication}
+          onDelete={deleteParentCommunication}
+          addTask={addTask}
+        />
+      </div>
+
       {/* ─── Parent Contact Info ─────────────────────────────────────── */}
       <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100 no-print">
         <div className="flex items-center justify-between mb-3">
@@ -2525,18 +2535,6 @@ export default function StudentDetailView({
             ))}
           </select>
         </div>
-      </div>
-
-      {/* ─── Parent Communication Log ─────────────────────────────────── */}
-      <div id="parents" ref={parentCommRef} className="bg-white rounded-[32px] p-6 card-shadow border border-slate-100 space-y-4 scroll-mt-header no-print">
-        <ParentCommunicationLog
-          student={student}
-          communications={parentCommunications}
-          onAdd={addParentCommunication}
-          onUpdate={updateParentCommunication}
-          onDelete={deleteParentCommunication}
-          addTask={addTask}
-        />
       </div>
 
       </>}{/* end parents tab */}
@@ -3007,6 +3005,8 @@ export default function StudentDetailView({
 
       {/* ─── REPORTS TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'reports' && <>
+
+      <StudentMiniDashboard student={student} notes={notes} indicators={indicators} />
 
       <div id="ai-report" ref={aiReportRef} className="scroll-mt-header" />
 
