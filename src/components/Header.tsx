@@ -131,26 +131,15 @@ export default function Header({
             <button
               onClick={() => setShowRotationForecast(!showRotationForecast)}
               className={cn(
-                'px-2.5 py-1.5 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center gap-1.5 transition-all hover:border-sage/30 group max-w-[140px]',
+                'p-2 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center gap-1.5 transition-all hover:border-sage/30 group',
                 showRotationForecast && 'ring-2 ring-sage/20 border-sage/40'
               )}
+              title={specialsConfig.mode === 'off' ? 'Rotation off' : todayRotation ? `Day ${todayRotation.letter}: ${todayRotation.special}` : 'No School'}
             >
               <div className="p-1.5 bg-sage/10 text-sage rounded-lg group-hover:bg-sage/20 transition-colors">
                 <School className="w-4 h-4" />
               </div>
-              <div className="text-left min-w-0">
-                <p className="text-[11px] font-bold text-slate-400 leading-none">Rotation</p>
-                <p className="text-[11px] font-bold text-sage-dark truncate">
-                  {specialsConfig.mode === 'off'
-                    ? 'Off'
-                    : todayRotation
-                    ? specialsConfig.mode === 'day-of-week'
-                      ? `${todayRotation.letter}: ${todayRotation.special}`
-                      : `Day ${todayRotation.letter}: ${todayRotation.special}`
-                    : 'No School'}
-                </p>
-              </div>
-              <ChevronDown className={cn('w-3.5 h-3.5 text-slate-300 transition-transform', showRotationForecast && 'rotate-180')} />
+              <ChevronDown className={cn('w-3 h-3 text-slate-300 transition-transform', showRotationForecast && 'rotate-180')} />
             </button>
 
             <AnimatePresence>
