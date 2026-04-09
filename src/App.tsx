@@ -23,6 +23,7 @@ import { cn } from './utils/cn';
 import { isFullMode } from './lib/mode';
 import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
 import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notifications';
+import { trackEvent } from './lib/analytics';
 import WelcomeModal from './components/WelcomeModal';
 import Confetti, { ConfettiHandle } from './components/Confetti';
 
@@ -98,10 +99,22 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const [showRotationForecast, setShowRotationForecast] = useState(false);
   const [welcomeHidden, setWelcomeHidden] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
+  const [showDemoNudge, setShowDemoNudge] = useState(false);
+  const [demoNudgeDismissed, setDemoNudgeDismissed] = useState(false);
   const [openGettingStarted, setOpenGettingStarted] = useState(false);
 
   const DEMO_NAMES = ['Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet'];
   const isInDemoMode = students.length > 0 && students.every(s => DEMO_NAMES.includes(s.name));
+
+  // Show signup nudge after 5 minutes in demo mode
+  useEffect(() => {
+    if (!isInDemoMode || demoNudgeDismissed) return;
+    const timer = setTimeout(() => {
+      setShowDemoNudge(true);
+      trackEvent('demo_nudge_shown');
+    }, 5 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [isInDemoMode, demoNudgeDismissed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSwitchFromDemo = async () => {
     for (const s of students) await deleteStudent(s.id);
@@ -539,6 +552,45 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 </button>
                 <button onClick={() => setDemoBannerDismissed(true)} className="text-violet-300 hover:text-violet-500 transition-colors flex-shrink-0">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {isInDemoMode && showDemoNudge && !demoNudgeDismissed && (
+            <motion.div
+              key="demo-nudge"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="fixed bottom-20 left-0 right-0 z-50 mx-4"
+            >
+              <div className="bg-white border border-slate-200 rounded-2xl px-4 py-4 shadow-lg flex flex-col gap-2">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">✨</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-800">Enjoying the demo?</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Create a free account to track your real class — your notes, your students, your data.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setDemoNudgeDismissed(true);
+                      setShowDemoNudge(false);
+                      trackEvent('demo_nudge_dismissed');
+                    }}
+                    className="text-slate-300 hover:text-slate-500 transition-colors flex-shrink-0 mt-0.5"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    trackEvent('demo_nudge_cta_clicked');
+                    handleSwitchFromDemo();
+                  }}
+                  className="w-full text-sm font-black text-white bg-sage hover:opacity-90 transition-opacity px-4 py-2.5 rounded-xl"
+                >
+                  Create free account →
                 </button>
               </div>
             </motion.div>
