@@ -540,11 +540,11 @@ export default function StudentsScreen({
   };
 
   const statusRing: Record<string, string> = {
-    today:     'ring-2 ring-emerald-400 ring-offset-1',
-    recent:    'ring-2 ring-sage/60 ring-offset-1',
-    fading:    'ring-2 ring-amber-400 ring-offset-1',
-    neglected: 'ring-2 ring-red-400 ring-offset-1',
-    never:     'ring-1 ring-slate-200',
+    today:     'ring-[3px] ring-emerald-400 ring-offset-2',
+    recent:    'ring-[3px] ring-sage/60 ring-offset-2',
+    fading:    'ring-[3px] ring-amber-400 ring-offset-2',
+    neglected: 'ring-[3px] ring-red-400 ring-offset-2',
+    never:     'ring-2 ring-slate-200 ring-offset-1',
   };
 
   const statusDot: Record<string, string> = {
