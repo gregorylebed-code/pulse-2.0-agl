@@ -505,9 +505,8 @@ const handleVoiceLog = async () => {
             // AI unavailable — save note without tags
           }
         }
-        const today = new Date().toISOString().split('T')[0];
-        const todayEvent = calendarEvents?.find(e => e.date === today);
-        if (todayEvent) finalTags.push(`[${todayEvent.title}]`);
+        const noteDateEvent = calendarEvents?.find(e => e.date === noteDate);
+        if (noteDateEvent) finalTags.push(`[${noteDateEvent.title}]`);
 
         const noteCreatedAt = noteDate !== todayStr ? `${noteDate}T12:00:00.000Z` : undefined;
         await addNote({
@@ -592,9 +591,8 @@ const handleVoiceLog = async () => {
         }
       }
 
-      const today = new Date().toISOString().split('T')[0];
-      const todayEvent = calendarEvents?.find(e => e.date === today);
-      if (todayEvent) finalTags.push(`[${todayEvent.title}]`);
+      const noteDateEvent = calendarEvents?.find(e => e.date === noteDate);
+      if (noteDateEvent) finalTags.push(`[${noteDateEvent.title}]`);
 
       const noteCreatedAt = noteDate !== todayStr ? `${noteDate}T12:00:00.000Z` : undefined;
       const student = students.find(s => s.name === studentToUse);
