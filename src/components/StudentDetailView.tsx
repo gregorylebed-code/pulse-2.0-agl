@@ -3065,7 +3065,7 @@ export default function StudentDetailView({
               {!student.archivedSummaries || student.archivedSummaries.length === 0 ? (
                 <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200 px-6 space-y-1.5">
                   <p className="text-xs font-black text-slate-400">No archived drafts yet.</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">Compose a report above, then tap <span className="font-bold">Archive</span> to save a snapshot of this student's progress. Archived reports can be emailed, copied, or downloaded as a PDF.</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Go to the <span className="font-bold">Write Report</span> tab, then tap <span className="font-bold">Archive</span> to save a snapshot of this student's progress. Archived reports can be emailed, copied, or downloaded as a PDF.</p>
                 </div>
               ) : (
                 student.archivedSummaries.filter((s: any) => !pendingDeleteArchiveIds.has(s.id)).map((s: any) => {
