@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 import { createPortal } from 'react-dom';
 import { Note, Student, CalendarEvent } from '../types';
 import { parseVoiceLog, categorizeNote } from '../lib/gemini';
@@ -286,8 +287,42 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   useEffect(() => { if (resetKey) setNoteMode('student'); }, [resetKey]);
   const [selectedClass, setSelectedClass] = useState<string>('');
 
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const handleVoiceResult = useCallback(async (transcript: string) => {
+    setIsSaving(true);
+    try {
+      const studentNames = students.map(s => s.name);
+      const indicatorLabels = indicators.map(i => i.label);
+      const result = await parseVoiceLog(transcript, studentNames, indicatorLabels);
+
+      if (result) {
+        if (result.student_name) {
+          const aiName = result.student_name.toLowerCase();
+          const fullMatch = students.find(s =>
+            s.name.toLowerCase() === aiName ||
+            s.name.toLowerCase().startsWith(aiName + ' ')
+          );
+          selectStudent(fullMatch ? fullMatch.name : result.student_name);
+        }
+        if (result.content) setNoteContent(result.content);
+        if (result.tags && result.tags.length > 0) {
+          const matchedTags = result.tags.filter((t: string) =>
+            indicatorLabels.some(l => l.toLowerCase() === t.toLowerCase())
+          );
+          if (matchedTags.length > 0) setSelectedTags(matchedTags);
+        }
+      } else {
+        setNoteContent(transcript);
+      }
+    } catch (err) {
+      console.error('Voice parse error:', err);
+      setNoteContent(transcript);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [students, indicators]);
+
+  const { isListening, startListening, stopListening } = useVoiceRecognition(handleVoiceResult);
+
   const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
   // Map of noteId → timer, so multiple pending deletes each have their own countdown
   const pendingDeleteTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -425,54 +460,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-const handleVoiceLog = async () => {
-    if (isListening) { recognitionRef.current?.abort(); setIsListening(false); return; }
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice recognition not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    recognition.lang = 'en-US';
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = async (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setIsSaving(true);
-      try {
-        const studentNames = students.map(s => s.name);
-        const indicatorLabels = indicators.map(i => i.label);
-        const result = await parseVoiceLog(transcript, studentNames, indicatorLabels);
-
-        if (result) {
-          if (result.student_name) {
-            const aiName = result.student_name.toLowerCase();
-            const fullMatch = students.find(s =>
-              s.name.toLowerCase() === aiName ||
-              s.name.toLowerCase().startsWith(aiName + ' ')
-            );
-            selectStudent(fullMatch ? fullMatch.name : result.student_name);
-          }
-          if (result.content) setNoteContent(result.content);
-          if (result.tags && result.tags.length > 0) {
-            const matchedTags = result.tags.filter((t: string) =>
-              indicatorLabels.some(l => l.toLowerCase() === t.toLowerCase())
-            );
-            if (matchedTags.length > 0) setSelectedTags(matchedTags);
-          }
-        } else {
-          setNoteContent(transcript);
-        }
-      } catch (err) {
-        console.error("Voice parse error:", err);
-        setNoteContent(transcript);
-      } finally {
-        setIsSaving(false);
-      }
-    };
-    recognition.start();
+const handleVoiceLog = () => {
+    if (isListening) { stopListening(); return; }
+    startListening();
   };
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {

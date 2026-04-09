@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import imageCompression from 'browser-image-compression';
@@ -714,8 +715,6 @@ export default function StudentDetailView({
   const [showSparkles, setShowSparkles] = useState(false);
   const sparkleOrigin = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const saveNoteButtonRef = useRef<HTMLButtonElement>(null);
-  const [isListening, setIsListening] = useState(false);
-  const voiceRecognitionRef = useRef<any>(null);
   const [showTags, setShowTags] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<'positive' | 'neutral' | 'growth' | 'comm' | null>(null);
   const [showReportOptions, setShowReportOptions] = useState(false);
@@ -853,46 +852,37 @@ export default function StudentDetailView({
     setImagePreview(URL.createObjectURL(compressed));
   };
 
-  const handleVoiceLog = async () => {
-    if (isListening) { voiceRecognitionRef.current?.abort(); setIsListening(false); return; }
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice recognition not supported in this browser.");
-      return;
-    }
+  const handleVoiceResult = useCallback(async (transcript: string) => {
+    setIsSavingNote(true);
+    try {
+      const studentNames = students.map(s => s.name);
+      const indicatorLabels = indicators.map(i => i.label);
+      const result = await parseVoiceLog(transcript, studentNames, indicatorLabels);
 
-    const recognition = new SpeechRecognition();
-    voiceRecognitionRef.current = recognition;
-    recognition.lang = 'en-US';
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = async (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setIsSavingNote(true);
-      try {
-        const studentNames = students.map(s => s.name);
-        const indicatorLabels = indicators.map(i => i.label);
-        const result = await parseVoiceLog(transcript, studentNames, indicatorLabels);
-
-        if (result) {
-          if (result.content) setNoteContent(result.content);
-          if (result.tags && result.tags.length > 0) {
-            const matchedTags = result.tags.filter((t: string) =>
-              indicatorLabels.some(l => l.toLowerCase() === t.toLowerCase())
-            );
-            if (matchedTags.length > 0) setSelectedTags(matchedTags);
-          }
-        } else {
-          setNoteContent(transcript);
+      if (result) {
+        if (result.content) setNoteContent(result.content);
+        if (result.tags && result.tags.length > 0) {
+          const matchedTags = result.tags.filter((t: string) =>
+            indicatorLabels.some(l => l.toLowerCase() === t.toLowerCase())
+          );
+          if (matchedTags.length > 0) setSelectedTags(matchedTags);
         }
-      } catch (err) {
-        console.error("Voice parse error:", err);
+      } else {
         setNoteContent(transcript);
-      } finally {
-        setIsSavingNote(false);
       }
-    };
-    recognition.start();
+    } catch (err) {
+      console.error('Voice parse error:', err);
+      setNoteContent(transcript);
+    } finally {
+      setIsSavingNote(false);
+    }
+  }, [students, indicators]);
+
+  const { isListening, startListening, stopListening } = useVoiceRecognition(handleVoiceResult);
+
+  const handleVoiceLog = () => {
+    if (isListening) { stopListening(); return; }
+    startListening();
   };
 
   const handleSaveNote = async () => {
