@@ -768,6 +768,22 @@ export default function StudentDetailView({
   const aiReportRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
 
+  const placeholders = useMemo(() => [
+    `Add a note for ${student.name}... (optional — indicators alone work fine)`,
+    "E.g. 'hw = missing' (Your abbreviations will auto-expand!)",
+    `Try the mic: '${student.name.split(' ')[0]} did a great job helping clean up today.'`,
+    "Tip: You can change the date of this note using the calendar button below.",
+    "Try 'attendance: present' to log attendance via voice."
+  ], [student.name]);
+  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [placeholders.length]);
+
   const handleDeleteGoal = (id: string) => {
     let cancelled = false;
     const timer = setTimeout(() => { if (!cancelled) deleteGoal(id); }, 3000);
@@ -1632,7 +1648,7 @@ export default function StudentDetailView({
             ref={noteInputRef}
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
-            placeholder={`Add a quick note for ${student.name}...`}
+            placeholder={placeholders[currentPlaceholderIndex]}
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
