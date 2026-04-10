@@ -7,7 +7,7 @@ import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations'
 import imageCompression from 'browser-image-compression';
 import {
   Mic, MicOff, Image as ImageIcon, Send, Trash2, Edit2, Copy,
-  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Cake, ChevronDown, Smile, Frown
+  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Cake, ChevronDown, Smile, Frown, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
