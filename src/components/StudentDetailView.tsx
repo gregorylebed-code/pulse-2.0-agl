@@ -767,6 +767,7 @@ export default function StudentDetailView({
   const timelineRef = useRef<HTMLDivElement>(null);
   const aiReportRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
+  const [showSavedReports, setShowSavedReports] = useState(false);
 
   const placeholders = useMemo(() => [
     `Add a note for ${student.name}... (optional — indicators alone work fine)`,
@@ -2968,139 +2969,162 @@ export default function StudentDetailView({
       <div id="ai-report" ref={aiReportRef} className="scroll-mt-header" />
 
       <div id="history" ref={historyRef} className="space-y-4 scroll-mt-header">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-sage-dark flex items-center gap-2">
-                  <Archive className="w-4 h-4 text-sage" /> Saved Reports
-                </h3>
-                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                  {student.archivedSummaries?.length || 0} Saved {(student.archivedSummaries?.length || 0) === 1 ? 'Record' : 'Records'}
-                </p>
+            <button 
+              onClick={() => setShowSavedReports(!showSavedReports)}
+              className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-sage/30 transition-all text-left"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-sage/10 flex items-center justify-center flex-shrink-0">
+                  <Archive className="w-5 h-5 text-sage" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-800">Saved Reports</h3>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                    {student.archivedSummaries?.length || 0} Saved {(student.archivedSummaries?.length || 0) === 1 ? 'Record' : 'Records'}
+                    <span className="mx-2 text-slate-200">|</span>
+                    <span className="text-sage font-black">{showSavedReports ? 'tap to collapse' : 'tap to expand'}</span>
+                  </p>
+                </div>
               </div>
-
-              {student.archivedSummaries && student.archivedSummaries.length > 0 && (
-                <button
-                  onClick={handleSelectAllArchives}
-                  className="px-3 py-1.5 bg-slate-50 text-slate-500 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-colors"
-                >
-                  {selectedArchiveIds.length === student.archivedSummaries.length ? 'Deselect All' : 'Select All'}
-                </button>
-              )}
-            </div>
+              <ChevronDown className={cn("w-5 h-5 text-slate-300 transition-transform duration-300", showSavedReports && "rotate-180")} />
+            </button>
 
             <AnimatePresence>
-              {selectedArchiveIds.length > 0 && (
+              {showSavedReports && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex flex-wrap gap-2 overflow-hidden"
+                  className="space-y-4 overflow-hidden"
                 >
-                  <button
-                    onClick={handleCopySelected}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all shadow-sm"
-                  >
-                    <Copy className="w-3.5 h-3.5" /> Copy Selected
-                  </button>
-                  <button
-                    onClick={handleEmailSelected}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all shadow-sm shadow-blue-500/20"
-                  >
-                    <Mail className="w-3.5 h-3.5" /> Email Parent
-                  </button>
-                  <button
-                    onClick={handleDownloadPDF}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-terracotta-dark transition-all shadow-sm shadow-terracotta/20"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download PDF
-                  </button>
+                  <div className="flex items-center justify-between px-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">History Management</p>
+                    {student.archivedSummaries && student.archivedSummaries.length > 0 && (
+                      <button
+                        onClick={handleSelectAllArchives}
+                        className="px-3 py-1.5 bg-slate-50 text-slate-500 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-colors"
+                      >
+                        {selectedArchiveIds.length === student.archivedSummaries.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                    )}
+                  </div>
+
+                  <AnimatePresence>
+                    {selectedArchiveIds.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex flex-wrap gap-2 overflow-hidden pb-2"
+                      >
+                        <button
+                          onClick={handleCopySelected}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-all shadow-sm"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> Copy Selected
+                        </button>
+                        <button
+                          onClick={handleEmailSelected}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all shadow-sm shadow-blue-500/20"
+                        >
+                          <Mail className="w-3.5 h-3.5" /> Email Parent
+                        </button>
+                        <button
+                          onClick={handleDownloadPDF}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-terracotta text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-terracotta-dark transition-all shadow-sm shadow-terracotta/20"
+                        >
+                          <Download className="w-3.5 h-3.5" /> Download PDF
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="space-y-3">
+                    {!student.archivedSummaries || student.archivedSummaries.length === 0 ? (
+                      <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200 px-6 space-y-1.5">
+                        <p className="text-xs font-black text-slate-400">No archived drafts yet.</p>
+                        <p className="text-xs text-slate-400 leading-relaxed">Go to the <span className="font-bold">Write Report</span> tab, then tap <span className="font-bold">Archive</span> to save a snapshot of this student's progress. Archived reports can be emailed, copied, or downloaded as a PDF.</p>
+                      </div>
+                    ) : (
+                      student.archivedSummaries.filter((s: any) => !pendingDeleteArchiveIds.has(s.id)).map((s: any) => {
+                        const isExpanded = expandedArchiveIds.includes(s.id);
+                        const isSelected = selectedArchiveIds.includes(s.id);
+
+                        return (
+                          <div
+                            key={s.id}
+                            onClick={(e) => handleToggleArchiveExpand(s.id, e)}
+                            className={cn(
+                              "group cursor-pointer p-4 rounded-2xl border transition-all duration-200",
+                              isSelected ? "bg-indigo-50/50 border-indigo-200 shadow-sm" : "bg-white border-slate-100 hover:border-sage/30 hover:shadow-sm card-shadow"
+                            )}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="pt-0.5">
+                                <button
+                                  onClick={(e) => handleToggleArchiveSelect(s.id, e)}
+                                  className={cn(
+                                    "w-5 h-5 rounded-md flex items-center justify-center border transition-all",
+                                    isSelected ? "bg-indigo-500 border-indigo-500 text-white" : "bg-white border-slate-300 text-transparent hover:border-indigo-400 hover:bg-indigo-50"
+                                  )}
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</span>
+                                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleCopyText(s.content); }}
+                                      className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                                      title="Copy Archive"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleEmailText(s.content); }}
+                                      className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Email Parent"
+                                    >
+                                      <Mail className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); softDeleteArchive(s.id); }}
+                                      className="p-1.5 text-slate-400 hover:text-terracotta hover:bg-terracotta/10 rounded-lg transition-colors"
+                                      title="Delete Archive"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="relative">
+                                  <div className={cn(
+                                    "text-xs text-slate-700 font-medium leading-relaxed whitespace-pre-wrap transition-all overflow-hidden",
+                                    !isExpanded && "line-clamp-2"
+                                  )}>
+                                    {s.content}
+                                  </div>
+                                  {!isExpanded && s.content.length > 80 && (
+                                    <div className="absolute bottom-0 right-0 top-0 w-16 bg-gradient-to-l from-white group-hover:from-transparent to-transparent pointer-events-none" />
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="pt-1">
+                                {isExpanded ? <ChevronLeft className="w-4 h-4 text-slate-400 -rotate-90" /> : <ChevronLeft className="w-4 h-4 text-slate-400 rotate-180" />}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
-
-            <div className="space-y-3 pt-2">
-              {!student.archivedSummaries || student.archivedSummaries.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200 px-6 space-y-1.5">
-                  <p className="text-xs font-black text-slate-400">No archived drafts yet.</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">Go to the <span className="font-bold">Write Report</span> tab, then tap <span className="font-bold">Archive</span> to save a snapshot of this student's progress. Archived reports can be emailed, copied, or downloaded as a PDF.</p>
-                </div>
-              ) : (
-                student.archivedSummaries.filter((s: any) => !pendingDeleteArchiveIds.has(s.id)).map((s: any) => {
-                  const isExpanded = expandedArchiveIds.includes(s.id);
-                  const isSelected = selectedArchiveIds.includes(s.id);
-
-                  return (
-                    <div
-                      key={s.id}
-                      onClick={(e) => handleToggleArchiveExpand(s.id, e)}
-                      className={cn(
-                        "group cursor-pointer p-4 rounded-2xl border transition-all duration-200",
-                        isSelected ? "bg-indigo-50/50 border-indigo-200 shadow-sm" : "bg-white border-slate-100 hover:border-sage/30 hover:shadow-sm card-shadow"
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="pt-0.5">
-                          <button
-                            onClick={(e) => handleToggleArchiveSelect(s.id, e)}
-                            className={cn(
-                              "w-5 h-5 rounded-md flex items-center justify-center border transition-all",
-                              isSelected ? "bg-indigo-500 border-indigo-500 text-white" : "bg-white border-slate-300 text-transparent hover:border-indigo-400 hover:bg-indigo-50"
-                            )}
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</span>
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleCopyText(s.content); }}
-                                className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
-                                title="Copy Archive"
-                              >
-                                <Copy className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleEmailText(s.content); }}
-                                className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Email Parent"
-                              >
-                                <Mail className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); softDeleteArchive(s.id); }}
-                                className="p-1.5 text-slate-400 hover:text-terracotta hover:bg-terracotta/10 rounded-lg transition-colors"
-                                title="Delete Archive"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="relative">
-                            <div className={cn(
-                              "text-xs text-slate-700 font-medium leading-relaxed whitespace-pre-wrap transition-all overflow-hidden",
-                              !isExpanded && "line-clamp-2"
-                            )}>
-                              {s.content}
-                            </div>
-                            {!isExpanded && s.content.length > 80 && (
-                              <div className="absolute bottom-0 right-0 top-0 w-16 bg-gradient-to-l from-white group-hover:from-transparent to-transparent pointer-events-none" />
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="pt-1">
-                          {isExpanded ? <ChevronLeft className="w-4 h-4 text-slate-400 -rotate-90" /> : <ChevronLeft className="w-4 h-4 text-slate-400 rotate-180" />}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
       </div>
 
       <div ref={progressRef} id="progress" className="scroll-mt-header">
