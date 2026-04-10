@@ -408,7 +408,7 @@ export default function ShoutoutsScreen({ shoutouts, students, addShoutout, dele
               exit={{ y: 60, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-slate-800 rounded-t-[32px] w-full max-w-lg p-6 pb-10 space-y-5 mb-16"
+              className="bg-white dark:bg-slate-800 rounded-t-[32px] w-full max-w-lg p-6 pb-10 space-y-5 mb-28"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-[16px] font-black text-slate-800 dark:text-white flex items-center gap-2">
