@@ -34,3 +34,7 @@ For any dark mode styling, add rules to `src/index.css` under the `/* ===== DARK
 - For new features or structural changes: briefly explain the approach and options first, then wait for a go-ahead unless the user says "go for it"
 - Don't add unnecessary abstractions, helpers, or future-proofing — keep it simple
 - Don't use Tailwind `dark:` variants (see above)
+
+## Context management
+- If a task is large or multi-part (e.g. redesign a whole page, build a new feature end-to-end), suggest upfront whether it's better handled in a fresh conversation or split into sub-agents — don't wait until the conversation is already long.
+- When wrapping up a long session, save anything important to memory before the user starts a new chat.

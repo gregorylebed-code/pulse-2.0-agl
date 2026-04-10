@@ -763,7 +763,7 @@ export default function StudentDetailView({
   const [studentNameDraft, setStudentNameDraft] = useState(student.name);
   const [editingAlias, setEditingAlias] = useState(false);
   const [aliasDraft, setAliasDraft] = useState(student.alias ?? '');
-  const timelineRef = useRef<HTMLDivElement>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const aiReportRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
 
@@ -1131,15 +1131,10 @@ export default function StudentDetailView({
   const handleSaveContact = async () => {
     setIsUpdatingContact(true);
     try {
-      const bm = parseInt(birthMonth);
-      const bd = parseInt(birthDay);
       await updateStudent(student.id, {
         parent_guardian_names: [parentName],
         parent_emails: parentEmail ? [parentEmail] : [],
-        parent_phones: parentPhone ? [parentPhone] : [],
-        birth_month: !isNaN(bm) && bm >= 1 && bm <= 12 ? bm : null,
-        birth_day: !isNaN(bd) && bd >= 1 && bd <= 31 ? bd : null,
-        pronouns: pronouns.trim() || null,
+        parent_phones: parentPhone ? [parentPhone] : []
       });
       toast.success('Contact info updated!');
       onNoteUpdate();
@@ -1562,30 +1557,15 @@ export default function StudentDetailView({
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  {editingStudentName ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={studentNameDraft}
-                        onChange={e => setStudentNameDraft(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleSaveStudentName(); if (e.key === 'Escape') setEditingStudentName(false); }}
-                        autoFocus
-                        className="text-base font-bold text-white bg-white/20 border border-white/40 rounded-xl px-3 py-1 focus:outline-none focus:ring-2 focus:ring-white/40 placeholder-white/50"
-                      />
-                      <button onClick={handleSaveStudentName} className="text-[11px] font-bold text-white/80 hover:text-white">Save</button>
-                      <button onClick={() => setEditingStudentName(false)} className="text-[11px] font-bold text-white/60 hover:text-white/80">Cancel</button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 group min-w-0">
-                      <h2 className="text-[20px] font-black text-white font-display leading-tight drop-shadow-sm truncate">
-                        {student.name.split(' ')[0]}{' '}
-                        <span className="text-white/80">{student.name.split(' ').slice(1).map((n: string) => n[0]).join('')}.</span>
-                      </h2>
-                      <button onClick={() => { setStudentNameDraft(student.name); setEditingStudentName(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-white/60 hover:text-white flex-shrink-0" title="Edit name">
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 group min-w-0">
+                    <h2 className="text-[20px] font-black text-white font-display leading-tight drop-shadow-sm truncate">
+                      {student.name.split(' ')[0]}{' '}
+                      <span className="text-white/80">{student.name.split(' ').slice(1).map((n: string) => n[0]).join('')}.</span>
+                    </h2>
+                    <button onClick={() => { setStudentNameDraft(student.name); setAliasDraft(student.alias ?? ''); setShowProfileModal(true); }} className="p-1 rounded-full bg-white/20 text-white hover:bg-white/30 flex-shrink-0 transition-colors shadow-sm ml-1" title="Edit Profile">
+                      <Settings2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
                 {/* Stats inline */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1631,28 +1611,10 @@ export default function StudentDetailView({
                   );
                 })()}
                 {/* Alias inline */}
-                {editingAlias ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="text"
-                      value={aliasDraft}
-                      onChange={e => setAliasDraft(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleSaveAlias(); if (e.key === 'Escape') setEditingAlias(false); }}
-                      autoFocus
-                      placeholder="Alias…"
-                      className="text-[10px] font-bold text-white bg-white/20 border border-white/40 rounded-lg px-2 py-0.5 w-24 focus:outline-none"
-                    />
-                    <button onClick={handleSaveAlias} className="text-[10px] font-bold text-white/80 hover:text-white">Save</button>
-                    <button onClick={() => setEditingAlias(false)} className="text-[10px] text-white/50 hover:text-white/80">✕</button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setAliasDraft(student.alias ?? ''); setEditingAlias(true); }}
-                    className="flex items-center gap-1 px-2 py-0.5 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-[10px] font-bold rounded-full transition-colors"
-                    title="Set alias for Alias Mode"
-                  >
-                    {student.alias ? `Alias: ${student.alias}` : '+ Alias'}
-                  </button>
+                {student.alias && (
+                  <span className="inline-block px-2 py-0.5 bg-white/10 text-white/80 text-[10px] font-bold rounded-full font-mono">
+                    "{student.alias}"
+                  </span>
                 )}
                 <span className="text-[10px] font-bold text-white/50">{heroStats.lastLogged !== '—' ? `Last: ${heroStats.lastLogged}` : ''}</span>
               </div>
@@ -1841,7 +1803,7 @@ export default function StudentDetailView({
         <div className="flex items-center gap-1">
           {([
             { key: 'notes' as const,   line1: '📝 Student', line2: 'Notes',    active: 'bg-terracotta text-white',        inactive: 'bg-terracotta/15 text-terracotta border-terracotta/20'  },
-            { key: 'reports' as const, line1: '📊 Write &', line2: 'Reports',  active: 'bg-sage text-white',              inactive: 'bg-sage/15 text-sage border-sage/20'                    },
+            { key: 'reports' as const, line1: '📈 Insights', line2: '& Reports',  active: 'bg-sage text-white',              inactive: 'bg-sage/15 text-sage border-sage/20'                    },
             { key: 'parents' as const, line1: '📬 Parent',  line2: 'Comm',     active: 'bg-blue-500 text-white',          inactive: 'bg-blue-100 text-blue-500 border-blue-200'              },
             { key: 'goals' as const,   line1: '🎯 Goals &', line2: 'Accom',    active: 'bg-violet-500 text-white',        inactive: 'bg-violet-100 text-violet-500 border-violet-200'        },
           ]).map(tab => (
@@ -2161,50 +2123,6 @@ export default function StudentDetailView({
             className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
           />
         </div>
-        <div className="flex items-start gap-2 mt-2">
-          <span className="text-slate-300 flex-shrink-0 text-xs w-3.5 text-center mt-2">P</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400 font-medium w-16 flex-shrink-0">Pronouns</span>
-              <select
-                value={pronouns}
-                onChange={(e) => setPronouns(e.target.value)}
-                className="min-w-0 w-full px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-              >
-                <option value="">Auto-detect (they/them if name is unclear)</option>
-                <option value="he/him">he/him</option>
-                <option value="she/her">she/her</option>
-                <option value="they/them">they/them</option>
-              </select>
-            </div>
-            <p className="text-[10px] text-slate-400 mt-1 leading-snug pl-[72px]">
-              Helps the AI refer to this student correctly in notes and reports.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 mt-2">
-          <Cake className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
-          <span className="text-[11px] text-slate-400 font-medium w-16">Birthday</span>
-          <select
-            value={birthMonth}
-            onChange={(e) => setBirthMonth(e.target.value)}
-            className="px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          >
-            <option value="">Month</option>
-            {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
-              <option key={i} value={i + 1}>{m}</option>
-            ))}
-          </select>
-          <select
-            value={birthDay}
-            onChange={(e) => setBirthDay(e.target.value)}
-            className="px-2 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          >
-            <option value="">Day</option>
-            {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -3192,6 +3110,99 @@ export default function StudentDetailView({
               Undo
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showProfileModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-sm bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden"
+            >
+              <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-800">Edit Profile</h3>
+                <button onClick={() => setShowProfileModal(false)} className="p-1 text-slate-400 hover:text-red-500 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Student Name</label>
+                  <input type="text" value={studentNameDraft} onChange={e => setStudentNameDraft(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage" />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Alias (Optional)</label>
+                  <input type="text" value={aliasDraft} onChange={e => setAliasDraft(e.target.value)} placeholder="e.g. Blue Falcon" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage" />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Pronouns</label>
+                  <select value={pronouns} onChange={e => setPronouns(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage">
+                    <option value="">Auto-detect (they/them if unclear)</option>
+                    <option value="he/him">he/him</option>
+                    <option value="she/her">she/her</option>
+                    <option value="they/them">they/them</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Birthday</label>
+                  <div className="flex gap-2">
+                    <select value={birthMonth} onChange={e => setBirthMonth(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage">
+                      <option value="">Month</option>
+                      {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                    </select>
+                    <select value={birthDay} onChange={e => setBirthDay(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage">
+                      <option value="">Day</option>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+                <button
+                  onClick={async () => {
+                    setIsUpdatingContact(true);
+                    try {
+                      const bm = parseInt(birthMonth);
+                      const bd = parseInt(birthDay);
+                      const trimmedName = studentNameDraft.trim() || student.name;
+                      const trimmedAlias = aliasDraft.trim() || null;
+                      await updateStudent(student.id, {
+                        name: trimmedName,
+                        alias: trimmedAlias,
+                        birth_month: !isNaN(bm) && bm >= 1 && bm <= 12 ? bm : null,
+                        birth_day: !isNaN(bd) && bd >= 1 && bd <= 31 ? bd : null,
+                        pronouns: pronouns.trim() || null,
+                      });
+                      toast.success('Profile updated!');
+                      setShowProfileModal(false);
+                      onNoteUpdate();
+                    } catch (err: any) {
+                      toast.error('Failed to update profile');
+                    } finally {
+                      setIsUpdatingContact(false);
+                    }
+                  }}
+                  disabled={isUpdatingContact}
+                  className="flex-1 py-3 bg-sage text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-sage-dark transition-all disabled:opacity-50"
+                >
+                  {isUpdatingContact ? 'Saving...' : 'Save Profile'}
+                </button>
+                <button
+                  onClick={() => setShowProfileModal(false)}
+                  className="px-4 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </motion.div>
