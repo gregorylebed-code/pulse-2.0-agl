@@ -62,6 +62,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     saveSpecialsMode, saveDayOfWeekSpecials, saveRollingConfig, saveTodayOverride,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
     updateCalendarEvents, refreshData, stats, lessonHistory, saveLessonHistory,
+    seatingChart, saveSeatingChart,
     notificationPrefs, saveNotificationPrefs,
     onboardingComplete, markOnboardingComplete,
     loading,
@@ -625,6 +626,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 teacherLastName={teacherLastName}
                 shoutouts={shoutouts}
                 addTask={addTask}
+                seatingChart={seatingChart}
+                saveSeatingChart={saveSeatingChart}
               />
               </ErrorBoundary>
             </motion.div>

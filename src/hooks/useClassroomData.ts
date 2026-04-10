@@ -117,6 +117,7 @@ interface ClassroomDataState {
   abbreviations: Abbreviation[];
   stats: Stats;
   lessonHistory: DeliveredLesson[];
+  seatingChart: Record<string, { x: number; y: number }>;
   notificationPrefs: NotificationPrefs;
   onboardingComplete: boolean | null;
   loading: boolean;
@@ -161,6 +162,7 @@ interface ClassroomDataActions {
   updateClasses: (classes: string[]) => Promise<void>;
   updateCalendarEvents: (events: CalendarEvent[]) => Promise<void>;
   saveLessonHistory: (history: DeliveredLesson[]) => Promise<void>;
+  saveSeatingChart: (chart: Record<string, { x: number; y: number }>) => Promise<void>;
   saveNotificationPrefs: (prefs: NotificationPrefs) => Promise<void>;
   markOnboardingComplete: () => Promise<void>;
   refreshData: () => Promise<void>;
@@ -192,6 +194,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     abbreviations: [],
     stats: { notes_created: 0, reports_generated: 0 },
     lessonHistory: [],
+    seatingChart: {},
     notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
     onboardingComplete: null,
     loading: true,
@@ -199,6 +202,14 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
   });
 
   const subscriptionsRef = useRef<any[]>([]);
+
+  const updateSetting = useCallback(async (key: string, value: any) => {
+    const { error } = await supabase.from('settings').upsert(
+      { user_id: userId, key, value },
+      { onConflict: 'user_id,key' }
+    );
+    if (error) throw error;
+  }, [userId]);
 
   const loadAllData = useCallback(async () => {
     try {
@@ -263,6 +274,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       const rollingStartDate: string = settingsMap['rolling_start_date'] ?? '';
       const rollingLetterCount: number = settingsMap['rolling_letter_count'] ?? 5;
       const todayOverride = settingsMap['today_override'] ?? null;
+      const seatingChart: Record<string, { x: number; y: number }> = settingsMap['seating_chart'] ?? {};
 
       // Map student IDs to names for note display
       const studentMap = new Map((studentsData || []).map((s: any) => [s.id, s.name]));
@@ -315,6 +327,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         abbreviations,
         stats,
         lessonHistory,
+        seatingChart,
         notificationPrefs,
         onboardingComplete,
         loading: false,
@@ -378,12 +391,9 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       return { ...prev, stats: updated };
     });
     if (updatedStats) {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'stats', value: updatedStats },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('stats', updatedStats);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   // ─── Notes ─────────────────────────────────────────────────────────────────
 
@@ -588,141 +598,116 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const saveProfile = useCallback(async (profile: Profile) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'profile', value: profile },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('profile', profile);
       setState(prev => ({ ...prev, profile }));
     } catch (error) {
       console.error('Error saving profile:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveRotationMapping = useCallback(async (mapping: Record<string, string>) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'rotation_mapping', value: mapping },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('rotation_mapping', mapping);
       setState(prev => ({ ...prev, rotationMapping: mapping }));
     } catch (error) {
       console.error('Error saving rotation mapping:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveSpecialsNames = useCallback(async (names: Record<string, string>) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'specials_names', value: names },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('specials_names', names);
       setState(prev => ({ ...prev, specialsNames: names }));
     } catch (error) {
       console.error('Error saving specials names:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveSpecialsMode = useCallback(async (mode: SpecialsMode) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'specials_mode', value: mode },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('specials_mode', mode);
       setState(prev => ({ ...prev, specialsMode: mode }));
     } catch (error) {
       console.error('Error saving specials mode:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveDayOfWeekSpecials = useCallback(async (specials: Record<string, string>) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'day_of_week_specials', value: specials },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('day_of_week_specials', specials);
       setState(prev => ({ ...prev, dayOfWeekSpecials: specials }));
     } catch (error) {
       console.error('Error saving day-of-week specials:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveRollingConfig = useCallback(async (startDate: string, letterCount: number) => {
     try {
       await Promise.all([
-        supabase.from('settings').upsert(
-          { user_id: userId, key: 'rolling_start_date', value: startDate },
-          { onConflict: 'user_id,key' }
-        ),
-        supabase.from('settings').upsert(
-          { user_id: userId, key: 'rolling_letter_count', value: letterCount },
-          { onConflict: 'user_id,key' }
-        ),
+        updateSetting('rolling_start_date', startDate),
+        updateSetting('rolling_letter_count', letterCount),
       ]);
       setState(prev => ({ ...prev, rollingStartDate: startDate, rollingLetterCount: letterCount }));
     } catch (error) {
       console.error('Error saving rolling config:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveTodayOverride = useCallback(async (override: { date: string; letter: string } | null) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'today_override', value: override },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('today_override', override);
       setState(prev => ({ ...prev, todayOverride: override }));
     } catch (error) {
       console.error('Error saving today override:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveAbbreviations = useCallback(async (abbreviations: Abbreviation[]) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'abbreviations', value: abbreviations },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('abbreviations', abbreviations);
       setState(prev => ({ ...prev, abbreviations }));
     } catch (error) {
       console.error('Error saving abbreviations:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveLessonHistory = useCallback(async (history: DeliveredLesson[]) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'lesson_history', value: history },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('lesson_history', history);
       setState(prev => ({ ...prev, lessonHistory: history }));
     } catch (error) {
       console.error('Error saving lesson history:', error);
+      toast.error('Failed to save lesson history');
     }
-  }, [userId]);
+  }, [updateSetting]);
+
+  const saveSeatingChart = useCallback(async (chart: Record<string, { x: number; y: number }>) => {
+    try {
+      await updateSetting('seating_chart', chart);
+      setState(prev => ({ ...prev, seatingChart: chart }));
+    } catch (error) {
+      console.error('Error saving seating chart:', error);
+      toast.error('Failed to save seating chart');
+    }
+  }, [updateSetting]);
 
   const markOnboardingComplete = useCallback(async () => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'onboarding_complete', value: true },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('onboarding_complete', true);
       setState(prev => ({ ...prev, onboardingComplete: true }));
     } catch (error) {
       console.error('Error saving onboarding state:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   const saveNotificationPrefs = useCallback(async (prefs: NotificationPrefs) => {
     try {
-      await supabase.from('settings').upsert(
-        { user_id: userId, key: 'notification_prefs', value: prefs },
-        { onConflict: 'user_id,key' }
-      );
+      await updateSetting('notification_prefs', prefs);
       setState(prev => ({ ...prev, notificationPrefs: prefs }));
     } catch (error) {
       console.error('Error saving notification prefs:', error);
     }
-  }, [userId]);
+  }, [updateSetting]);
 
   // ─── Bulk Updates (delete-all + re-insert) ──────────────────────────────────
 
@@ -1008,6 +993,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     updateClasses,
     updateCalendarEvents,
     saveLessonHistory,
+    saveSeatingChart,
     saveNotificationPrefs,
     markOnboardingComplete,
     refreshData,
