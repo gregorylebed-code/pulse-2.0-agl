@@ -65,11 +65,8 @@ export default function SeatingChart({ students, seatingChart, saveSeatingChart,
             key={s.id}
             drag
             dragMomentum={false}
-            dragConstraints={containerRef}
             onDragEnd={(e, info) => handleDragEnd(s.id, info)}
-            initial={{ x: coords.x, y: coords.y }}
-            animate={{ x: coords.x, y: coords.y }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            style={{ x: coords.x, y: coords.y }}
             className="absolute z-10 w-16 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing hover:z-20"
           >
             <div 
