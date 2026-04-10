@@ -1684,7 +1684,7 @@ export default function StudentDetailView({
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            className="w-full min-h-[130px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
+            className="w-full min-h-[130px] p-5 pb-14 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
           <div className="absolute right-3 bottom-1.5 flex flex-col items-end gap-1.5">
             <span className="text-[9px] font-bold text-slate-400 opacity-60 flex items-center gap-1 mr-1">
