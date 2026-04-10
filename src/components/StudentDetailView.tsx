@@ -1580,9 +1580,24 @@ export default function StudentDetailView({
                       {student.name.split(' ')[0]}{' '}
                       <span className="text-white/80">{student.name.split(' ').slice(1).map((n: string) => n[0]).join('')}.</span>
                     </h2>
-                    <button onClick={() => { setStudentNameDraft(student.name); setAliasDraft(student.alias ?? ''); setShowProfileModal(true); }} className="p-1 rounded-full bg-white/20 text-white hover:bg-white/30 flex-shrink-0 transition-colors shadow-sm ml-1" title="Edit Profile">
+                    <button onClick={() => { setStudentNameDraft(student.name); setAliasDraft(student.alias ?? ''); setShowProfileModal(true); }} className="p-1 rounded-full bg-white/20 text-white hover:bg-white/30 flex-shrink-0 transition-colors shadow-sm ml-1" title="Edit Profile & Contact">
                       <Settings2 className="w-3.5 h-3.5" />
                     </button>
+                    {/* Quick Contact shortcuts */}
+                    {(parentEmail || parentPhone) && (
+                      <div className="flex items-center gap-1 ml-2 pl-2 border-l border-white/20">
+                        {parentEmail && (
+                          <button onClick={(e) => { e.stopPropagation(); handleEmailText(''); }} className="p-1.5 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 transition-all" title={`Email ${parentName || 'Parent'}`}>
+                            <Mail className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {parentPhone && (
+                          <a href={`tel:${parentPhone}`} className="p-1.5 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 transition-all" title={`Call ${parentName || 'Parent'}`}>
+                            <Phone className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {/* Stats inline */}
@@ -2088,59 +2103,6 @@ export default function StudentDetailView({
           onDelete={deleteParentCommunication}
           addTask={addTask}
         />
-      </div>
-
-      {/* ─── Parent Contact Info ─────────────────────────────────────── */}
-      <div className="bg-white px-5 py-4 rounded-2xl card-shadow border border-slate-100 no-print">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Parent Contact</h3>
-          <button
-            type="button"
-            onClick={handleSaveContact}
-            disabled={isUpdatingContact}
-            className="text-[11px] font-black text-sage hover:text-sage-dark disabled:opacity-50"
-          >
-            {isUpdatingContact ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <input
-            id="parent_name"
-            name="parent_name"
-            type="text"
-            value={parentName}
-            onChange={(e) => setParentName(e.target.value)}
-            placeholder="Parent name..."
-            autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          />
-          <input
-            id="parent_email"
-            name="parent_email"
-            type="email"
-            value={parentEmail}
-            onChange={(e) => setParentEmail(e.target.value)}
-            placeholder="Email..."
-            autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          />
-          <input
-            id="parent_phone"
-            name="parent_phone"
-            type="tel"
-            value={parentPhone}
-            onChange={(e) => setParentPhone(e.target.value)}
-            placeholder="Phone..."
-            autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
-          />
-        </div>
       </div>
 
       </>}{/* end parents tab */}
@@ -3162,7 +3124,7 @@ export default function StudentDetailView({
               className="w-full max-w-sm bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden"
             >
               <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-800">Edit Profile</h3>
+                <h3 className="text-lg font-black text-slate-800">Profile & Contact</h3>
                 <button onClick={() => setShowProfileModal(false)} className="p-1 text-slate-400 hover:text-red-500 rounded-full transition-colors">
                   <X className="w-5 h-5" />
                 </button>
@@ -3202,6 +3164,26 @@ export default function StudentDetailView({
                     </select>
                   </div>
                 </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Parent / Guardian Contact</label>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 ml-1">Parent Name</label>
+                      <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="Full name..." className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 ml-1">Email</label>
+                        <input type="email" value={parentEmail} onChange={e => setParentEmail(e.target.value)} placeholder="Email address..." className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 ml-1">Phone</label>
+                        <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} placeholder="Phone number..." className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-2">
@@ -3219,8 +3201,11 @@ export default function StudentDetailView({
                         birth_month: !isNaN(bm) && bm >= 1 && bm <= 12 ? bm : null,
                         birth_day: !isNaN(bd) && bd >= 1 && bd <= 31 ? bd : null,
                         pronouns: pronouns.trim() || null,
+                        parent_name: parentName.trim() || null,
+                        parent_email: parentEmail.trim() || null,
+                        parent_phone: parentPhone.trim() || null,
                       });
-                      toast.success('Profile updated!');
+                      toast.success('Information updated!');
                       setShowProfileModal(false);
                       onNoteUpdate();
                     } catch (err: any) {
