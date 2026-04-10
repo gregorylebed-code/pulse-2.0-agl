@@ -1619,7 +1619,7 @@ export default function StudentDetailView({
                 {/* Status Pills */}
                 <div className="flex items-center gap-1.5">
                   <span className="inline-block px-2 py-1 bg-white/10 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm">
-                    P{student.class_period || '—'}
+                    {student.class_period || '—'}
                   </span>
                   {[
                     { val: heroStats.total, label: 'notes' },
