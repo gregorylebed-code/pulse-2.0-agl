@@ -1184,31 +1184,30 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         </div>
 
         {/* ── Optional text note ── */}
-        <div className="relative max-w-2xl">
+        <div className="space-y-3 max-w-2xl">
           <textarea
             ref={noteInputRef}
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
             onFocus={() => setTimeout(() => noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
             placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : placeholders[currentPlaceholderIndex]}
-            className="w-full min-h-[130px] p-5 pb-14 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
+            className="w-full min-h-[130px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
-          <div className="absolute right-3 bottom-1.5 flex flex-col items-end gap-1.5">
-            <span className="text-[9px] font-bold text-slate-400 opacity-60 flex items-center gap-1 mr-1">
-              💡 Tip: Speak naturally (e.g. "Alice was focused")
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] font-bold text-slate-400 opacity-80 flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-sage" />
+              Tip: Speak naturally (e.g. "Alice was focused")
             </span>
-            <div className="flex gap-2 items-center">
-              <button
-                onClick={handleVoiceLog}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest",
-                  isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
-                )}
-              >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                <span>{isListening ? 'Stop' : 'Voice'}</span>
-              </button>
-            </div>
+            <button
+              onClick={handleVoiceLog}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2.5 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest",
+                isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
+              )}
+            >
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              <span>{isListening ? 'Stop Listening' : 'Voice Note'}</span>
+            </button>
           </div>
         </div>
 
