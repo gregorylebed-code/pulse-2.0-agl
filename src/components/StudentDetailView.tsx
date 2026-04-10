@@ -1673,7 +1673,7 @@ export default function StudentDetailView({
       </div>
 
       <div className="bg-white rounded-[32px] p-8 card-shadow border border-sage/5 space-y-6 no-print">
-        <div className="space-y-3">
+        <div className="relative">
           <textarea
             id="quick_note"
             name="quick_note"
@@ -1684,22 +1684,22 @@ export default function StudentDetailView({
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
-            className="w-full min-h-[130px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
+            className="w-full min-h-[140px] p-5 pb-16 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] font-bold text-slate-400 opacity-80 flex items-center gap-1.5">
+          <div className="absolute left-2 right-2 bottom-2 flex items-center justify-between px-2 bg-gradient-to-t from-slate-50 to-transparent pt-4 pb-1 rounded-b-xl pointer-events-none">
+            <span className="text-[10px] font-bold text-slate-400 opacity-80 flex items-center gap-1.5 translate-y-[2px] pointer-events-auto">
               <Sparkles className="w-3 h-3 text-sage" />
               Tip: Speak naturally (e.g. "Focus was great today")
             </span>
             <button
               onClick={handleVoiceLog}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2.5 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest",
-                isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border transition-all font-bold text-[10px] uppercase tracking-widest pointer-events-auto",
+                isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
               )}
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              <span>{isListening ? 'Stop Listening' : 'Voice Note'}</span>
+              {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+              <span>{isListening ? 'Stop' : 'Voice'}</span>
             </button>
           </div>
         </div>
