@@ -295,6 +295,12 @@ export default function StudentsScreen({
   const [filter, setFilter] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'seating'>('grid');
 
+  React.useEffect(() => {
+    if (filter === 'All' && viewMode === 'seating') {
+      setViewMode('grid');
+    }
+  }, [filter, viewMode]);
+
   // ─── Attendance mode ─────────────────────────────────────────────────────
   const [attendanceMode, setAttendanceMode] = useState(false);
   const [attendanceSelections, setAttendanceSelections] = useState<Record<string, 'absent' | 'tardy'>>({});
@@ -721,7 +727,7 @@ export default function StudentsScreen({
           </button>
         </div>
         <div className="flex bg-white rounded-xl p-1 shadow-sm border border-slate-100 overflow-x-auto no-scrollbar max-w-[240px]">
-          {isFullMode && (
+          {isFullMode && filter !== 'All' && (
              <div className="flex mr-2 pr-2 border-r border-slate-100">
                 <button
                   onClick={() => setViewMode('grid')}

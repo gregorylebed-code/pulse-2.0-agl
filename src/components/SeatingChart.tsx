@@ -50,7 +50,7 @@ export default function SeatingChart({ students, seatingChart, saveSeatingChart,
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-[600px] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] bg-white rounded-3xl border-2 border-slate-100 overflow-hidden shadow-inner"
+      className="relative w-full h-[600px] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] bg-white rounded-3xl border-2 border-slate-100 overflow-hidden shadow-inner no-swipe"
     >
       <div className="absolute top-4 left-4 text-xs font-black text-slate-400 bg-white/80 px-3 py-1.5 rounded-full z-0">
         FRONT OF ROOM

@@ -381,6 +381,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const tabs = (['pulse', 'students', isFullMode ? 'insights' : null, isFullMode ? 'shoutouts' : null, 'settings'] as const).filter(Boolean) as ('pulse' | 'students' | 'insights' | 'shoutouts' | 'settings')[];
   const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('.no-swipe')) return;
     const t = e.touches[0];
     swipeStartRef.current = { x: t.clientX, y: t.clientY };
   };
