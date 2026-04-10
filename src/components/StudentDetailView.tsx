@@ -764,6 +764,7 @@ export default function StudentDetailView({
   const [editingAlias, setEditingAlias] = useState(false);
   const [aliasDraft, setAliasDraft] = useState(student.alias ?? '');
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const timelineRef = useRef<HTMLDivElement>(null);
   const aiReportRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
 
