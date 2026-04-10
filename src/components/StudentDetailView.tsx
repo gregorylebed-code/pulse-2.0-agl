@@ -1573,50 +1573,66 @@ export default function StudentDetailView({
 
             {/* Name + period + stats inline */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 overflow-hidden">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <div className="flex items-center gap-1.5 group min-w-0">
-                    <h2 className="text-[20px] font-black text-white font-display leading-tight drop-shadow-sm truncate">
-                      {student.name.split(' ')[0]}{' '}
-                      <span className="text-white/80">{student.name.split(' ').slice(1).map((n: string) => n[0]).join('')}.</span>
-                    </h2>
-                    <button onClick={() => { setStudentNameDraft(student.name); setAliasDraft(student.alias ?? ''); setShowProfileModal(true); }} className="p-1 rounded-full bg-white/20 text-white hover:bg-white/30 flex-shrink-0 transition-colors shadow-sm ml-1" title="Edit Profile & Contact">
-                      <Settings2 className="w-3.5 h-3.5" />
-                    </button>
-                    {/* Quick Contact shortcuts */}
-                    {(parentEmail || parentPhone) && (
-                      <div className="flex items-center gap-1 ml-2 pl-2 border-l border-white/20">
-                        {parentEmail && (
-                          <button onClick={(e) => { e.stopPropagation(); handleEmailText(''); }} className="p-1.5 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 transition-all" title={`Email ${parentName || 'Parent'}`}>
-                            <Mail className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {parentPhone && (
-                          <a href={`tel:${parentPhone}`} className="p-1.5 rounded-lg bg-white/10 text-white/90 hover:bg-white/20 transition-all" title={`Call ${parentName || 'Parent'}`}>
-                            <Phone className="w-3.5 h-3.5" />
-                          </a>
-                        )}
-                      </div>
+                  <h2 className="text-[22px] font-black text-white font-display leading-tight drop-shadow-sm truncate">
+                    {student.name}
+                  </h2>
+                  <button onClick={() => { setStudentNameDraft(student.name); setAliasDraft(student.alias ?? ''); setShowProfileModal(true); }} className="p-1 rounded-full bg-white/20 text-white hover:bg-white/30 flex-shrink-0 transition-colors shadow-sm ml-1" title="Edit Profile & Contact">
+                    <Settings2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {/* Quick Contact shortcuts with confirmation for phone */}
+                {(parentEmail || parentPhone) && (
+                  <div className="flex items-center gap-1 pr-2 border-r border-white/20">
+                    {parentEmail && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleEmailText(''); }} 
+                        className="p-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-all flex items-center gap-1.5 px-2.5" 
+                        title={`Email ${parentName || 'Parent'}`}
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Email</span>
+                      </button>
+                    )}
+                    {parentPhone && (
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if (window.confirm(`Are you sure you want to call ${parentName || 'the parent'}? This may use your personal phone line.`)) {
+                            window.location.href = `tel:${parentPhone}`;
+                          }
+                        }} 
+                        className="p-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-all flex items-center gap-1.5 px-2.5" 
+                        title={`Call ${parentName || 'Parent'}`}
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Call</span>
+                      </button>
                     )}
                   </div>
-                </div>
-                {/* Stats inline */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                )}
+
+                {/* Status Pills */}
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block px-2 py-1 bg-white/10 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm">
+                    P{student.class_period || '—'}
+                  </span>
                   {[
                     { val: heroStats.total, label: 'notes' },
                     { val: `${heroStats.positivePct}%`, label: 'pos' },
                   ].map(({ val, label }) => (
-                    <div key={label} className="bg-white/15 backdrop-blur-sm rounded-xl px-2 py-1 text-center">
-                      <div className="text-[13px] font-black text-white leading-none">{val}</div>
-                      <div className="text-[9px] font-bold text-white/60 uppercase tracking-wide">{label}</div>
+                    <div key={label} className="bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1.5">
+                      <span className="text-[11px] font-black text-white leading-none">{val}</span>
+                      <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest leading-none">{label}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                <span className="inline-block px-2 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded-full backdrop-blur-sm">
-                  Period {student.class_period || '—'}
-                </span>
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap min-h-[20px]">
                 {(() => {
                   const accomIcons: Record<AccommodationCategory, React.ReactNode> = {
                     extended_time: <History className="w-3 h-3" strokeWidth={2.5} />,
