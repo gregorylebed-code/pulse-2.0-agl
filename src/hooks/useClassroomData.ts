@@ -220,20 +220,20 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         { data: accommodationsData },
         { data: attendanceData },
       ] = await Promise.all([
-        supabase.from('notes').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-        supabase.from('students').select('*').eq('user_id', userId),
-        supabase.from('indicators').select('*').eq('user_id', userId),
-        supabase.from('comm_types').select('*').eq('user_id', userId),
-        supabase.from('tasks').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-        supabase.from('classes').select('*').eq('user_id', userId),
-        supabase.from('calendar_events').select('*').eq('user_id', userId),
-        supabase.from('reports').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-        supabase.from('settings').select('*').eq('user_id', userId),
-        supabase.from('student_goals').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-        supabase.from('shoutouts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-        supabase.from('parent_communications').select('*').eq('user_id', userId).order('comm_date', { ascending: false }),
-        supabase.from('student_accommodations').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-        supabase.from('attendance_records').select('*').eq('user_id', userId).order('date', { ascending: false }),
+        supabase.from('notes').select('*').order('created_at', { ascending: false }),
+        supabase.from('students').select('*'),
+        supabase.from('indicators').select('*'),
+        supabase.from('comm_types').select('*'),
+        supabase.from('tasks').select('*').order('created_at', { ascending: false }),
+        supabase.from('classes').select('*'),
+        supabase.from('calendar_events').select('*'),
+        supabase.from('reports').select('*').order('created_at', { ascending: false }),
+        supabase.from('settings').select('*'),
+        supabase.from('student_goals').select('*').order('created_at', { ascending: true }),
+        supabase.from('shoutouts').select('*').order('created_at', { ascending: false }),
+        supabase.from('parent_communications').select('*').order('comm_date', { ascending: false }),
+        supabase.from('student_accommodations').select('*').order('created_at', { ascending: true }),
+        supabase.from('attendance_records').select('*').order('date', { ascending: false }),
       ]);
 
       if (notesError) throw new Error(`Notes: ${notesError.message}`);
@@ -733,7 +733,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         type: rest.type || 'neutral',
         user_id: userId,
       }));
-      await supabase.from('indicators').delete().eq('user_id', userId);
+      await supabase.from('indicators').delete();
       if (toSave.length > 0) {
         await supabase.from('indicators').insert(toSave);
       }
@@ -749,7 +749,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         label: rest.label,
         user_id: userId,
       }));
-      await supabase.from('comm_types').delete().eq('user_id', userId);
+      await supabase.from('comm_types').delete();
       if (toSave.length > 0) {
         await supabase.from('comm_types').insert(toSave);
       }
@@ -761,7 +761,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const updateClasses = useCallback(async (newClasses: string[]) => {
     try {
-      await supabase.from('classes').delete().eq('user_id', userId);
+      await supabase.from('classes').delete();
       if (newClasses.length > 0) {
         await supabase.from('classes').insert(newClasses.map(name => ({ name, user_id: userId })));
       }
@@ -773,7 +773,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const updateCalendarEvents = useCallback(async (newEvents: CalendarEvent[]) => {
     try {
-      await supabase.from('calendar_events').delete().eq('user_id', userId);
+      await supabase.from('calendar_events').delete();
       if (newEvents.length > 0) {
         const toSave = newEvents.map(({ id: _id, user_id: _uid, ...rest }) => ({ ...rest, user_id: userId }));
         await supabase.from('calendar_events').insert(toSave);

@@ -78,7 +78,7 @@ interface StudentDetailViewProps {
   onBack: () => void;
   onGenerateReport: (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<ReportData | undefined>;
   onNoteUpdate: () => void;
-  addNote: (note: any) => Promise<any>;
+  addNote: (note: any, createdAt?: string) => Promise<any>;
   updateNote: (id: string, updates: any) => Promise<void>;
   updateStudent: (id: string, updates: any) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
@@ -878,11 +878,10 @@ export default function StudentDetailView({
     }
   }, [students, indicators]);
 
-  const { isListening, startListening, stopListening } = useVoiceRecognition(handleVoiceResult);
+  const { isListening, toggleListening } = useVoiceRecognition(handleVoiceResult);
 
   const handleVoiceLog = () => {
-    if (isListening) { stopListening(); return; }
-    startListening();
+    toggleListening();
   };
 
   const handleSaveNote = async () => {
@@ -1676,17 +1675,22 @@ export default function StudentDetailView({
             data-lpignore="true"
             className="w-full min-h-[130px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
-          <div className="absolute right-3 bottom-3">
-            <button
-              onClick={handleVoiceLog}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest z-10",
-                isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
-              )}
-            >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              <span>{isListening ? 'Stop' : 'Voice'}</span>
-            </button>
+          <div className="absolute right-3 bottom-1.5 flex flex-col items-end gap-1.5">
+            <span className="text-[9px] font-bold text-slate-400 opacity-60 flex items-center gap-1 mr-1">
+              💡 Tip: Speak naturally (e.g. "Focus was great today")
+            </span>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={handleVoiceLog}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest z-10",
+                  isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
+                )}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                <span>{isListening ? 'Stop' : 'Voice'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2061,8 +2065,9 @@ export default function StudentDetailView({
             </div>
           ))}
           {notes.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-[32px] border border-dashed border-slate-200">
+            <div className="text-center py-12 bg-white rounded-[32px] border border-dashed border-slate-200 px-6">
               <p className="text-sm text-slate-400 font-medium">No notes yet for this student.</p>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">Observations you save using the "Quick Note" box above will appear here in a scrollable timeline.</p>
             </div>
           )}
         </div>
@@ -2304,7 +2309,17 @@ export default function StudentDetailView({
 
         {/* Existing goals */}
         {goals.length === 0 && !showGoalForm && (
-          <p className="text-xs text-slate-400 text-center py-6">No goals yet — tap + to add one or let AI suggest some.</p>
+          <div className="text-center py-10 bg-white rounded-[32px] border border-dashed border-slate-200 px-6 space-y-2">
+            <p className="text-sm text-slate-400 font-medium">No goals yet.</p>
+            <p className="text-xs text-slate-400 leading-relaxed">Tracking a specific goal (e.g. "Raise hand before speaking") helps you spot long-term growth trends in the Pulse charts.</p>
+            <button
+              type="button"
+              onClick={() => setShowGoalForm(true)}
+              className="text-[11px] font-black uppercase tracking-widest text-violet-500 hover:text-violet-600"
+            >
+              + Create First Goal
+            </button>
+          </div>
         )}
 
         <div className="space-y-3">
@@ -2480,7 +2495,17 @@ export default function StudentDetailView({
         </div>
 
         {accommodations.filter(a => a.student_id === student.id).length === 0 && !showAccomForm && (
-          <p className="text-xs text-slate-400 text-center py-6">No accommodations yet — tap + to add one.</p>
+          <div className="text-center py-10 bg-white rounded-[32px] border border-dashed border-slate-200 px-6 space-y-2">
+            <p className="text-sm text-slate-400 font-medium">No accommodations yet.</p>
+            <p className="text-xs text-slate-400 leading-relaxed">You can list IEP/504 details here to keep them handy during lesson planning and report writing.</p>
+            <button
+              type="button"
+              onClick={() => setShowAccomForm(true)}
+              className="text-[11px] font-black uppercase tracking-widest text-sky-500 hover:text-sky-600"
+            >
+              + List Accommodations
+            </button>
+          </div>
         )}
 
         <div className="space-y-3">

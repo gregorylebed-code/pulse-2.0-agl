@@ -112,20 +112,7 @@ export default function Header({
             );
           })}
         </span>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Alias Mode Toggle */}
-          <button
-            onClick={toggleAliasMode}
-            title={aliasMode ? 'Student names are hidden — tap to show them' : 'Tap to hide student names (great for public spaces)'}
-            className={cn(
-              'p-1.5 rounded-xl border transition-all',
-              aliasMode
-                ? 'bg-amber-50 border-amber-200 text-amber-500'
-                : 'bg-white border-slate-100 text-slate-300 hover:text-slate-400'
-            )}
-          >
-            {aliasMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           {/* Rotation Dashboard Badge */}
           {isFullMode && <div className="relative">
             <button
@@ -139,6 +126,11 @@ export default function Header({
               <div className="p-1.5 bg-sage/10 text-sage rounded-lg group-hover:bg-sage/20 transition-colors">
                 <School className="w-4 h-4" />
               </div>
+              {todayRotation && specialsConfig.mode !== 'off' && (
+                <span className="text-[11px] font-bold text-slate-600 max-w-[80px] truncate">
+                  {todayRotation.special}
+                </span>
+              )}
               <ChevronDown className={cn('w-3 h-3 text-slate-300 transition-transform', showRotationForecast && 'rotate-180')} />
             </button>
 
@@ -239,7 +231,19 @@ export default function Header({
             </AnimatePresence>
           </div>}
 
-
+          {/* Alias Mode Toggle — below rotation badge */}
+          <button
+            onClick={toggleAliasMode}
+            title={aliasMode ? 'Student names are hidden — tap to show them' : 'Tap to hide student names (great for public spaces)'}
+            className={cn(
+              'p-1.5 rounded-xl border transition-all',
+              aliasMode
+                ? 'bg-amber-50 border-amber-200 text-amber-500'
+                : 'bg-white border-slate-100 text-slate-300 hover:text-slate-400'
+            )}
+          >
+            {aliasMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
         </div>
       </div>
     </header>

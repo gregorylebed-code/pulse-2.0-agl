@@ -7,7 +7,7 @@ import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations'
 import imageCompression from 'browser-image-compression';
 import {
   Mic, MicOff, Image as ImageIcon, Send, Trash2, Edit2, Copy,
-  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Cake, ChevronDown
+  Mail, MessageSquare, User, Calendar, Eye, X, AlertCircle, Loader2, School, Cake, ChevronDown, Smile, Frown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -25,7 +25,7 @@ interface PulseScreenProps {
   calendarEvents: CalendarEvent[];
   classes: string[];
   onNoteAdded: () => void;
-  addNote: (note: any) => Promise<any>;
+  addNote: (note: any, createdAt?: string) => Promise<any>;
   updateNote: (id: string, updates: any) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   abbreviations: Abbreviation[];
@@ -215,6 +215,21 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [latestNoteId, setLatestNoteId] = useState<string | null>(null);
   const [visibleNoteCount, setVisibleNoteCount] = useState(5);
+  const placeholders = useMemo(() => [
+    "Add a note... (optional — indicators alone work fine)",
+    "E.g. 'hw = missing' (Your abbreviations will auto-expand!)",
+    "Try the mic: 'Alice did a great job helping clean up today.'",
+    "Tip: Capture a photo of a student's work to attach it to a note.",
+    "Try 'attendance: present' to log attendance via voice."
+  ], []);
+  const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [placeholders.length]);
 
   // Streak: count consecutive school days (Mon–Fri) going back from today with at least one note
   const streak = useMemo(() => {
@@ -232,6 +247,24 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     }
     return count;
   }, [notes]);
+
+  const quickTags = useMemo(() => {
+    const counts: Record<string, number> = {};
+    // Only look at student notes (notes with student_id)
+    notes.filter(n => n.student_id).slice(0, 80).forEach(n => {
+      n.tags?.forEach(t => {
+        // Skip calendar event tags andParentSquare/Email/etc
+        if (!t.startsWith('[') && !['ParentSquare', 'Email', 'Phone', 'Meeting'].includes(t)) {
+          counts[t] = (counts[t] || 0) + 1;
+        }
+      });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(entry => entry[0]);
+  }, [notes]);
+
   const [editContent, setEditContent] = useState('');
   const [editStudentName, setEditStudentName] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
@@ -321,7 +354,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     }
   }, [students, indicators]);
 
-  const { isListening, startListening, stopListening } = useVoiceRecognition(handleVoiceResult);
+  const { isListening, toggleListening } = useVoiceRecognition(handleVoiceResult);
 
   const [undoToast, setUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
   // Map of noteId → timer, so multiple pending deletes each have their own countdown
@@ -460,9 +493,8 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-const handleVoiceLog = () => {
-    if (isListening) { stopListening(); return; }
-    startListening();
+  const handleVoiceLog = () => {
+    toggleListening();
   };
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1026,6 +1058,38 @@ const handleVoiceLog = () => {
           </>
         )}
 
+        {/* ── Quick Tags ───────────────────────────────────────────────────────── */}
+        {quickTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            <span className="w-full text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Frequently Used</span>
+            {quickTags.map(tag => {
+              const isSelected = selectedTags.includes(tag);
+              const indicator = indicators.find(i => i.label === tag);
+              const type = indicator?.type || 'neutral';
+              const colors = {
+                positive: isSelected ? 'bg-sage border-sage text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-sage/40',
+                growth: isSelected ? 'bg-terracotta border-terracotta text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-terracotta/40',
+                neutral: isSelected ? 'bg-slate-500 border-slate-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+              };
+              
+              return (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all flex items-center gap-1.5",
+                    colors[type]
+                  )}
+                >
+                  {type === 'positive' && <Smile className="w-3 h-3" />}
+                  {type === 'growth' && <Frown className="w-3 h-3" />}
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* ── Indicators — accordion by category ── */}
         <div className="space-y-1.5">
           <p className="text-[11px] text-slate-400 font-medium px-1">Tap a behavior label to tag this note — the AI uses these to write parent reports</p>
@@ -1126,20 +1190,25 @@ const handleVoiceLog = () => {
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
             onFocus={() => setTimeout(() => noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
-            placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : "Add a note... (optional — indicators alone work fine)"}
+            placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : placeholders[currentPlaceholderIndex]}
             className="w-full min-h-[130px] p-5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
           />
-          <div className="absolute right-3 bottom-3 flex gap-2 items-center">
-            <button
-              onClick={handleVoiceLog}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest",
-                isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
-              )}
-            >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              <span>{isListening ? 'Stop' : 'Voice'}</span>
-            </button>
+          <div className="absolute right-3 bottom-1.5 flex flex-col items-end gap-1.5">
+            <span className="text-[9px] font-bold text-slate-400 opacity-60 flex items-center gap-1 mr-1">
+              💡 Tip: Speak naturally (e.g. "Alice was focused")
+            </span>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={handleVoiceLog}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest",
+                  isListening ? "bg-terracotta text-white border-terracotta animate-pulse shadow-terracotta/30 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40"
+                )}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                <span>{isListening ? 'Stop' : 'Voice'}</span>
+              </button>
+            </div>
           </div>
         </div>
 

@@ -36,5 +36,13 @@ export function useVoiceRecognition(onResult: OnResultCallback) {
     setIsListening(false);
   };
 
-  return { isListening, startListening, stopListening };
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  return { isListening, startListening, stopListening, toggleListening };
 }
