@@ -70,11 +70,11 @@ export default function SeatingChart({ students, seatingChart, saveSeatingChart,
             initial={{ x: coords.x, y: coords.y }}
             animate={{ x: coords.x, y: coords.y }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="absolute z-10 w-20 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing hover:z-20"
+            className="absolute z-10 w-16 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing hover:z-20"
           >
             <div 
               className={cn(
-                "bg-white p-1 rounded-2xl shadow-sm border-2 flex flex-col items-center gap-1 w-full relative",
+                "bg-white p-1 rounded-xl shadow-sm border-2 flex flex-col items-center gap-0.5 w-full relative",
                 "border-slate-200 hover:border-sage/50 transition-colors"
               )}
               onClick={(e) => {
@@ -83,17 +83,17 @@ export default function SeatingChart({ students, seatingChart, saveSeatingChart,
                 onStudentClick(s.id);
               }}
             >
-              <span className={cn('absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-white', statusDot[status])} />
+              <span className={cn('absolute -top-1 -right-1 w-2 h-2 rounded-full border border-white', statusDot[status])} />
               
               {s.photo_url ? (
-                <img src={s.photo_url} alt={s.name} className="w-10 h-10 rounded-full object-cover" />
+                <img src={s.photo_url} alt={s.name} className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <div className={cn('w-10 h-10 rounded-full flex items-center justify-center border text-[13px] font-black', getAvatarColor(s.name))} style={{ fontFamily: "'Boogaloo', cursive" }}>
+                <div className={cn('w-8 h-8 rounded-full flex items-center justify-center border text-[11px] font-black leading-none', getAvatarColor(s.name))} style={{ fontFamily: "'Boogaloo', cursive" }}>
                   {aliasMode ? getDisplayName(s, true).substring(0, 2).toUpperCase() : s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                 </div>
               )}
               
-              <h4 className="text-[10px] font-bold text-slate-700 leading-tight text-center line-clamp-2 w-full break-words">
+              <h4 className="text-[9px] font-bold text-slate-700 leading-tight text-center truncate w-full px-0.5">
                 {getDisplayName(s, aliasMode)}
               </h4>
             </div>
