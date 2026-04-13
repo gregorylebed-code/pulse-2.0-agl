@@ -250,10 +250,13 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
   const quickTags = useMemo(() => {
     const counts: Record<string, number> = {};
-    // Only look at student notes (notes with student_id)
-    notes.filter(n => n.student_id).slice(0, 80).forEach(n => {
+    // If a student is selected, show their top tags; otherwise show global top tags
+    const sourceNotes = selectedStudent
+      ? notes.filter(n => n.student_name === selectedStudent)
+      : notes.filter(n => n.student_id).slice(0, 80);
+    sourceNotes.forEach(n => {
       n.tags?.forEach(t => {
-        // Skip calendar event tags andParentSquare/Email/etc
+        // Skip calendar event tags and ParentSquare/Email/etc
         if (!t.startsWith('[') && !['ParentSquare', 'Email', 'Phone', 'Meeting'].includes(t)) {
           counts[t] = (counts[t] || 0) + 1;
         }
@@ -263,7 +266,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       .sort((a, b) => b[1] - a[1])
       .slice(0, 4)
       .map(entry => entry[0]);
-  }, [notes]);
+  }, [notes, selectedStudent]);
 
   const [editContent, setEditContent] = useState('');
   const [editStudentName, setEditStudentName] = useState('');
