@@ -731,7 +731,7 @@ export default function StudentDetailView({
   const [activeTab, setActiveTab] = useState<'notes' | 'parents' | 'goals' | 'reports'>('notes');
   const [quickNote, setQuickNote] = useState<string | null>(null);
   const [isGeneratingQuickNote, setIsGeneratingQuickNote] = useState(false);
-  const [quickNoteDays, setQuickNoteDays] = useState<0 | 1 | 3 | 5 | 7>(0);
+  const [quickNoteDays, setQuickNoteDays] = useState<0 | 1 | 3 | 5 | 7 | 14 | 30 | 60 | 365>(0);
   const [quickNoteRefineInstructions, setQuickNoteRefineInstructions] = useState('');
   const [isRefiningQuickNote, setIsRefiningQuickNote] = useState(false);
   const [isListeningQuickNoteRefine, setIsListeningQuickNoteRefine] = useState(false);
@@ -2672,7 +2672,7 @@ export default function StudentDetailView({
                     setTimeRange(opt.value === 'today' ? 'Today' : opt.value);
                     if (reportLength === 'Quick Note') {
                       // map to quickNoteDays
-                      const map: Record<string, 0 | 1 | 3 | 5 | 7> = { today: 0, 'Last 7 Days': 7, '15 Days': 7, 'Last 30 Days': 7 };
+                      const map: Record<string, 0 | 1 | 3 | 5 | 7 | 14 | 30 | 60 | 365> = { today: 0, 'Last 7 Days': 7, '15 Days': 14, 'Last 30 Days': 30, '60 Days': 60, 'Whole Year': 365 };
                       const d = map[opt.value];
                       if (d !== undefined) setQuickNoteDays(d);
                     }
