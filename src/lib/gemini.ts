@@ -200,6 +200,13 @@ STRICT RULES — follow these exactly:
 - If no tag fits clearly, return an empty array [].
 - Prefer accuracy over brevity — if there are genuinely two distinct situations, use two tags.
 
+EXAMPLES of direct matches (these are NOT inferences — apply the tag):
+- "forgot Chromebook", "didn't bring pencil", "no homework", "missing materials" → Unprepared
+- "hit another student", "pushed", "kicked" → tag the relevant behavior (e.g. Physical Aggression if available, otherwise Behavior)
+- "called out repeatedly", "talking while teacher is talking" → Disruption
+- "refused to work", "put head down", "doing nothing" → Off Task (or closest available tag)
+- "cried", "upset", "seemed anxious" → tag the relevant emotional/social tag if available
+
 Return a JSON object:
 - tags: array of strings (use exact tag names from the available list, or [] if none fit)
 - sentiment: "Positive", "Neutral", or "Negative"`;
