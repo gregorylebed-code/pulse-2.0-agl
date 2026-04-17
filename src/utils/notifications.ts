@@ -88,8 +88,12 @@ export function scheduleCalendarReminder(todayEvents: CalendarEvent[]): () => vo
     fireNotification(`📅 Today: ${label}`, 'Tap to open ShortHand', 'calendar-reminder');
   };
 
+  const noon = new Date();
+  noon.setHours(12, 0, 0, 0);
+
   if (eightAM <= now) {
-    // Already past 8 AM — fire after a short delay so the app is fully loaded
+    // Already past 8 AM — fire after a short delay, but only if it's still morning
+    if (now >= noon) return () => {};
     const id = setTimeout(fire, 1500);
     return () => clearTimeout(id);
   }
