@@ -2635,7 +2635,16 @@ export default function StudentDetailView({
                 <button
                   key={opt.key}
                   type="button"
-                  onClick={() => { setReportLength(opt.key); setQuickNote(null); setCurrentReport(null); }}
+                  onClick={() => {
+                    setReportLength(opt.key);
+                    setQuickNote(null);
+                    setCurrentReport(null);
+                    if (opt.key === 'Quick Note') {
+                      const map: Record<string, 0 | 1 | 3 | 5 | 7 | 14 | 30 | 60 | 365> = { Today: 0, 'Last 7 Days': 7, '15 Days': 14, 'Last 30 Days': 30, '60 Days': 60, 'Whole Year': 365 };
+                      const d = map[timeRange];
+                      if (d !== undefined) setQuickNoteDays(d);
+                    }
+                  }}
                   className={cn(
                     "flex flex-col items-start text-left p-4 rounded-2xl border-2 transition-all",
                     reportLength === opt.key

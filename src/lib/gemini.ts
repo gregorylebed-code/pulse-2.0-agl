@@ -494,7 +494,10 @@ export async function quickParentNote(notes: Note[], teacherTitle: string, teach
   const firstName = studentName.split(' ')[0];
   const pronounInfo = getStudentPronounInfo(firstName, studentPronouns);
   const pronounInstruction = buildPronounInstruction(pronounInfo);
-  const notesText = notes.map(n => n.content).join('\n- ');
+  const notesText = notes.map(n => {
+    const tagStr = n.tags?.length ? `[${n.tags.join(', ')}]` : '';
+    return [n.content, tagStr].filter(Boolean).join(' ');
+  }).join('\n- ');
   const shoutoutsText = shoutouts.length > 0
     ? '\n\nPositive shoutouts for this student:\n- ' +
       shoutouts.map(s => `${s.category ? `[${s.category}] ` : ''}${s.content}`).join('\n- ')
