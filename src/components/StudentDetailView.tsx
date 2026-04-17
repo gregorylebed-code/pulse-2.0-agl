@@ -686,7 +686,7 @@ export default function StudentDetailView({
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, []);
 
   const [reportLength, setReportLength] = useState<'Quick Note' | 'Standard' | 'Detailed'>('Standard');
-  const [timeRange, setTimeRange] = useState('Last 7 Days');
+  const [timeRange, setTimeRange] = useState('5 Days');
   const [customStartDate, setCustomStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0]);
   const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1390,6 +1390,7 @@ export default function StudentDetailView({
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       if (range === 'Today') return diffDays <= 1;
+      if (range === '5 Days') return diffDays <= 5;
       if (range === 'Last 7 Days') return diffDays <= 7;
       if (range === '15 Days') return diffDays <= 15;
       if (range === 'Last 30 Days') return diffDays <= 30;
@@ -2640,7 +2641,7 @@ export default function StudentDetailView({
                     setQuickNote(null);
                     setCurrentReport(null);
                     if (opt.key === 'Quick Note') {
-                      const map: Record<string, 0 | 1 | 3 | 5 | 7 | 14 | 30 | 60 | 365> = { Today: 0, 'Last 7 Days': 7, '15 Days': 14, 'Last 30 Days': 30, '60 Days': 60, 'Whole Year': 365 };
+                      const map: Record<string, 0 | 1 | 3 | 5 | 7 | 14 | 30 | 60 | 365> = { Today: 0, '5 Days': 5, 'Last 7 Days': 7, '15 Days': 14, 'Last 30 Days': 30, '60 Days': 60, 'Whole Year': 365 };
                       const d = map[timeRange];
                       if (d !== undefined) setQuickNoteDays(d);
                     }
@@ -2669,7 +2670,7 @@ export default function StudentDetailView({
             <div className="flex flex-wrap gap-2">
               {([
                 { label: 'Today', value: 'today' },
-                { label: '5 Days', value: 'Last 7 Days' },
+                { label: '5 Days', value: '5 Days' },
                 { label: '14 Days', value: '15 Days' },
                 { label: '30 Days', value: 'Last 30 Days' },
                 { label: 'Custom', value: 'Custom Range' },
@@ -2681,7 +2682,7 @@ export default function StudentDetailView({
                     setTimeRange(opt.value === 'today' ? 'Today' : opt.value);
                     if (reportLength === 'Quick Note') {
                       // map to quickNoteDays
-                      const map: Record<string, 0 | 1 | 3 | 5 | 7 | 14 | 30 | 60 | 365> = { today: 0, 'Last 7 Days': 7, '15 Days': 14, 'Last 30 Days': 30, '60 Days': 60, 'Whole Year': 365 };
+                      const map: Record<string, 0 | 1 | 3 | 5 | 7 | 14 | 30 | 60 | 365> = { today: 0, '5 Days': 5, 'Last 7 Days': 7, '15 Days': 14, 'Last 30 Days': 30, '60 Days': 60, 'Whole Year': 365 };
                       const d = map[opt.value];
                       if (d !== undefined) setQuickNoteDays(d);
                     }
