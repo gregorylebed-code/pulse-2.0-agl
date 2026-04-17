@@ -18,7 +18,7 @@ import { Note, Student, Report, CalendarEvent, StudentGoal, GoalCategory, GoalSt
 import ParentCommunicationLog from './ParentCommunicationLog';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
-import { categorizeNote, refineReport, refineQuickNote, parseVoiceLog, quickParentNote, suggestGoals, ReportData, PronounInfo } from '../lib/gemini';
+import { categorizeNote, cleanNoteContent, refineReport, refineQuickNote, parseVoiceLog, quickParentNote, suggestGoals, ReportData, PronounInfo } from '../lib/gemini';
 import { isFullMode } from '../lib/mode';
 import { cn } from '../utils/cn';
 
@@ -920,13 +920,18 @@ export default function StudentDetailView({
       let finalTags = [...selectedTags];
       let isParentComm = false;
       let commType = '';
+      let cleanedContent = expandedContent;
 
-      if (finalTags.length === 0) {
+      if (expandedContent.trim()) {
         try {
-          const aiResult = await categorizeNote(expandedContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
-          finalTags = aiResult.tags ?? [];
+          const [aiResult, cleaned] = await Promise.all([
+            finalTags.length === 0 ? categorizeNote(expandedContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label)) : Promise.resolve({ tags: finalTags }),
+            cleanNoteContent(expandedContent),
+          ]);
+          if (finalTags.length === 0) finalTags = aiResult.tags ?? [];
+          cleanedContent = cleaned;
         } catch {
-          // AI unavailable — save note without tags
+          // AI unavailable — save note without cleaning
         }
       }
 
@@ -939,7 +944,7 @@ export default function StudentDetailView({
 
       const newNote: Note = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        content: expandedContent,
+        content: cleanedContent,
         student_name: student.name,
         user_id: '',
         tags: finalTags,
@@ -956,7 +961,7 @@ export default function StudentDetailView({
       // Save to Supabase
       await addNote({
         student_id: student.id,
-        content: expandedContent,
+        content: cleanedContent,
         tags: finalTags,
         is_parent_communication: isParentComm,
         parent_communication_type: commType || null,

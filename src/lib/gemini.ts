@@ -177,6 +177,33 @@ export async function performSmartScan(fileData: string, mimeType: string, signa
   }
 }
 
+export async function cleanNoteContent(content: string): Promise<string> {
+  const prompt = `You are editing a teacher's shorthand classroom observation note.
+
+Remove only filler words that are implied by context: leading "was/is/has/had", trailing "today/this morning/right now", and filler openers like "he was", "she was", "they were", "student was".
+
+Keep the core observation intact. Do not rewrite, rephrase, or add anything. If the note is already clean, return it unchanged.
+
+Examples:
+- "was playing around in math today" → "playing around in math"
+- "she was off task during reading" → "off task during reading"
+- "had a great day today" → "great day"
+- "refusing to work" → "refusing to work"
+- "helped a classmate with her math" → "helped a classmate with her math"
+
+Note: "${content}"
+
+Return only the cleaned note text — no quotes, no explanation.`;
+
+  try {
+    const result = await callGroq(prompt, false, undefined, 'clean_note');
+    const cleaned = result.trim().replace(/^["']|["']$/g, '');
+    return cleaned || content;
+  } catch {
+    return content;
+  }
+}
+
 export async function categorizeNote(content: string, currentTime: string, hasImage: boolean, availableIndicators: string[] = []) {
   const indicatorList = availableIndicators.length > 0
     ? availableIndicators.join(', ')

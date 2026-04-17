@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 import { createPortal } from 'react-dom';
 import { Note, Student, CalendarEvent } from '../types';
-import { parseVoiceLog, categorizeNote } from '../lib/gemini';
+import { parseVoiceLog, categorizeNote, cleanNoteContent } from '../lib/gemini';
 import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations';
 import imageCompression from 'browser-image-compression';
 import {
@@ -522,10 +522,15 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       try {
         const expandedContent = expandAbbreviations(noteContent, abbreviations);
         let finalTags = [...selectedTags];
-        if (finalTags.length === 0 && expandedContent.trim()) {
+        let cleanedContent = expandedContent;
+        if (expandedContent.trim()) {
           try {
-            const aiResult = await categorizeNote(expandedContent, new Date().toLocaleString(), false, indicators.map(i => i.label));
-            finalTags = aiResult.tags ?? [];
+            const [aiResult, cleaned] = await Promise.all([
+              finalTags.length === 0 ? categorizeNote(expandedContent, new Date().toLocaleString(), false, indicators.map(i => i.label)) : Promise.resolve({ tags: finalTags }),
+              cleanNoteContent(expandedContent),
+            ]);
+            if (finalTags.length === 0) finalTags = aiResult.tags ?? [];
+            cleanedContent = cleaned;
           } catch {
             // AI unavailable — save note without tags
           }
@@ -537,7 +542,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         await addNote({
           student_id: null,
           class_name: selectedClass,
-          content: expandedContent,
+          content: cleanedContent,
           tags: finalTags,
           is_parent_communication: false,
           parent_communication_type: null,
@@ -607,12 +612,17 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       }
 
       let finalTags = [...selectedTags];
-      if (finalTags.length === 0 && expandedContent.trim()) {
+      let cleanedContent = expandedContent;
+      if (expandedContent.trim()) {
         try {
-          const aiResult = await categorizeNote(expandedContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label));
-          finalTags = aiResult.tags ?? [];
+          const [aiResult, cleaned] = await Promise.all([
+            finalTags.length === 0 ? categorizeNote(expandedContent, new Date().toLocaleString(), !!image, indicators.map(i => i.label)) : Promise.resolve({ tags: finalTags }),
+            cleanNoteContent(expandedContent),
+          ]);
+          if (finalTags.length === 0) finalTags = aiResult.tags ?? [];
+          cleanedContent = cleaned;
         } catch {
-          // AI unavailable — save note without tags
+          // AI unavailable — save note without cleaning
         }
       }
 
@@ -623,7 +633,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       const student = students.find(s => s.name === studentToUse);
       await addNote({
         student_id: student?.id ?? null,
-        content: expandedContent,
+        content: cleanedContent,
         tags: finalTags,
         is_parent_communication: false,
         parent_communication_type: null,
@@ -634,7 +644,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       if (!navigator.onLine) {
         toast('Note saved offline — will sync when reconnected', { icon: '📶' });
       } else {
-        setSavedConfirm({ studentName: studentToUse, content: expandedContent, tags: finalTags });
+        setSavedConfirm({ studentName: studentToUse, content: cleanedContent, tags: finalTags });
         if (saveButtonRef.current) {
           const r = saveButtonRef.current.getBoundingClientRect();
           sparkleOrigin.current = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
