@@ -266,26 +266,25 @@ export default function FreeTool() {
 
           {/* Optional extra */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Anything else? <span className="font-normal text-slate-400">(optional)</span>
-            </label>
-            <div className="relative">
-              <textarea
-                value={extra}
-                onChange={e => setExtra(e.target.value)}
-                placeholder="e.g. loves soccer, recently moved schools, made big progress this term"
-                rows={2}
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none"
-              />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-semibold text-slate-700">
+                Anything else? <span className="font-normal text-slate-400">(optional)</span>
+              </label>
               <button
                 type="button"
                 onClick={extraMic.toggle}
-                className={`absolute right-2.5 bottom-2.5 p-1 rounded-lg transition-colors ${extraMic.listening ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'}`}
-                title="Speak"
+                className={`text-lg px-2 py-1 rounded-lg transition-colors ${extraMic.listening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 🎤
               </button>
             </div>
+            <textarea
+              value={extra}
+              onChange={e => setExtra(e.target.value)}
+              placeholder="e.g. loves soccer, recently moved schools, made big progress this term"
+              rows={2}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none"
+            />
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -306,24 +305,23 @@ export default function FreeTool() {
 
             {/* Refine instructions */}
             <div className="mb-3">
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Refine instructions <span className="font-normal">(optional — tell AI what to change)</span></label>
-              <div className="relative">
-                <textarea
-                  value={refineInstructions}
-                  onChange={e => setRefineInstructions(e.target.value)}
-                  placeholder="e.g. don't mention math, or add something about her growth mindset"
-                  rows={2}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none"
-                />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-500">Refine instructions <span className="font-normal">(tell AI what to change)</span></label>
                 <button
                   type="button"
                   onClick={refineMic.toggle}
-                  className={`absolute right-2.5 bottom-2.5 p-1 rounded-lg transition-colors ${refineMic.listening ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'}`}
-                  title="Speak"
+                  className={`text-lg px-2 py-1 rounded-lg transition-colors ${refineMic.listening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   🎤
                 </button>
               </div>
+              <textarea
+                value={refineInstructions}
+                onChange={e => setRefineInstructions(e.target.value)}
+                placeholder="e.g. don't mention math, or add something about her growth mindset"
+                rows={2}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none"
+              />
             </div>
 
             <div className="flex gap-2">
