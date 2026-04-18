@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/free-tool", "destination": "/free-tool.html" },
+    { "source": "/((?!api|assets|.*\\..*).*)", "destination": "/index.html" }
+  ]
+}
