@@ -62,10 +62,41 @@ const CHIP_COLORS: Record<string, { active: string; inactive: string }> = {
   violet: { active: 'bg-violet-500 text-white border-violet-500', inactive: 'bg-white text-slate-600 border-slate-200 hover:border-violet-300' },
 };
 
+const LENGTH_OPTIONS = [
+  { id: 'short', label: 'Short', hint: '1–2 sentences' },
+  { id: 'medium', label: 'Medium', hint: '3–4 sentences' },
+  { id: 'long', label: 'Long', hint: '5–6 sentences' },
+];
+
+const LENGTH_INSTRUCTIONS: Record<string, string> = {
+  short: 'Write exactly 1-2 sentences.',
+  medium: 'Write exactly 3-4 sentences.',
+  long: 'Write exactly 5-6 sentences.',
+};
+
+function buildPrompt(name: string, selected: Set<string>, extra: string, length: string) {
+  const strengths = SECTIONS[0].items.filter(i => selected.has(i.id)).map(i => i.label);
+  const struggles = SECTIONS[1].items.filter(i => selected.has(i.id)).map(i => i.label);
+  const behavior  = SECTIONS[2].items.filter(i => selected.has(i.id)).map(i => i.label);
+
+  const parts = [
+    `Write a report card comment${name.trim() ? ` for a student named ${name.trim()}` : ''}.`,
+    LENGTH_INSTRUCTIONS[length],
+    strengths.length ? `Academic strengths: ${strengths.join(', ')}.` : '',
+    struggles.length ? `Areas for growth: ${struggles.join(', ')}.` : '',
+    behavior.length  ? `Social and behavior observations: ${behavior.join(', ')}.` : '',
+    extra.trim()     ? `Additional context from the teacher: ${extra.trim()}.` : '',
+    'Be warm, specific, and professional. Do not use hollow phrases like "a pleasure to have in class." Write as if the teacher genuinely knows this student. Never use em dashes (—) under any circumstances.',
+  ];
+
+  return parts.filter(Boolean).join(' ');
+}
+
 export default function FreeTool() {
   const [name, setName] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [extra, setExtra] = useState('');
+  const [length, setLength] = useState('medium');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -79,37 +110,38 @@ export default function FreeTool() {
     });
   }
 
+  async function callApi(prompt: string) {
+    const res = await fetch('/api/free-tool', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message ?? 'Something went wrong.');
+    return data.comment as string;
+  }
+
   async function generate() {
-    if (!name.trim()) { setError('Please enter a student name.'); return; }
     if (selected.size === 0) { setError('Please select at least one option.'); return; }
     setError('');
     setResult('');
     setLoading(true);
-
-    const strengths = SECTIONS[0].items.filter(i => selected.has(i.id)).map(i => i.label);
-    const struggles = SECTIONS[1].items.filter(i => selected.has(i.id)).map(i => i.label);
-    const behavior  = SECTIONS[2].items.filter(i => selected.has(i.id)).map(i => i.label);
-
-    const parts = [
-      `Write a 2-3 sentence report card comment for a student named ${name.trim()}.`,
-      strengths.length ? `Academic strengths: ${strengths.join(', ')}.` : '',
-      struggles.length ? `Areas for growth: ${struggles.join(', ')}.` : '',
-      behavior.length  ? `Social and behavior observations: ${behavior.join(', ')}.` : '',
-      extra.trim()     ? `Additional context from the teacher: ${extra.trim()}.` : '',
-      'Be warm, specific, and professional. Do not use hollow phrases like "a pleasure to have in class." Write as if the teacher genuinely knows this student.',
-    ];
-
-    const prompt = parts.filter(Boolean).join(' ');
-
     try {
-      const res = await fetch('/api/free-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error?.message ?? 'Something went wrong.');
-      setResult(data.comment);
+      setResult(await callApi(buildPrompt(name, selected, extra, length)));
+    } catch (e: any) {
+      setError(e.message ?? 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function refine() {
+    if (!result) return;
+    setError('');
+    setLoading(true);
+    try {
+      const prompt = `Here is a report card comment: "${result}"\n\nRewrite it to be better. Keep the same student name (if any), same length, and same facts. Make it sound more natural and human — less generic. Never use em dashes (—) under any circumstances.`;
+      setResult(await callApi(prompt));
     } catch (e: any) {
       setError(e.message ?? 'Something went wrong. Please try again.');
     } finally {
@@ -124,7 +156,7 @@ export default function FreeTool() {
   }
 
   function reset() {
-    setResult(''); setName(''); setSelected(new Set()); setExtra('');
+    setResult(''); setName(''); setSelected(new Set()); setExtra(''); setError('');
   }
 
   return (
@@ -144,9 +176,11 @@ export default function FreeTool() {
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
 
-          {/* Student name */}
+          {/* Student name — optional */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Student name</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Student name <span className="font-normal text-slate-400">(optional)</span>
+            </label>
             <input
               type="text"
               value={name}
@@ -181,6 +215,27 @@ export default function FreeTool() {
             );
           })}
 
+          {/* Length selector */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Comment length</label>
+            <div className="flex gap-2">
+              {LENGTH_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setLength(opt.id)}
+                  className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors ${
+                    length === opt.id
+                      ? 'bg-slate-800 text-white border-slate-800'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                  }`}
+                >
+                  <div>{opt.label}</div>
+                  <div className={`text-xs mt-0.5 ${length === opt.id ? 'text-slate-300' : 'text-slate-400'}`}>{opt.hint}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Optional extra */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -210,12 +265,19 @@ export default function FreeTool() {
         {result && (
           <div className="mt-4 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <p className="text-slate-700 text-sm leading-relaxed mb-4">{result}</p>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
                 onClick={copy}
                 className="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
               >
-                {copied ? '✓ Copied!' : 'Copy to clipboard'}
+                {copied ? '✓ Copied!' : 'Copy'}
+              </button>
+              <button
+                onClick={refine}
+                disabled={loading}
+                className="flex-1 border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 font-semibold py-2.5 rounded-xl transition-colors text-sm"
+              >
+                {loading ? 'Refining…' : 'Refine'}
               </button>
               <button
                 onClick={reset}
