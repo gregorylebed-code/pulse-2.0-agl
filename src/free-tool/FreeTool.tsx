@@ -350,7 +350,7 @@ export default function FreeTool() {
             <div className="mt-5 pt-4 border-t border-slate-100 text-center">
               <p className="text-slate-500 text-sm mb-2">Want to do this for your whole class in 2 minutes?</p>
               <a
-                href="https://getshorthand.app"
+                href="https://shorthand-website.vercel.app"
                 className="inline-block bg-slate-800 hover:bg-slate-700 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors"
               >
                 Try ShortHand free →
@@ -362,7 +362,7 @@ export default function FreeTool() {
         {/* Footer */}
         <p className="text-center text-xs text-slate-400 mt-6">
           Built by a teacher, for teachers. &nbsp;
-          <a href="https://getshorthand.app" className="underline hover:text-slate-600">getshorthand.app</a>
+          <a href="https://shorthand-website.vercel.app" className="underline hover:text-slate-600">shorthand-website.vercel.app</a>
         </p>
       </div>
     </div>
