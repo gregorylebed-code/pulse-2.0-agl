@@ -6,6 +6,7 @@ const SECTIONS = [
     label: 'Academic strengths',
     color: 'teal',
     accent: '#0d9488',
+    bg: '#f0fdfa',
     items: [
       { id: 's_math', label: 'Math' },
       { id: 's_ela', label: 'ELA' },
@@ -24,6 +25,7 @@ const SECTIONS = [
     label: 'Areas for growth',
     color: 'amber',
     accent: '#d97706',
+    bg: '#fffbeb',
     items: [
       { id: 'g_math', label: 'Math' },
       { id: 'g_ela', label: 'ELA' },
@@ -42,6 +44,7 @@ const SECTIONS = [
     label: 'Social & behavior',
     color: 'violet',
     accent: '#7c3aed',
+    bg: '#f5f3ff',
     items: [
       { id: 'b_participates', label: 'Participates actively' },
       { id: 'b_kind', label: 'Kind to peers' },
@@ -60,9 +63,9 @@ const SECTIONS = [
 ];
 
 const CHIP_COLORS: Record<string, { active: string; inactive: string }> = {
-  teal:   { active: 'bg-teal-600 text-white border-teal-600',       inactive: 'bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700' },
-  amber:  { active: 'bg-amber-500 text-white border-amber-500',     inactive: 'bg-white text-slate-600 border-slate-200 hover:border-amber-400 hover:text-amber-700' },
-  violet: { active: 'bg-violet-600 text-white border-violet-600',   inactive: 'bg-white text-slate-600 border-slate-200 hover:border-violet-400 hover:text-violet-700' },
+  teal:   { active: 'bg-teal-600 text-white border-teal-600 shadow-sm',         inactive: 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100 hover:border-teal-400' },
+  amber:  { active: 'bg-amber-500 text-white border-amber-500 shadow-sm',       inactive: 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-400' },
+  violet: { active: 'bg-violet-600 text-white border-violet-600 shadow-sm',     inactive: 'bg-violet-50 text-violet-800 border-violet-200 hover:bg-violet-100 hover:border-violet-400' },
 };
 
 const LENGTH_OPTIONS = [
@@ -191,195 +194,178 @@ export default function FreeTool() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-10">
-      <div className="max-w-xl mx-auto">
+    <div style={{ minHeight: '100vh', background: '#0f172a' }}>
 
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <a href="https://shorthand-website.vercel.app" className="inline-flex items-center gap-2 mb-5 group">
-            <img src="/icon-192.png" alt="ShortHand" className="w-7 h-7 rounded-lg" />
-            <span className="text-sm font-semibold text-slate-500 group-hover:text-slate-700 transition-colors">ShortHand</span>
+      {/* Hero header */}
+      <div style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0891b2 100%)', padding: '48px 24px 40px' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
+          <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20, textDecoration: 'none' }}>
+            <img src="/icon-192.png" alt="ShortHand" style={{ width: 28, height: 28, borderRadius: 8 }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.02em' }}>ShortHand</span>
           </a>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', margin: '0 0 10px', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Report Card Comment Generator
           </h1>
-          <p className="text-slate-500 text-sm">Free · No sign-up · Ready in 10 seconds</p>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: 0 }}>
+            Free · No sign-up · Ready in 10 seconds
+          </p>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 48px' }}>
+
+        {/* Student name */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+            Student name <span style={{ fontWeight: 400, textTransform: 'none', color: '#94a3b8' }}>(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="e.g. Alex"
+            style={{ width: '100%', borderRadius: 10, border: '1.5px solid #e2e8f0', padding: '10px 14px', fontSize: 14, color: '#1e293b', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+            onFocus={e => e.target.style.borderColor = '#0d9488'}
+            onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+          />
         </div>
 
-        {/* Form card */}
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 divide-y divide-slate-100">
-
-          {/* Student name */}
-          <div className="p-6">
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-              Student name <span className="normal-case font-normal text-slate-400">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="e.g. Alex"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm transition"
-            />
-          </div>
-
-          {/* Chip sections */}
-          {SECTIONS.map(section => {
-            const colors = CHIP_COLORS[section.color];
-            return (
-              <div key={section.id} className="p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-4 rounded-full" style={{ background: section.accent }} />
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    {section.label} <span className="normal-case font-normal text-slate-400">(pick all that apply)</span>
-                  </label>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {section.items.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => toggle(item.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        selected.has(item.id) ? colors.active : colors.inactive
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Length */}
-          <div className="p-6">
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Comment length</label>
-            <div className="flex gap-2">
-              {LENGTH_OPTIONS.map(opt => (
-                <button
-                  key={opt.id}
-                  onClick={() => setLength(opt.id)}
-                  className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
-                    length === opt.id
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-                  }`}
-                >
-                  <div>{opt.label}</div>
-                  <div className={`text-xs font-normal mt-0.5 ${length === opt.id ? 'text-slate-400' : 'text-slate-400'}`}>{opt.hint}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Extra context */}
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                Anything else? <span className="normal-case font-normal text-slate-400">(optional)</span>
+        {/* Chip sections */}
+        {SECTIONS.map(section => {
+          const colors = CHIP_COLORS[section.color];
+          return (
+            <div key={section.id} style={{ background: section.bg, borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.25)', borderLeft: `4px solid ${section.accent}` }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: section.accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                {section.label} <span style={{ fontWeight: 400, textTransform: 'none', color: '#94a3b8' }}>(pick all that apply)</span>
               </label>
-              <button
-                type="button"
-                onClick={extraMic.toggle}
-                title="Speak instead of type"
-                className={`text-base px-2 py-1 rounded-lg transition-colors ${extraMic.listening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                🎤
-              </button>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {section.items.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => toggle(item.id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                      selected.has(item.id) ? colors.active : colors.inactive
+                    }`}
+                    style={{ fontFamily: 'inherit' }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <textarea
-              value={extra}
-              onChange={e => setExtra(e.target.value)}
-              placeholder="e.g. loves soccer, recently moved schools, made big progress this term"
-              rows={2}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none transition"
-            />
-          </div>
+          );
+        })}
 
-          {/* Generate */}
-          <div className="p-6">
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-            <button
-              onClick={generate}
-              disabled={loading}
-              className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors text-sm tracking-wide shadow-sm"
-            >
-              {loading ? 'Generating…' : 'Generate comment →'}
-            </button>
+        {/* Length */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+            Comment length
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {LENGTH_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setLength(opt.id)}
+                style={{
+                  flex: 1, padding: '10px 8px', borderRadius: 10, border: '1.5px solid',
+                  borderColor: length === opt.id ? '#0f172a' : '#e2e8f0',
+                  background: length === opt.id ? '#0f172a' : '#fff',
+                  color: length === opt.id ? '#fff' : '#475569',
+                  fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <div>{opt.label}</div>
+                <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, color: length === opt.id ? '#94a3b8' : '#94a3b8' }}>{opt.hint}</div>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Result card */}
-        {result && (
-          <div className="mt-4 bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-6">
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <p className="text-slate-800 text-sm leading-relaxed flex-1">{result}</p>
-            </div>
+        {/* Extra context */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Anything else? <span style={{ fontWeight: 400, textTransform: 'none', color: '#94a3b8' }}>(optional)</span>
+            </label>
+            <button onClick={extraMic.toggle} style={{ background: extraMic.listening ? '#fee2e2' : 'transparent', border: 'none', cursor: 'pointer', fontSize: 16, padding: '4px 8px', borderRadius: 8 }}>🎤</button>
+          </div>
+          <textarea
+            value={extra}
+            onChange={e => setExtra(e.target.value)}
+            placeholder="e.g. loves soccer, recently moved schools, made big progress this term"
+            rows={2}
+            style={{ width: '100%', borderRadius: 10, border: '1.5px solid #e2e8f0', padding: '10px 14px', fontSize: 14, color: '#1e293b', resize: 'none', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+            onFocus={e => e.target.style.borderColor = '#0d9488'}
+            onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+          />
+        </div>
 
-            {/* Refine */}
-            <div className="mb-4 pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Refine <span className="normal-case font-normal text-slate-400">(tell AI what to change)</span>
+        {error && <p style={{ color: '#ef4444', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
+
+        <button
+          onClick={generate}
+          disabled={loading}
+          style={{
+            width: '100%', background: loading ? '#5eead4' : 'linear-gradient(135deg, #0d9488, #0891b2)',
+            color: '#fff', fontWeight: 700, fontSize: 15, padding: '14px', borderRadius: 14,
+            border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 4px 14px rgba(13,148,136,0.4)', letterSpacing: '0.01em', transition: 'opacity 0.15s',
+          }}
+        >
+          {loading ? 'Generating…' : 'Generate comment →'}
+        </button>
+
+        {/* Result */}
+        {result && (
+          <div style={{ background: '#fff', borderRadius: 16, padding: 24, marginTop: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.3)', borderTop: '4px solid #0d9488' }}>
+            <p style={{ fontSize: 15, color: '#1e293b', lineHeight: 1.7, margin: '0 0 20px' }}>{result}</p>
+
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 16, marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Refine <span style={{ fontWeight: 400, textTransform: 'none', color: '#94a3b8' }}>(tell AI what to change)</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={refineMic.toggle}
-                  className={`text-base px-2 py-1 rounded-lg transition-colors ${refineMic.listening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  🎤
-                </button>
+                <button onClick={refineMic.toggle} style={{ background: refineMic.listening ? '#fee2e2' : 'transparent', border: 'none', cursor: 'pointer', fontSize: 16, padding: '4px 8px', borderRadius: 8 }}>🎤</button>
               </div>
               <textarea
                 value={refineInstructions}
                 onChange={e => setRefineInstructions(e.target.value)}
-                placeholder="e.g. don't mention math, or add something about her growth mindset"
+                placeholder="e.g. don't mention math, add something about her growth mindset"
                 rows={2}
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none transition"
+                style={{ width: '100%', borderRadius: 10, border: '1.5px solid #e2e8f0', padding: '10px 14px', fontSize: 14, color: '#1e293b', resize: 'none', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                onFocus={e => e.target.style.borderColor = '#0d9488'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
               />
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={copy}
-                className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm shadow-sm"
-              >
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={copy} style={{ flex: 1, background: 'linear-gradient(135deg, #0d9488, #0891b2)', color: '#fff', fontWeight: 700, fontSize: 13, padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                 {copied ? '✓ Copied!' : 'Copy'}
               </button>
-              <button
-                onClick={refine}
-                disabled={loading}
-                className="flex-1 border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 font-semibold py-2.5 rounded-xl transition-colors text-sm"
-              >
+              <button onClick={refine} disabled={loading} style={{ flex: 1, background: '#f8fafc', color: '#334155', fontWeight: 600, fontSize: 13, padding: '11px', borderRadius: 10, border: '1.5px solid #e2e8f0', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
                 {loading ? 'Refining…' : 'Refine'}
               </button>
-              <button
-                onClick={reset}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-sm font-medium"
-              >
+              <button onClick={reset} style={{ padding: '11px 16px', borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
                 New
               </button>
             </div>
 
             {/* Upsell */}
-            <div className="mt-5 pt-4 border-t border-slate-100 text-center">
-              <p className="text-slate-500 text-sm mb-3">Want to do this for your whole class in 2 minutes?</p>
-              <a
-                href="https://shorthand-website.vercel.app"
-                className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm"
-              >
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
+              <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 12px' }}>Want to do this for your whole class in 2 minutes?</p>
+              <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0f172a', color: '#fff', fontWeight: 700, fontSize: 13, padding: '10px 20px', borderRadius: 10, textDecoration: 'none' }}>
                 Try ShortHand free →
               </a>
             </div>
           </div>
         )}
 
-        {/* Footer */}
-        <p className="text-center text-xs text-slate-400 mt-8">
+        <p style={{ textAlign: 'center', fontSize: 11, color: '#475569', marginTop: 32 }}>
           Built by a teacher, for teachers. &nbsp;
-          <a href="https://shorthand-website.vercel.app" className="underline hover:text-slate-600 transition-colors">shorthand-website.vercel.app</a>
+          <a href="https://shorthand-website.vercel.app" style={{ color: '#0d9488', textDecoration: 'underline' }}>shorthand-website.vercel.app</a>
         </p>
-
       </div>
     </div>
   );
