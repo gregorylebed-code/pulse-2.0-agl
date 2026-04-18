@@ -199,11 +199,11 @@ export default function FreeTool() {
       {/* Hero header */}
       <div style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0891b2 100%)', padding: '48px 24px 40px' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
-          <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20, textDecoration: 'none' }}>
-            <img src="/icon-192.png" alt="ShortHand" style={{ width: 28, height: 28, borderRadius: 8 }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.02em' }}>ShortHand</span>
+          <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 24, textDecoration: 'none' }}>
+            <img src="/icon-192.png" alt="ShortHand" style={{ width: 36, height: 36, borderRadius: 10 }} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.01em' }}>ShortHand</span>
           </a>
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', margin: '0 0 10px', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 600, color: '#fff', margin: '0 0 10px', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
             Report Card Comment Generator
           </h1>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: 0 }}>
@@ -362,10 +362,12 @@ export default function FreeTool() {
           </div>
         )}
 
-        <p style={{ textAlign: 'center', fontSize: 11, color: '#475569', marginTop: 32 }}>
-          Built by a teacher, for teachers. &nbsp;
-          <a href="https://shorthand-website.vercel.app" style={{ color: '#0d9488', textDecoration: 'underline' }}>shorthand-website.vercel.app</a>
-        </p>
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>Built by a teacher, for teachers.</p>
+          <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', fontWeight: 600, fontSize: 13, padding: '10px 20px', borderRadius: 10, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>
+            Visit ShortHand →
+          </a>
+        </div>
       </div>
     </div>
   );
