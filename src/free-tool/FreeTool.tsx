@@ -352,12 +352,10 @@ export default function FreeTool() {
               </button>
             </div>
 
-            {/* Upsell */}
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 12px' }}>Want to do this for your whole class in 2 minutes?</p>
-              <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0f172a', color: '#fff', fontWeight: 700, fontSize: 13, padding: '10px 20px', borderRadius: 10, textDecoration: 'none' }}>
-                Try ShortHand free →
-              </a>
+            {/* Transition CTA */}
+            <div style={{ marginTop: 16, padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <p style={{ fontSize: 12.5, color: '#64748b', margin: 0, lineHeight: 1.4 }}>Want to generate these automatically throughout the year based on your daily notes?</p>
+              <a href="https://shorthand-website.vercel.app" style={{ flexShrink: 0, fontSize: 12.5, fontWeight: 700, color: '#0d9488', textDecoration: 'none', whiteSpace: 'nowrap' }}>Check out ShortHand →</a>
             </div>
           </div>
         )}
