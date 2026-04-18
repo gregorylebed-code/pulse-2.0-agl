@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const SECTIONS = [
   {
@@ -92,15 +92,40 @@ function buildPrompt(name: string, selected: Set<string>, extra: string, length:
   return parts.filter(Boolean).join(' ');
 }
 
+function useSpeechToText(onResult: (text: string) => void) {
+  const [listening, setListening] = useState(false);
+  const recRef = useRef<any>(null);
+
+  function toggle() {
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    if (listening) { recRef.current?.stop(); return; }
+    const rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.onresult = (e: any) => onResult(e.results[0][0].transcript);
+    rec.onend = () => setListening(false);
+    rec.start();
+    recRef.current = rec;
+    setListening(true);
+  }
+
+  return { listening, toggle };
+}
+
 export default function FreeTool() {
   const [name, setName] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [extra, setExtra] = useState('');
+  const [refineInstructions, setRefineInstructions] = useState('');
   const [length, setLength] = useState('medium');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const extraMic = useSpeechToText(text => setExtra(prev => (prev ? prev + ' ' : '') + text));
+  const refineMic = useSpeechToText(text => setRefineInstructions(prev => (prev ? prev + ' ' : '') + text));
 
   function toggle(id: string) {
     setSelected(prev => {
@@ -140,7 +165,10 @@ export default function FreeTool() {
     setError('');
     setLoading(true);
     try {
-      const prompt = `Here is a report card comment: "${result}"\n\nRewrite it to be better. Keep the same student name (if any), same length, and same facts. Make it sound more natural and human — less generic. Never use em dashes (—) under any circumstances.`;
+      const instructions = refineInstructions.trim()
+        ? `Teacher instructions: ${refineInstructions.trim()}`
+        : 'Make it sound more natural and human — less generic.';
+      const prompt = `Here is a report card comment: "${result}"\n\nRewrite it based on these instructions: ${instructions}\n\nKeep the same student name (if any) and same length. Never use em dashes (—) under any circumstances.`;
       setResult(await callApi(prompt));
     } catch (e: any) {
       setError(e.message ?? 'Something went wrong. Please try again.');
@@ -241,13 +269,23 @@ export default function FreeTool() {
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
               Anything else? <span className="font-normal text-slate-400">(optional)</span>
             </label>
-            <textarea
-              value={extra}
-              onChange={e => setExtra(e.target.value)}
-              placeholder="e.g. loves soccer, recently moved schools, made big progress this term"
-              rows={2}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none"
-            />
+            <div className="relative">
+              <textarea
+                value={extra}
+                onChange={e => setExtra(e.target.value)}
+                placeholder="e.g. loves soccer, recently moved schools, made big progress this term"
+                rows={2}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none"
+              />
+              <button
+                type="button"
+                onClick={extraMic.toggle}
+                className={`absolute right-2.5 bottom-2.5 p-1 rounded-lg transition-colors ${extraMic.listening ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'}`}
+                title="Speak"
+              >
+                🎤
+              </button>
+            </div>
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -265,6 +303,29 @@ export default function FreeTool() {
         {result && (
           <div className="mt-4 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <p className="text-slate-700 text-sm leading-relaxed mb-4">{result}</p>
+
+            {/* Refine instructions */}
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Refine instructions <span className="font-normal">(optional — tell AI what to change)</span></label>
+              <div className="relative">
+                <textarea
+                  value={refineInstructions}
+                  onChange={e => setRefineInstructions(e.target.value)}
+                  placeholder="e.g. don't mention math, or add something about her growth mindset"
+                  rows={2}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 pr-10 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none"
+                />
+                <button
+                  type="button"
+                  onClick={refineMic.toggle}
+                  className={`absolute right-2.5 bottom-2.5 p-1 rounded-lg transition-colors ${refineMic.listening ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'}`}
+                  title="Speak"
+                >
+                  🎤
+                </button>
+              </div>
+            </div>
+
             <div className="flex gap-2">
               <button
                 onClick={copy}
