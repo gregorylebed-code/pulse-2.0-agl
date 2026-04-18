@@ -258,7 +258,7 @@ export default function FreeTool() {
         })}
 
         {/* Length */}
-        <div style={{ background: '#faf5ff', borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.3)', borderLeft: '4px solid #a855f7' }}>
+        <div style={{ background: '#fff7ed', borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.3)', borderLeft: '4px solid #f97316' }}>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
             Comment length
           </label>
@@ -284,7 +284,7 @@ export default function FreeTool() {
         </div>
 
         {/* Extra context */}
-        <div style={{ background: '#fff7ed', borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.3)', borderLeft: '4px solid #f97316' }}>
+        <div style={{ background: '#faf5ff', borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.3)', borderLeft: '4px solid #a855f7' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Anything else? <span style={{ fontWeight: 400, textTransform: 'none', color: '#94a3b8' }}>(optional)</span>
