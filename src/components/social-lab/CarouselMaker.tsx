@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { supabase } from "../../lib/supabase";
 
+type Mode = "app-pitch" | "resource-drop";
+
 interface Slide {
   title: string;
   content: string;
@@ -28,6 +30,44 @@ async function callGroq(prompt: string): Promise<string> {
   if (!response.ok) throw new Error(`Groq error: ${response.status}`);
   const data = await response.json();
   return data.choices[0].message.content as string;
+}
+
+function buildPrompt(input: string, mode: Mode): string {
+  if (mode === "app-pitch") {
+    return `You are writing slides for a teacher who talks like this: direct, blunt, no-BS. Short sentences. Tired but driven. Not a salesperson — a real teacher who found something that works.
+
+Topic: "${input}"
+
+The angle: manually writing parent emails and behavior reports takes too long. It burns time teachers don't have. ShortHand fixes that — it drafts them fast so you can move on.
+
+Generate 5–7 slides. Each slide has a title (4 words max) and 1–2 sentences of body copy.
+
+Rules:
+- Sound like a real teacher, not a marketer
+- No "desired outcomes." No "potentially." No "hey teachers." No emojis. No hashtags.
+- Short sentences. Say the hard thing plainly.
+- The content should make a tired teacher nod, not roll their eyes.
+
+Return JSON: { "slides": [{ "title": "...", "content": "..." }] }`;
+  }
+
+  return `You are writing a 7-slide cheat sheet carousel for teachers. Purely informational. No sales pitch. No app mentions.
+
+Topic: "${input}"
+
+Structure:
+- Slide 1: The "Why" — one blunt reason this topic matters
+- Slides 2–6: Step-by-step instructions or high-value tips. Specific and actionable.
+- Slide 7: "Follow for more no-fluff teaching assets." — exact words, no changes.
+
+Each slide has a title (4 words max) and 1–2 sentences of body copy.
+
+Rules:
+- Logic-based and blunt. No warmth, no cheerleading.
+- Short sentences. Cut anything that doesn't add information.
+- No emojis. No hashtags. No "amazing" or "game-changer."
+
+Return JSON: { "slides": [{ "title": "...", "content": "..." }] }`;
 }
 
 function SlideCard({ slide, index }: { slide: Slide; index: number }) {
@@ -58,6 +98,7 @@ function SlideCard({ slide, index }: { slide: Slide; index: number }) {
 }
 
 export default function CarouselMaker() {
+  const [mode, setMode] = useState<Mode>("app-pitch");
   const [vent, setVent] = useState("");
   const [slides, setSlides] = useState<Slide[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,15 +111,7 @@ export default function CarouselMaker() {
     setLoading(true);
     setError(null);
     try {
-      const prompt = `You are converting a raw teacher thought into a clean social media carousel.
-
-Input: "${vent}"
-
-Generate 5–7 slides. Each slide has a short punchy title (4 words max) and 1–2 sentences of content that expand on that title. No emojis. No hashtags. No fluff. Write like a technical manual — blunt and clear.
-
-Return JSON: { "slides": [{ "title": "...", "content": "..." }] }`;
-
-      const raw = await callGroq(prompt);
+      const raw = await callGroq(buildPrompt(vent, mode));
       const parsed = JSON.parse(raw);
       const result: Slide[] = Array.isArray(parsed.slides) ? parsed.slides : [];
       if (result.length === 0) throw new Error("No slides returned.");
@@ -117,16 +150,45 @@ Return JSON: { "slides": [{ "title": "...", "content": "..." }] }`;
         // Carousel Maker
       </h1>
 
+      {/* Mode toggle */}
+      <div className="flex items-center gap-4">
+        <span
+          className={`text-xs tracking-widest uppercase cursor-pointer transition-colors ${mode === "app-pitch" ? "text-white" : "text-zinc-600"}`}
+          onClick={() => setMode("app-pitch")}
+        >
+          App Pitch
+        </span>
+        <button
+          onClick={() => setMode(mode === "app-pitch" ? "resource-drop" : "app-pitch")}
+          className="relative w-12 h-6 border border-zinc-600 focus:outline-none"
+          aria-label="Toggle mode"
+        >
+          <div
+            className={`absolute top-[3px] w-4 h-4 bg-white transition-all duration-200 ${mode === "resource-drop" ? "left-[26px]" : "left-[3px]"}`}
+          />
+        </button>
+        <span
+          className={`text-xs tracking-widest uppercase cursor-pointer transition-colors ${mode === "resource-drop" ? "text-white" : "text-zinc-600"}`}
+          onClick={() => setMode("resource-drop")}
+        >
+          Resource Drop
+        </span>
+      </div>
+
       {/* Input */}
       <div className="flex flex-col gap-3">
         <label className="text-xs tracking-widest uppercase text-zinc-500">
-          Raw input
+          {mode === "app-pitch" ? "Raw thought" : "Cheat sheet topic"}
         </label>
         <textarea
           value={vent}
           onChange={(e) => setVent(e.target.value)}
           rows={5}
-          placeholder="Paste your raw thought here..."
+          placeholder={
+            mode === "app-pitch"
+              ? "e.g. writing parent emails takes 20 minutes every night..."
+              : "e.g. how to handle a Tier 3 behavior in the hallway"
+          }
           className="bg-zinc-950 border border-zinc-700 text-white font-mono text-sm p-4 resize-none focus:outline-none focus:border-white placeholder:text-zinc-700"
         />
         <div className="flex gap-4">
