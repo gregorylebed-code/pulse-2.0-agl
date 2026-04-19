@@ -80,7 +80,12 @@ const LENGTH_INSTRUCTIONS: Record<string, string> = {
   long:   'Write exactly 5-6 sentences.',
 };
 
-function buildPrompt(name: string, selected: Set<string>, extra: string, length: string) {
+const TONE_INSTRUCTIONS: Record<string, string> = {
+  casual:   'Write in a warm, conversational tone — like a teacher talking directly to a family. Friendly, personal, and approachable.',
+  academic: 'Write in a formal, professional tone suitable for official school records. Precise, measured, and objective.',
+};
+
+function buildPrompt(name: string, selected: Set<string>, extra: string, length: string, tone: string) {
   const strengths = SECTIONS[0].items.filter(i => selected.has(i.id)).map(i => i.label);
   const struggles = SECTIONS[1].items.filter(i => selected.has(i.id)).map(i => i.label);
   const behavior  = SECTIONS[2].items.filter(i => selected.has(i.id)).map(i => i.label);
@@ -88,11 +93,12 @@ function buildPrompt(name: string, selected: Set<string>, extra: string, length:
   const parts = [
     `Write a report card comment${name.trim() ? ` for a student named ${name.trim()}` : ''}.`,
     LENGTH_INSTRUCTIONS[length],
+    TONE_INSTRUCTIONS[tone],
     strengths.length ? `Academic strengths: ${strengths.join(', ')}.` : '',
     struggles.length ? `Areas for growth: ${struggles.join(', ')}.` : '',
     behavior.length  ? `Social and behavior observations: ${behavior.join(', ')}.` : '',
     extra.trim()     ? `Additional context from the teacher: ${extra.trim()}.` : '',
-    'Be warm, specific, and professional. Do not use hollow phrases like "a pleasure to have in class." Write as if the teacher genuinely knows this student. Never use em dashes (—) under any circumstances.',
+    'Be specific and avoid hollow phrases like "a pleasure to have in class." Write as if the teacher genuinely knows this student. Never use em dashes (—) under any circumstances.',
   ];
 
   return parts.filter(Boolean).join(' ');
@@ -125,6 +131,7 @@ export default function FreeTool() {
   const [extra, setExtra] = useState('');
   const [refineInstructions, setRefineInstructions] = useState('');
   const [length, setLength] = useState('medium');
+  const [tone, setTone] = useState('casual');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -158,7 +165,7 @@ export default function FreeTool() {
     setResult('');
     setLoading(true);
     try {
-      setResult(await callApi(buildPrompt(name, selected, extra, length)));
+      setResult(await callApi(buildPrompt(name, selected, extra, length, tone)));
     } catch (e: any) {
       setError(e.message ?? 'Something went wrong. Please try again.');
     } finally {
@@ -190,7 +197,7 @@ export default function FreeTool() {
   }
 
   function reset() {
-    setResult(''); setName(''); setSelected(new Set()); setExtra(''); setRefineInstructions(''); setError('');
+    setResult(''); setName(''); setSelected(new Set()); setExtra(''); setRefineInstructions(''); setError(''); setTone('casual');
   }
 
   return (
@@ -278,6 +285,32 @@ export default function FreeTool() {
               >
                 <div>{opt.label}</div>
                 <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, color: length === opt.id ? '#94a3b8' : '#94a3b8' }}>{opt.hint}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tone */}
+        <div style={{ background: '#f0fdf4', borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.3)', borderLeft: '4px solid #22c55e' }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+            Tone
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[{ id: 'casual', label: 'Casual', hint: 'Warm & friendly' }, { id: 'academic', label: 'Academic', hint: 'Formal & precise' }].map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setTone(opt.id)}
+                style={{
+                  flex: 1, padding: '10px 8px', borderRadius: 10, border: '1.5px solid',
+                  borderColor: tone === opt.id ? '#0f172a' : '#e2e8f0',
+                  background: tone === opt.id ? '#0f172a' : '#fff',
+                  color: tone === opt.id ? '#fff' : '#475569',
+                  fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <div>{opt.label}</div>
+                <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2, color: '#94a3b8' }}>{opt.hint}</div>
               </button>
             ))}
           </div>
