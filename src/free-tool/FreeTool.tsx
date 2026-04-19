@@ -203,6 +203,13 @@ export default function FreeTool() {
   return (
     <div style={{ minHeight: '100vh', background: '#0f172a' }}>
 
+      {/* Back to website bar */}
+      <div style={{ background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '10px 20px' }}>
+        <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500 }}>
+          <span style={{ fontSize: 16 }}>←</span> Back to ShortHand
+        </a>
+      </div>
+
       {/* Hero header */}
       <div style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0891b2 100%)', padding: '48px 24px 40px' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
