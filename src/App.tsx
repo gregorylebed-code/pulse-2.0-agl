@@ -26,6 +26,7 @@ import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notific
 import { trackEvent } from './lib/analytics';
 import WelcomeModal from './components/WelcomeModal';
 import Confetti, { ConfettiHandle } from './components/Confetti';
+import CarouselMaker from './components/social-lab/CarouselMaker';
 
 import type { Note } from './types';
 import { Sparkles, BarChart2 } from 'lucide-react';
@@ -429,6 +430,10 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     }
     prevStatsRef.current = { notes_created: stats.notes_created, reports_generated: stats.reports_generated };
   }, [loading, stats.notes_created, stats.reports_generated]);
+
+  if (window.location.pathname === '/lab') {
+    return <CarouselMaker />;
+  }
 
   return (
     <div className="min-h-screen bg-cream font-sans text-slate-900 selection:bg-sage/20">
