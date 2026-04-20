@@ -357,6 +357,19 @@ export default function FreeTool() {
           {loading ? 'Generating…' : 'Generate comment →'}
         </button>
 
+        {(name || selected.size > 0 || extra) && (
+          <button
+            onClick={reset}
+            style={{
+              width: '100%', marginTop: 8, background: 'transparent', color: '#94a3b8',
+              fontWeight: 500, fontSize: 13, padding: '10px', borderRadius: 14,
+              border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            Clear
+          </button>
+        )}
+
         {/* Result */}
         {result && (
           <div style={{ background: '#fff', borderRadius: 16, padding: 24, marginTop: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.3)', borderTop: '4px solid #0d9488' }}>
