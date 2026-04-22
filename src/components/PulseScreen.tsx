@@ -279,6 +279,12 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     return map;
   }, [students]);
 
+  const indicatorByLabel = useMemo(() => {
+    const map: Record<string, any> = {};
+    indicators.forEach(i => { map[i.label] = i; });
+    return map;
+  }, [indicators]);
+
   const selectedStudentObj = studentByName[selectedStudent] ?? null;
 
   const indicatorCategories = useMemo(() => [
@@ -1100,8 +1106,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             <span className="w-full text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Frequently Used</span>
             {quickTags.map(tag => {
               const isSelected = selectedTags.includes(tag);
-              const indicator = indicators.find(i => i.label === tag);
-              const type = indicator?.type || 'neutral';
+              const type = indicatorByLabel[tag]?.type || 'neutral';
               const colors = {
                 positive: isSelected ? 'bg-sage border-sage text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-sage/40',
                 growth: isSelected ? 'bg-terracotta border-terracotta text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-terracotta/40',
@@ -1467,7 +1472,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed">{note.content}</p>
                   <div className="flex gap-2 mt-3 flex-wrap">
                     {note.tags.map(t => {
-                      const indicator = indicators.find(i => i.label === t);
+                      const indicator = indicatorByLabel[t];
                       const isComm = note.is_parent_communication && note.parent_communication_type?.includes(t);
 
                       let colorClass = "bg-slate-50 text-slate-400 border-slate-100";
