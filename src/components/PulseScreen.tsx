@@ -273,6 +273,12 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     [notes, pendingDeleteNoteIds]
   );
 
+  const indicatorCategories = useMemo(() => [
+    { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive') },
+    { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral') },
+    { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicators.filter(b => b.type === 'growth') },
+  ], [indicators]);
+
   const [editContent, setEditContent] = useState('');
   const [editStudentName, setEditStudentName] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
@@ -1118,12 +1124,8 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         {/* ── Indicators — accordion by category ── */}
         <div className="space-y-1.5">
           <p className="text-[11px] text-slate-400 font-medium px-1">Tap a behavior label to tag this note — the AI uses these to write parent reports</p>
-          {([
-            { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive'), selectedCount: indicators.filter(b => b.type === 'positive' && selectedTags.includes(b.label)).length },
-            { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral'), selectedCount: indicators.filter(b => b.type === 'neutral' && selectedTags.includes(b.label)).length },
-            { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicators.filter(b => b.type === 'growth'), selectedCount: indicators.filter(b => b.type === 'growth' && selectedTags.includes(b.label)).length },
-
-          ].map(cat => {
+          {indicatorCategories.map(cat => {
+            const selectedCount = cat.items.filter(b => selectedTags.includes(b.label)).length;
             const isOpen = expandedCategory === cat.key;
             const headerColors: Record<string, string> = {
               emerald: 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
@@ -1164,9 +1166,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                     {!isOpen && <span className="text-[10px] font-normal normal-case tracking-normal opacity-60">tap to expand</span>}
                   </span>
                   <div className="flex items-center gap-2">
-                    {cat.selectedCount > 0 && (
+                    {selectedCount > 0 && (
                       <span className={cn("text-[11px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
-                        {cat.selectedCount}
+                        {selectedCount}
                       </span>
                     )}
                     <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', isOpen && 'rotate-180')} />
@@ -1205,7 +1207,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 </AnimatePresence>
               </div>
             );
-          }))}
+          })}
         </div>
 
         {/* ── Optional text note ── */}
