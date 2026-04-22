@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Mail, LayoutGrid, Map } from 'lucide-react';
 import { toast } from 'sonner';
@@ -6,7 +6,7 @@ import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication,
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
-const StudentDetailView = lazy(() => import('./StudentDetailView'));
+import StudentDetailView from './StudentDetailView';
 import { cn } from '../utils/cn';
 import { isFullMode } from '../lib/mode';
 import { useAliasMode } from '../context/AliasModeContext';
@@ -592,7 +592,6 @@ export default function StudentsScreen({
 
   if (selectedStudent) {
     return (
-      <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
       <StudentDetailView
         student={selectedStudent}
         students={students}
@@ -629,7 +628,6 @@ export default function StudentsScreen({
         attendanceRecords={attendanceRecords.filter(r => r.student_id === selectedStudent.id)}
         deleteAttendanceRecord={deleteAttendanceRecord}
       />
-      </Suspense>
     );
   }
 
