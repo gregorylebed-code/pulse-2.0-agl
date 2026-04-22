@@ -3,7 +3,7 @@
 // - Serves offline fallback page for navigation requests
 // - Handles notification clicks
 
-const CACHE = 'shorthand-v1';
+const CACHE = 'shorthand-v3';
 const OFFLINE_URL = '/offline.html';
 
 // App shell assets to pre-cache (the index.html + offline page)
