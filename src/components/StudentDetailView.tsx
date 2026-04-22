@@ -1444,11 +1444,46 @@ export default function StudentDetailView({
     setEditComm(prev => prev.includes(comm) ? prev.filter(c => c !== comm) : [...prev, comm]);
   };
 
+  // Notes visible in timeline (excludes pending-delete items)
+  const visibleNotes = useMemo(
+    () => notes.filter(n => !pendingDeleteNoteIds.has(n.id)),
+    [notes, pendingDeleteNoteIds]
+  );
+
+  // Indicator groups by type — used in note-entry tag picker and hero stats
+  const indicatorsByType = useMemo(() => ({
+    positive: indicators.filter((b: any) => b.type === 'positive'),
+    neutral:  indicators.filter((b: any) => b.type === 'neutral'),
+    growth:   indicators.filter((b: any) => b.type === 'growth'),
+  }), [indicators]);
+
+  // label → type lookup for all indicators
+  const indicatorTypeMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    indicators.forEach((ind: any) => { if (ind.label) map[ind.label] = ind.type; });
+    return map;
+  }, [indicators]);
+
+  // label → full indicator object — avoids indicators.find() per tag per note in render
+  const indicatorByLabel = useMemo(() => {
+    const map: Record<string, any> = {};
+    indicators.forEach((ind: any) => { if (ind.label) map[ind.label] = ind; });
+    return map;
+  }, [indicators]);
+
+  // Accommodations for this student
+  const studentAccommodations = useMemo(
+    () => accommodations.filter(a => a.student_id === student.id),
+    [accommodations, student.id]
+  );
+  const activeAccommodations = useMemo(
+    () => studentAccommodations.filter(a => a.is_active),
+    [studentAccommodations]
+  );
+
   // Hero stats
   const heroStats = useMemo(() => {
     const studentNotes = notes.filter(n => n.student_name === student.name);
-    const indicatorTypeMap: Record<string, string> = {};
-    indicators.forEach((ind: any) => { if (ind.label) indicatorTypeMap[ind.label] = ind.type; });
     const positiveCount = studentNotes.filter(n => (n.tags || []).some((t: string) => indicatorTypeMap[t] === 'positive')).length;
     const positivePct = studentNotes.length > 0 ? Math.round((positiveCount / studentNotes.length) * 100) : 0;
     const lastNote = studentNotes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
@@ -1457,7 +1492,7 @@ export default function StudentDetailView({
       : null;
     const lastLogged = daysSince === null ? 'Never' : daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince}d ago`;
     return { total: studentNotes.length, positivePct, lastLogged };
-  }, [notes, student.name, indicators]);
+  }, [notes, student.name, indicatorTypeMap]);
 
   // Hero gradient by class period (cycles through a palette)
   const HERO_GRADIENTS = [
@@ -1650,7 +1685,7 @@ export default function StudentDetailView({
                     response:      <MessageSquare className="w-3 h-3" strokeWidth={2.5} />,
                     other:         <Tag className="w-3 h-3" strokeWidth={2.5} />,
                   };
-                  const active = accommodations.filter(a => a.student_id === student.id && a.is_active);
+                  const active = activeAccommodations;
                   const uniqueCategories = [...new Set(active.map(a => a.category))];
                   if (uniqueCategories.length === 0) return null;
                   return (
@@ -1720,9 +1755,9 @@ export default function StudentDetailView({
         <div className="space-y-1.5 pt-2">
           <p className="text-[11px] text-slate-400 font-medium px-1">Tap a behavior label to tag this note — the AI uses these to write parent reports</p>
           {([
-            { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive'), selectedCount: indicators.filter(b => b.type === 'positive' && selectedTags.includes(b.label)).length },
-            { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral'), selectedCount: indicators.filter(b => b.type === 'neutral' && selectedTags.includes(b.label)).length },
-            { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicators.filter(b => b.type === 'growth'), selectedCount: indicators.filter(b => b.type === 'growth' && selectedTags.includes(b.label)).length },
+            { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicatorsByType.positive, selectedCount: indicatorsByType.positive.filter((b: any) => selectedTags.includes(b.label)).length },
+            { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicatorsByType.neutral, selectedCount: indicatorsByType.neutral.filter((b: any) => selectedTags.includes(b.label)).length },
+            { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicatorsByType.growth, selectedCount: indicatorsByType.growth.filter((b: any) => selectedTags.includes(b.label)).length },
           ].map(cat => {
             const isOpen = expandedCategory === cat.key;
             const headerColors: Record<string, string> = {
@@ -1883,7 +1918,7 @@ export default function StudentDetailView({
       <div id="timeline" ref={timelineRef} className="space-y-4 scroll-mt-header">
         <div className="flex items-center gap-2 px-1">
           <h3 className="text-[13px] font-black text-blue-700">Notes about {student.name.split(' ')[0]}</h3>
-          <span className="text-[11px] font-bold text-blue-400">({[...shoutouts, ...notes.filter(n => !pendingDeleteNoteIds.has(n.id))].length} entries)</span>
+          <span className="text-[11px] font-bold text-blue-400">({[...shoutouts, ...visibleNotes].length} entries)</span>
           {shoutouts.length > 0 && <span className="text-[11px] font-bold text-amber-400">⭐ {shoutouts.length}</span>}
         </div>
         <div className="space-y-4">
@@ -1919,7 +1954,7 @@ export default function StudentDetailView({
               </div>
             </div>
           ))}
-          {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, timelineVisible).map((note) => (
+          {visibleNotes.slice(0, timelineVisible).map((note) => (
             <div key={note.id} className="relative">
               <div className="absolute -left-[29px] top-1 w-6 h-6 bg-white border-2 border-sage rounded-full flex items-center justify-center z-10 shadow-sm">
                 <div className="w-2 h-2 bg-sage rounded-full" />
@@ -2059,7 +2094,7 @@ export default function StudentDetailView({
                     )}
                     <div className="flex flex-wrap gap-1.5 pt-2">
                       {note.tags.map(t => {
-                        const indicator = indicators.find(i => i.label === t);
+                        const indicator = indicatorByLabel[t];
                         const isComm = note.is_parent_communication && note.parent_communication_type?.includes(t);
 
                         let colorClass = "bg-slate-50 text-slate-400 border-slate-100";
@@ -2088,13 +2123,13 @@ export default function StudentDetailView({
           )}
         </div>
         {/* Show more / less */}
-        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length > timelineVisible && (
+        {visibleNotes.length > timelineVisible && (
           <button
             type="button"
             onClick={() => setTimelineVisible(v => v + 5)}
             className="w-full py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-sage border border-dashed border-slate-200 rounded-2xl hover:border-sage/40 transition-all"
           >
-            Show 5 More ({notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length - timelineVisible} remaining)
+            Show 5 More ({visibleNotes.length - timelineVisible} remaining)
           </button>
         )}
         {timelineVisible > 5 && (
@@ -2400,7 +2435,7 @@ export default function StudentDetailView({
               <FileText className="w-4 h-4" /> IEP / 504 Accommodations
             </h3>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-              {accommodations.filter(a => a.student_id === student.id && a.is_active).length} active accommodation{accommodations.filter(a => a.student_id === student.id && a.is_active).length !== 1 ? 's' : ''}
+              {activeAccommodations.length} active accommodation{activeAccommodations.length !== 1 ? 's' : ''}
             </p>
           </div>
           <button
@@ -2412,7 +2447,7 @@ export default function StudentDetailView({
           </button>
         </div>
 
-        {accommodations.filter(a => a.student_id === student.id).length === 0 && !showAccomForm && (
+        {studentAccommodations.length === 0 && !showAccomForm && (
           <div className="text-center py-10 bg-white rounded-[32px] border border-dashed border-slate-200 px-6 space-y-2">
             <p className="text-sm text-slate-400 font-medium">No accommodations yet.</p>
             <p className="text-xs text-slate-400 leading-relaxed">You can list IEP/504 details here to keep them handy during lesson planning and report writing.</p>
@@ -2427,7 +2462,7 @@ export default function StudentDetailView({
         )}
 
         <div className="space-y-3">
-          {accommodations.filter(a => a.student_id === student.id).map(acc => {
+          {studentAccommodations.map(acc => {
             const planColors: Record<AccommodationPlanType, string> = {
               'IEP':   'bg-violet-100 text-violet-700',
               '504':   'bg-sky-100 text-sky-700',
