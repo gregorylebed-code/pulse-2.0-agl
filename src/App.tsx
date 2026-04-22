@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { AliasModeProvider } from './context/AliasModeContext';
 
 import { useClassroomData } from './hooks/useClassroomData';
@@ -6,14 +6,14 @@ import { useAuth, signOut, signInAnonymously } from './lib/auth';
 import { supabase } from './lib/supabase';
 import AuthScreen from './components/AuthScreen';
 import { migrateLocalDataToUser } from './utils/migrateLocalData';
-import PulseScreen from './components/PulseScreen';
-import SummaryView from './components/SummaryView';
-import InsightsScreen from './components/InsightsScreen';
+const PulseScreen = lazy(() => import('./components/PulseScreen'));
+const SummaryView = lazy(() => import('./components/SummaryView'));
+const InsightsScreen = lazy(() => import('./components/InsightsScreen'));
 import FeedbackModal from './components/FeedbackModal';
-import StudentsScreen from './components/StudentsScreen';
-import TaskDrawer from './components/TaskDrawer';
-import SettingsScreen from './components/SettingsScreen';
-import ShoutoutsScreen from './components/ShoutoutsScreen';
+const StudentsScreen = lazy(() => import('./components/StudentsScreen'));
+const TaskDrawer = lazy(() => import('./components/TaskDrawer'));
+const SettingsScreen = lazy(() => import('./components/SettingsScreen'));
+const ShoutoutsScreen = lazy(() => import('./components/ShoutoutsScreen'));
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -512,9 +512,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 </div>
               )}
 
-              <ErrorBoundary label="Log Notes">
-
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               {(pulseView === 'log' || !isFullMode) ? (
+                <ErrorBoundary label="Log Notes">
                 <PulseScreen
                   notes={notes}
                   students={students}
@@ -533,10 +533,11 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   onGoToSettings={() => { setActiveTab('settings'); setSettingsView('main'); }}
                   onSwitchToRealClass={students.length > 0 ? handleSwitchFromDemo : undefined}
                 />
+                </ErrorBoundary>
               ) : (
                 <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} summaries={classSummaries} setSummaries={setClassSummaries} />
               )}
-              </ErrorBoundary>
+              </Suspense>
             </motion.div>
           )}
           {activeTab === 'students' && isInDemoMode && !demoBannerDismissed && (
@@ -606,8 +607,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
           {activeTab === 'students' && (
             <motion.div key="students" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <ErrorBoundary label="Students">
-
               <StudentsScreen
                 students={students} notes={notes} reports={reports}
                 goals={goals}
@@ -638,12 +639,13 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 saveSeatingChart={saveSeatingChart}
               />
               </ErrorBoundary>
+              </Suspense>
             </motion.div>
           )}
           {activeTab === 'insights' && (
             <motion.div key="insights" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <ErrorBoundary label="Insights">
-
               <InsightsScreen
                 notes={notes}
                 students={students}
@@ -654,12 +656,13 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 }}
               />
               </ErrorBoundary>
+              </Suspense>
             </motion.div>
           )}
           {activeTab === 'shoutouts' && (
             <motion.div key="shoutouts" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <ErrorBoundary label="Shoutouts">
-
               <ShoutoutsScreen
                 shoutouts={shoutouts}
                 students={students}
@@ -668,11 +671,12 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 onCelebrate={() => confettiRef.current?.fire()}
               />
               </ErrorBoundary>
+              </Suspense>
             </motion.div>
           )}
           {activeTab === 'settings' && (
             <motion.div key="settings" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
-
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <SettingsScreen
                 indicators={indicators} setIndicators={updateIndicators}
                 commTypes={commTypes} setCommTypes={updateCommTypes}
@@ -730,6 +734,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 notificationPrefs={notificationPrefs}
                 saveNotificationPrefs={saveNotificationPrefs}
               />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>
