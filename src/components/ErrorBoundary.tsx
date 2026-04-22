@@ -36,11 +36,6 @@ export default class ErrorBoundary extends React.Component<Props, State> {
           <p className="text-slate-400 text-sm">
             Your data is safe. Try refreshing this screen.
           </p>
-          {this.state.error && (
-            <p className="text-[11px] text-red-400 font-mono bg-red-50 rounded-xl px-3 py-2 max-w-xs break-all text-left">
-              {this.state.error.message}
-            </p>
-          )}
           <button
             onClick={() => this.setState({ hasError: false, error: undefined })}
             className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-xl text-sm font-bold"

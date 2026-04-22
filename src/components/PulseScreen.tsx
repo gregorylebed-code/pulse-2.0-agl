@@ -268,31 +268,6 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       .map(entry => entry[0]);
   }, [notes, selectedStudent]);
 
-  const filteredNotes = useMemo(
-    () => notes.filter(n => !pendingDeleteNoteIds.has(n.id)),
-    [notes, pendingDeleteNoteIds]
-  );
-
-  const studentByName = useMemo(() => {
-    const map: Record<string, Student> = {};
-    students.forEach(s => { map[s.name] = s; });
-    return map;
-  }, [students]);
-
-  const indicatorByLabel = useMemo(() => {
-    const map: Record<string, any> = {};
-    indicators.forEach(i => { map[i.label] = i; });
-    return map;
-  }, [indicators]);
-
-  const selectedStudentObj = studentByName[selectedStudent] ?? null;
-
-  const indicatorCategories = useMemo(() => [
-    { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive') },
-    { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral') },
-    { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicators.filter(b => b.type === 'growth') },
-  ], [indicators]);
-
   const [editContent, setEditContent] = useState('');
   const [editStudentName, setEditStudentName] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
@@ -687,33 +662,26 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     }
   };
 
+  const now = new Date();
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  // After 4 PM the school day is done — skip today's events and show the next upcoming one
+  const eventCutoff = now.getHours() >= 16 ? tomorrowStart : todayStart;
   // Parse "YYYY-MM-DD" as local midnight (not UTC) to avoid timezone off-by-one
-  const parseLocalDate = useCallback((d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); }, []);
+  const parseLocalDate = (d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); };
+  const upcomingEvents = calendarEvents
+    ?.filter(e => parseLocalDate(e.date) >= eventCutoff)
+    .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
+    .slice(0, 10) ?? [];
+  const nextEvent = upcomingEvents[0];
 
-  const { upcomingEvents, nextEvent, upcomingBirthdays } = useMemo(() => {
-    const now = new Date();
-    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-    const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-    const eventCutoff = now.getHours() >= 16 ? tomorrowStart : todayStart;
-
-    const upcoming = (calendarEvents ?? [])
-      .filter(e => parseLocalDate(e.date) >= eventCutoff)
-      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
-      .slice(0, 10);
-
-    const todayMonth = now.getMonth() + 1;
-    const todayDay = now.getDate();
-    const tomorrowMonth = tomorrowStart.getMonth() + 1;
-    const tomorrowDay = tomorrowStart.getDate();
-    const todayBirthdays = students.filter(s => s.birth_month === todayMonth && s.birth_day === todayDay);
-    const tomorrowBirthdays = students.filter(s => s.birth_month === tomorrowMonth && s.birth_day === tomorrowDay);
-    const birthdays = [
-      ...todayBirthdays.map(s => ({ student: s, when: 'today' as const })),
-      ...tomorrowBirthdays.map(s => ({ student: s, when: 'tomorrow' as const })),
-    ];
-
-    return { upcomingEvents: upcoming, nextEvent: upcoming[0], upcomingBirthdays: birthdays };
-  }, [calendarEvents, students, parseLocalDate]);
+  const todayMonth = now.getMonth() + 1;
+  const todayDay = now.getDate();
+  const tomorrowMonth = (tomorrowStart.getMonth() + 1);
+  const tomorrowDay = tomorrowStart.getDate();
+  const birthdayStudentsToday = students.filter(s => s.birth_month === todayMonth && s.birth_day === todayDay);
+  const birthdayStudentsTomorrow = students.filter(s => s.birth_month === tomorrowMonth && s.birth_day === tomorrowDay);
+  const upcomingBirthdays = [...birthdayStudentsToday.map(s => ({ student: s, when: 'today' as const })), ...birthdayStudentsTomorrow.map(s => ({ student: s, when: 'tomorrow' as const }))];
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
@@ -1087,12 +1055,15 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   className="overflow-hidden"
                 >
                   <div className="bg-sage/10 border border-sage/20 rounded-2xl px-4 py-3 flex items-center gap-3">
-                    {selectedStudentObj?.photo_url ? (
-                      <img src={selectedStudentObj.photo_url} alt={selectedStudentObj.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-2 h-2 bg-sage rounded-full animate-pulse" />
-                    )}
-                    <span className="text-[13px] font-bold text-sage-dark">Selected: <span className="text-slate-900">{selectedStudentObj ? getDisplayName(selectedStudentObj, aliasMode) : selectedStudent}</span></span>
+                    {(() => {
+                      const s = students.find(st => st.name === selectedStudent);
+                      return s?.photo_url ? (
+                        <img src={s.photo_url} alt={s.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-2 h-2 bg-sage rounded-full animate-pulse" />
+                      );
+                    })()}
+                    <span className="text-[13px] font-bold text-sage-dark">Selected: <span className="text-slate-900">{(() => { const s = students.find(st => st.name === selectedStudent); return s ? getDisplayName(s, aliasMode) : selectedStudent; })()}</span></span>
                   </div>
                 </motion.div>
               )}
@@ -1106,7 +1077,8 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             <span className="w-full text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Frequently Used</span>
             {quickTags.map(tag => {
               const isSelected = selectedTags.includes(tag);
-              const type = indicatorByLabel[tag]?.type || 'neutral';
+              const indicator = indicators.find(i => i.label === tag);
+              const type = indicator?.type || 'neutral';
               const colors = {
                 positive: isSelected ? 'bg-sage border-sage text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-sage/40',
                 growth: isSelected ? 'bg-terracotta border-terracotta text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-terracotta/40',
@@ -1134,8 +1106,12 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         {/* ── Indicators — accordion by category ── */}
         <div className="space-y-1.5">
           <p className="text-[11px] text-slate-400 font-medium px-1">Tap a behavior label to tag this note — the AI uses these to write parent reports</p>
-          {indicatorCategories.map(cat => {
-            const selectedCount = cat.items.filter(b => selectedTags.includes(b.label)).length;
+          {([
+            { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive'), selectedCount: indicators.filter(b => b.type === 'positive' && selectedTags.includes(b.label)).length },
+            { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral'), selectedCount: indicators.filter(b => b.type === 'neutral' && selectedTags.includes(b.label)).length },
+            { key: 'growth' as const, label: 'Growth Areas', color: 'rose', items: indicators.filter(b => b.type === 'growth'), selectedCount: indicators.filter(b => b.type === 'growth' && selectedTags.includes(b.label)).length },
+
+          ].map(cat => {
             const isOpen = expandedCategory === cat.key;
             const headerColors: Record<string, string> = {
               emerald: 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
@@ -1176,9 +1152,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                     {!isOpen && <span className="text-[10px] font-normal normal-case tracking-normal opacity-60">tap to expand</span>}
                   </span>
                   <div className="flex items-center gap-2">
-                    {selectedCount > 0 && (
+                    {cat.selectedCount > 0 && (
                       <span className={cn("text-[11px] font-black px-2 py-0.5 rounded-full", badgeColors[cat.color])}>
-                        {selectedCount}
+                        {cat.selectedCount}
                       </span>
                     )}
                     <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', isOpen && 'rotate-180')} />
@@ -1217,7 +1193,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 </AnimatePresence>
               </div>
             );
-          })}
+          }))}
         </div>
 
         {/* ── Optional text note ── */}
@@ -1316,13 +1292,13 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             )}
           </AnimatePresence>
         </div>
-        {filteredNotes.length === 0 && (
+        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
           <div className="text-center py-10 space-y-3 bg-white rounded-[28px] border border-dashed border-slate-200 px-6">
             <p className="text-sm font-black text-slate-400">No notes yet today.</p>
             <p className="text-xs text-slate-400">Pick a student and start tapping. ✌️</p>
           </div>
         )}
-        {filteredNotes.slice(0, visibleNoteCount).map((note, i) => (
+        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, visibleNoteCount).map((note, i) => (
           <motion.div
             key={note.id}
             initial={{ opacity: 0, y: 18 }}
@@ -1361,7 +1337,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   <h4
                     className={cn("font-black text-slate-900 text-base truncate font-display", onStudentClick && note.student_id && "cursor-pointer hover:underline")}
                     onClick={onStudentClick && note.student_id ? (e) => { e.stopPropagation(); onStudentClick(note.student_id!); } : undefined}
-                  >{studentByName[note.student_name] ? getDisplayName(studentByName[note.student_name], aliasMode) : note.student_name}</h4>
+                  >{(() => { const s = students.find(st => st.name === note.student_name); return s ? getDisplayName(s, aliasMode) : note.student_name; })()}</h4>
                 )}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-slate-300 tracking-tight">{new Date(note.created_at).toLocaleDateString()}</span>
@@ -1472,7 +1448,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed">{note.content}</p>
                   <div className="flex gap-2 mt-3 flex-wrap">
                     {note.tags.map(t => {
-                      const indicator = indicatorByLabel[t];
+                      const indicator = indicators.find(i => i.label === t);
                       const isComm = note.is_parent_communication && note.parent_communication_type?.includes(t);
 
                       let colorClass = "bg-slate-50 text-slate-400 border-slate-100";
@@ -1494,14 +1470,17 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </motion.div>
           </motion.div>
         ))}
-        {filteredNotes.length > visibleNoteCount && (
+        {(() => {
+          const filteredNotes = notes.filter(n => !pendingDeleteNoteIds.has(n.id));
+          return filteredNotes.length > visibleNoteCount && (
             <button
               onClick={() => setVisibleNoteCount(c => c + 10)}
               className="w-full py-3 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-sage transition-colors"
             >
               See 10 more
             </button>
-          )}
+          );
+        })()}
       </div>
 
       <AnimatePresence>
