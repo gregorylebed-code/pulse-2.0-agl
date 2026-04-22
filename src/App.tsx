@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { AliasModeProvider } from './context/AliasModeContext';
 
 import { useClassroomData } from './hooks/useClassroomData';
@@ -8,11 +8,11 @@ import AuthScreen from './components/AuthScreen';
 import { migrateLocalDataToUser } from './utils/migrateLocalData';
 import PulseScreen from './components/PulseScreen';
 import SummaryView from './components/SummaryView';
-import InsightsScreen from './components/InsightsScreen';
+const InsightsScreen = lazy(() => import('./components/InsightsScreen'));
 import FeedbackModal from './components/FeedbackModal';
 import StudentsScreen from './components/StudentsScreen';
 import TaskDrawer from './components/TaskDrawer';
-import SettingsScreen from './components/SettingsScreen';
+const SettingsScreen = lazy(() => import('./components/SettingsScreen'));
 import ShoutoutsScreen from './components/ShoutoutsScreen';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
@@ -641,6 +641,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           {activeTab === 'insights' && (
             <motion.div key="insights" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
               <ErrorBoundary label="Insights">
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <InsightsScreen
                 notes={notes}
                 students={students}
@@ -650,6 +651,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   setActiveTab('students');
                 }}
               />
+              </Suspense>
               </ErrorBoundary>
             </motion.div>
           )}
@@ -668,6 +670,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           )}
           {activeTab === 'settings' && (
             <motion.div key="settings" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <SettingsScreen
                 indicators={indicators} setIndicators={updateIndicators}
                 commTypes={commTypes} setCommTypes={updateCommTypes}
@@ -725,6 +728,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 notificationPrefs={notificationPrefs}
                 saveNotificationPrefs={saveNotificationPrefs}
               />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>
