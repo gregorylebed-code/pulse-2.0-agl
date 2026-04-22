@@ -7,6 +7,7 @@ import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
 import StudentDetailView from './StudentDetailView';
+import ErrorBoundary from './ErrorBoundary';
 import { cn } from '../utils/cn';
 import { isFullMode } from '../lib/mode';
 import { useAliasMode } from '../context/AliasModeContext';
@@ -592,6 +593,7 @@ export default function StudentsScreen({
 
   if (selectedStudent) {
     return (
+      <ErrorBoundary label="Student Detail">
       <StudentDetailView
         student={selectedStudent}
         students={students}
@@ -628,6 +630,7 @@ export default function StudentsScreen({
         attendanceRecords={attendanceRecords.filter(r => r.student_id === selectedStudent.id)}
         deleteAttendanceRecord={deleteAttendanceRecord}
       />
+      </ErrorBoundary>
     );
   }
 
