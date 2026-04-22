@@ -662,26 +662,33 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     }
   };
 
-  const now = new Date();
-  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-  const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-  // After 4 PM the school day is done — skip today's events and show the next upcoming one
-  const eventCutoff = now.getHours() >= 16 ? tomorrowStart : todayStart;
   // Parse "YYYY-MM-DD" as local midnight (not UTC) to avoid timezone off-by-one
-  const parseLocalDate = (d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); };
-  const upcomingEvents = calendarEvents
-    ?.filter(e => parseLocalDate(e.date) >= eventCutoff)
-    .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
-    .slice(0, 10) ?? [];
-  const nextEvent = upcomingEvents[0];
+  const parseLocalDate = useCallback((d: string) => { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); }, []);
 
-  const todayMonth = now.getMonth() + 1;
-  const todayDay = now.getDate();
-  const tomorrowMonth = (tomorrowStart.getMonth() + 1);
-  const tomorrowDay = tomorrowStart.getDate();
-  const birthdayStudentsToday = students.filter(s => s.birth_month === todayMonth && s.birth_day === todayDay);
-  const birthdayStudentsTomorrow = students.filter(s => s.birth_month === tomorrowMonth && s.birth_day === tomorrowDay);
-  const upcomingBirthdays = [...birthdayStudentsToday.map(s => ({ student: s, when: 'today' as const })), ...birthdayStudentsTomorrow.map(s => ({ student: s, when: 'tomorrow' as const }))];
+  const { upcomingEvents, nextEvent, upcomingBirthdays } = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+    const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    const eventCutoff = now.getHours() >= 16 ? tomorrowStart : todayStart;
+
+    const upcoming = (calendarEvents ?? [])
+      .filter(e => parseLocalDate(e.date) >= eventCutoff)
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
+      .slice(0, 10);
+
+    const todayMonth = now.getMonth() + 1;
+    const todayDay = now.getDate();
+    const tomorrowMonth = tomorrowStart.getMonth() + 1;
+    const tomorrowDay = tomorrowStart.getDate();
+    const todayBirthdays = students.filter(s => s.birth_month === todayMonth && s.birth_day === todayDay);
+    const tomorrowBirthdays = students.filter(s => s.birth_month === tomorrowMonth && s.birth_day === tomorrowDay);
+    const birthdays = [
+      ...todayBirthdays.map(s => ({ student: s, when: 'today' as const })),
+      ...tomorrowBirthdays.map(s => ({ student: s, when: 'tomorrow' as const })),
+    ];
+
+    return { upcomingEvents: upcoming, nextEvent: upcoming[0], upcomingBirthdays: birthdays };
+  }, [calendarEvents, students, parseLocalDate]);
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
