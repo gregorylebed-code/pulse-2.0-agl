@@ -268,6 +268,11 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       .map(entry => entry[0]);
   }, [notes, selectedStudent]);
 
+  const filteredNotes = useMemo(
+    () => notes.filter(n => !pendingDeleteNoteIds.has(n.id)),
+    [notes, pendingDeleteNoteIds]
+  );
+
   const [editContent, setEditContent] = useState('');
   const [editStudentName, setEditStudentName] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
@@ -1299,13 +1304,13 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             )}
           </AnimatePresence>
         </div>
-        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).length === 0 && (
+        {filteredNotes.length === 0 && (
           <div className="text-center py-10 space-y-3 bg-white rounded-[28px] border border-dashed border-slate-200 px-6">
             <p className="text-sm font-black text-slate-400">No notes yet today.</p>
             <p className="text-xs text-slate-400">Pick a student and start tapping. ✌️</p>
           </div>
         )}
-        {notes.filter(n => !pendingDeleteNoteIds.has(n.id)).slice(0, visibleNoteCount).map((note, i) => (
+        {filteredNotes.slice(0, visibleNoteCount).map((note, i) => (
           <motion.div
             key={note.id}
             initial={{ opacity: 0, y: 18 }}
@@ -1477,17 +1482,14 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </motion.div>
           </motion.div>
         ))}
-        {(() => {
-          const filteredNotes = notes.filter(n => !pendingDeleteNoteIds.has(n.id));
-          return filteredNotes.length > visibleNoteCount && (
+        {filteredNotes.length > visibleNoteCount && (
             <button
               onClick={() => setVisibleNoteCount(c => c + 10)}
               className="w-full py-3 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-sage transition-colors"
             >
               See 10 more
             </button>
-          );
-        })()}
+          )}
       </div>
 
       <AnimatePresence>
