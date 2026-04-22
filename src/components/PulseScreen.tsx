@@ -273,6 +273,14 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     [notes, pendingDeleteNoteIds]
   );
 
+  const studentByName = useMemo(() => {
+    const map: Record<string, Student> = {};
+    students.forEach(s => { map[s.name] = s; });
+    return map;
+  }, [students]);
+
+  const selectedStudentObj = studentByName[selectedStudent] ?? null;
+
   const indicatorCategories = useMemo(() => [
     { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive') },
     { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral') },
@@ -1073,15 +1081,12 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   className="overflow-hidden"
                 >
                   <div className="bg-sage/10 border border-sage/20 rounded-2xl px-4 py-3 flex items-center gap-3">
-                    {(() => {
-                      const s = students.find(st => st.name === selectedStudent);
-                      return s?.photo_url ? (
-                        <img src={s.photo_url} alt={s.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-2 h-2 bg-sage rounded-full animate-pulse" />
-                      );
-                    })()}
-                    <span className="text-[13px] font-bold text-sage-dark">Selected: <span className="text-slate-900">{(() => { const s = students.find(st => st.name === selectedStudent); return s ? getDisplayName(s, aliasMode) : selectedStudent; })()}</span></span>
+                    {selectedStudentObj?.photo_url ? (
+                      <img src={selectedStudentObj.photo_url} alt={selectedStudentObj.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-2 h-2 bg-sage rounded-full animate-pulse" />
+                    )}
+                    <span className="text-[13px] font-bold text-sage-dark">Selected: <span className="text-slate-900">{selectedStudentObj ? getDisplayName(selectedStudentObj, aliasMode) : selectedStudent}</span></span>
                   </div>
                 </motion.div>
               )}
@@ -1351,7 +1356,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                   <h4
                     className={cn("font-black text-slate-900 text-base truncate font-display", onStudentClick && note.student_id && "cursor-pointer hover:underline")}
                     onClick={onStudentClick && note.student_id ? (e) => { e.stopPropagation(); onStudentClick(note.student_id!); } : undefined}
-                  >{(() => { const s = students.find(st => st.name === note.student_name); return s ? getDisplayName(s, aliasMode) : note.student_name; })()}</h4>
+                  >{studentByName[note.student_name] ? getDisplayName(studentByName[note.student_name], aliasMode) : note.student_name}</h4>
                 )}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-slate-300 tracking-tight">{new Date(note.created_at).toLocaleDateString()}</span>
