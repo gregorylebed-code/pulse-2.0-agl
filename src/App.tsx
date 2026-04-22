@@ -607,8 +607,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
           {activeTab === 'students' && (
             <motion.div key="students" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
-              <ErrorBoundary label="Students">
               <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
+              <ErrorBoundary label="Students">
               <StudentsScreen
                 students={students} notes={notes} reports={reports}
                 goals={goals}
@@ -638,14 +638,14 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 seatingChart={seatingChart}
                 saveSeatingChart={saveSeatingChart}
               />
-              </Suspense>
               </ErrorBoundary>
+              </Suspense>
             </motion.div>
           )}
           {activeTab === 'insights' && (
             <motion.div key="insights" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
-              <ErrorBoundary label="Insights">
               <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
+              <ErrorBoundary label="Insights">
               <InsightsScreen
                 notes={notes}
                 students={students}
@@ -655,14 +655,14 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   setActiveTab('students');
                 }}
               />
-              </Suspense>
               </ErrorBoundary>
+              </Suspense>
             </motion.div>
           )}
           {activeTab === 'shoutouts' && (
             <motion.div key="shoutouts" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
-              <ErrorBoundary label="Shoutouts">
               <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
+              <ErrorBoundary label="Shoutouts">
               <ShoutoutsScreen
                 shoutouts={shoutouts}
                 students={students}
@@ -670,8 +670,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 deleteShoutout={deleteShoutout}
                 onCelebrate={() => confettiRef.current?.fire()}
               />
-              </Suspense>
               </ErrorBoundary>
+              </Suspense>
             </motion.div>
           )}
           {activeTab === 'settings' && (
