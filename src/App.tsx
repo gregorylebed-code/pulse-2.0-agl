@@ -512,9 +512,9 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 </div>
               )}
 
+              <ErrorBoundary label="Log Notes">
               <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               {(pulseView === 'log' || !isFullMode) ? (
-                <ErrorBoundary label="Log Notes">
                 <PulseScreen
                   notes={notes}
                   students={students}
@@ -533,11 +533,11 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   onGoToSettings={() => { setActiveTab('settings'); setSettingsView('main'); }}
                   onSwitchToRealClass={students.length > 0 ? handleSwitchFromDemo : undefined}
                 />
-                </ErrorBoundary>
               ) : (
                 <SummaryView notes={notes} students={students} classes={classes} lessonHistory={lessonHistory} saveLessonHistory={saveLessonHistory} summaries={classSummaries} setSummaries={setClassSummaries} />
               )}
               </Suspense>
+              </ErrorBoundary>
             </motion.div>
           )}
           {activeTab === 'students' && isInDemoMode && !demoBannerDismissed && (
@@ -607,8 +607,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
           {activeTab === 'students' && (
             <motion.div key="students" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
-              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <ErrorBoundary label="Students">
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <StudentsScreen
                 students={students} notes={notes} reports={reports}
                 goals={goals}
@@ -638,14 +638,14 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 seatingChart={seatingChart}
                 saveSeatingChart={saveSeatingChart}
               />
-              </ErrorBoundary>
               </Suspense>
+              </ErrorBoundary>
             </motion.div>
           )}
           {activeTab === 'insights' && (
             <motion.div key="insights" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
-              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <ErrorBoundary label="Insights">
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <InsightsScreen
                 notes={notes}
                 students={students}
@@ -655,14 +655,14 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   setActiveTab('students');
                 }}
               />
-              </ErrorBoundary>
               </Suspense>
+              </ErrorBoundary>
             </motion.div>
           )}
           {activeTab === 'shoutouts' && (
             <motion.div key="shoutouts" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
-              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <ErrorBoundary label="Shoutouts">
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
               <ShoutoutsScreen
                 shoutouts={shoutouts}
                 students={students}
@@ -670,8 +670,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 deleteShoutout={deleteShoutout}
                 onCelebrate={() => confettiRef.current?.fire()}
               />
-              </ErrorBoundary>
               </Suspense>
+              </ErrorBoundary>
             </motion.div>
           )}
           {activeTab === 'settings' && (
