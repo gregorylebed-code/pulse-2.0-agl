@@ -727,7 +727,7 @@ export default function StudentsScreen({
           </button>
         </div>
         <div className="flex bg-white rounded-xl p-1 shadow-sm border border-slate-100 overflow-x-auto no-scrollbar max-w-[240px]">
-          {isFullMode && filter !== 'All' && (
+          {(
              <div className="flex mr-2 pr-2 border-r border-slate-100">
                 <button
                   onClick={() => setViewMode('grid')}
