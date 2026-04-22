@@ -608,7 +608,6 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           {activeTab === 'students' && (
             <motion.div key="students" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
               <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-sage border-t-transparent rounded-full animate-spin" /></div>}>
-              <ErrorBoundary label="Students">
               <StudentsScreen
                 students={students} notes={notes} reports={reports}
                 goals={goals}
@@ -638,7 +637,6 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 seatingChart={seatingChart}
                 saveSeatingChart={saveSeatingChart}
               />
-              </ErrorBoundary>
               </Suspense>
             </motion.div>
           )}
