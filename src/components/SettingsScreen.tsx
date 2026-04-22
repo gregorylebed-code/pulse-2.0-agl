@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import imageCompression from 'browser-image-compression';
 import {
-  User, MessageCircle, Shield, Sparkles, Users2, Folder, TrendingUp, Calendar,
+  User, MessageCircle, Shield, Sparkles, Users2, Folder, TrendingUp, Calendar, PenLine,
   School, FileInput, MessageSquare, Trash2, Plus, X, Loader2, CheckCircle2,
   GripVertical, CalendarX, Edit2, ChevronDown, Upload, ArrowRight, Coffee,
-  Smile, Meh, Frown, Activity, AlertCircle, Users, Clock, Mail, Phone, ChevronRight
+  Smile, Meh, Frown, Activity, AlertCircle, Users, Clock, Mail, Phone, ChevronRight,
+  LogOut, Lock, Ban, UserCheck, Bot, Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, CalendarEvent } from '../types';
@@ -14,11 +16,14 @@ import { Abbreviation } from '../utils/expandAbbreviations';
 import {
   performSmartScan, extractRotationMapping, suggestAbbreviations
 } from '../lib/gemini';
+import { SpecialsMode } from '../utils/rotationHelpers';
 import { migrateFromLocalStorage } from '../utils/migrateFromLocalStorage';
+import { requestNotificationPermission, notificationsSupported } from '../utils/notifications';
 import { supabase } from '../lib/supabase';
 import ImportScreen from './ImportScreen';
 import StatsCard from './StatsCard';
 import { cn } from '../utils/cn';
+import { isFullMode } from '../lib/mode';
 
 
 const DEFAULT_BEHAVIOR_BUTTONS = [
@@ -55,7 +60,7 @@ const getIconForName = (name: string, type: string): React.ReactNode => {
     case 'Smile': return <Smile className="w-4 h-4 text-emerald-600" />;
     case 'Meh': return <Meh className="w-4 h-4 text-amber-500" />;
     case 'Frown': return <Frown className="w-4 h-4 text-red-500" />;
-    case 'ParentSquare': return <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[9px] font-black leading-none">PS</span>;
+    case 'ParentSquare': return <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-blue-500 text-white text-[11px] font-black leading-none">PS</span>;
     case 'Users': return <Users className="w-4 h-4 text-blue-500" />;
     case 'MessageSquare': return <MessageSquare className="w-4 h-4 text-blue-500" />;
     case 'Mail': return <Mail className="w-4 h-4 text-blue-500" />;
@@ -72,7 +77,7 @@ function SettingsItem({ icon, label, onClick }: { icon: React.ReactNode, label: 
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between px-4 py-1.5 hover:bg-slate-50 rounded-2xl transition-all group"
+      className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 rounded-2xl transition-all group"
     >
       <div className="flex items-center gap-4">
         <div className="text-slate-400 group-hover:text-sage transition-colors">
@@ -84,6 +89,8 @@ function SettingsItem({ icon, label, onClick }: { icon: React.ReactNode, label: 
     </button>
   );
 }
+
+type SettingsView = 'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations';
 
 interface SettingsScreenProps {
   indicators: any[];
@@ -98,12 +105,27 @@ interface SettingsScreenProps {
   setUserName: (val: string) => void;
   schoolName: string;
   setSchoolName: (val: string) => void;
+  teacherTitle: string;
+  setTeacherTitle: (val: string) => void;
+  teacherFirstName: string;
+  setTeacherFirstName: (val: string) => void;
+  teacherLastName: string;
+  setTeacherLastName: (val: string) => void;
   calendarEvents: CalendarEvent[];
   setCalendarEvents: (val: CalendarEvent[]) => void;
   rotationMapping: Record<string, string>;
   setRotationMapping: (val: Record<string, string>) => void;
   specialsNames: Record<string, string>;
   setSpecialsNames: (val: Record<string, string>) => void;
+  specialsMode: SpecialsMode;
+  setSpecialsMode: (val: SpecialsMode) => Promise<void>;
+  dayOfWeekSpecials: Record<string, string>;
+  setDayOfWeekSpecials: (val: Record<string, string>) => Promise<void>;
+  rollingStartDate: string;
+  rollingLetterCount: number;
+  saveRollingConfig: (startDate: string, letterCount: number) => Promise<void>;
+  todayOverride: { date: string; letter: string } | null;
+  saveTodayOverride: (override: { date: string; letter: string } | null) => Promise<void>;
   students: Student[];
   addStudent: (student: Omit<Student, 'id'>) => Promise<Student | null>;
   deleteStudent: (id: string) => Promise<void>;
@@ -113,7 +135,25 @@ interface SettingsScreenProps {
   abbreviations: Abbreviation[];
   saveAbbreviations: (val: Abbreviation[]) => Promise<void>;
   notes: Note[];
+  reportsCount: number;
   stats: { notes_created: number; reports_generated: number };
+  userId: string;
+  userEmail: string;
+  onSignOut: () => Promise<any>;
+  view: SettingsView;
+  setView: (v: SettingsView) => void;
+  notificationPrefs: import('../utils/notifications').NotificationPrefs;
+  saveNotificationPrefs: (prefs: import('../utils/notifications').NotificationPrefs) => Promise<void>;
+  saveProfile: (profile: import('../hooks/useClassroomData').Profile) => Promise<void>;
+  profile: import('../hooks/useClassroomData').Profile;
+  onboardingComplete: boolean | null;
+  markOnboardingComplete: () => Promise<void>;
+  onGoToProfile: () => void;
+  onGoToRoster: () => void;
+  onGoToPulse: () => void;
+  onGoToCalendar: () => void;
+  onGoToReport: () => void;
+  forceOpenGettingStarted?: boolean;
 }
 
 export default function SettingsScreen({
@@ -129,12 +169,27 @@ export default function SettingsScreen({
   setUserName,
   schoolName,
   setSchoolName,
+  teacherTitle,
+  setTeacherTitle,
+  teacherFirstName,
+  setTeacherFirstName,
+  teacherLastName,
+  setTeacherLastName,
   calendarEvents,
   setCalendarEvents,
   rotationMapping,
   setRotationMapping,
   specialsNames,
   setSpecialsNames,
+  specialsMode,
+  setSpecialsMode,
+  dayOfWeekSpecials,
+  setDayOfWeekSpecials,
+  rollingStartDate,
+  rollingLetterCount,
+  saveRollingConfig,
+  todayOverride,
+  saveTodayOverride,
   students,
   addStudent,
   deleteStudent,
@@ -144,9 +199,32 @@ export default function SettingsScreen({
   abbreviations,
   saveAbbreviations,
   notes,
+  reportsCount,
   stats,
+  userId,
+  userEmail,
+  onSignOut,
+  view,
+  setView,
+  notificationPrefs,
+  saveNotificationPrefs,
+  saveProfile,
+  profile,
+  onboardingComplete,
+  markOnboardingComplete,
+  onGoToProfile,
+  onGoToRoster,
+  onGoToPulse,
+  onGoToCalendar,
+  onGoToReport,
+  forceOpenGettingStarted,
 }: SettingsScreenProps) {
-  const [view, setView] = useState<'main' | 'indicators' | 'profile' | 'notifications' | 'privacy' | 'quick-grader' | 'data-management' | 'roster' | 'classes' | 'calendar' | 'rotation' | 'abbreviations'>('main');
+  const { canInstallAndroid, showIosInstructions, triggerInstall } = useInstallPrompt();
+  const [gettingStartedOpen, setGettingStartedOpen] = useState(onboardingComplete === false);
+
+  useEffect(() => {
+    if (forceOpenGettingStarted) setGettingStartedOpen(true);
+  }, [forceOpenGettingStarted]);
   const [newIndicator, setNewIndicator] = useState('');
   const [newIndicatorType, setNewIndicatorType] = useState<'positive' | 'growth' | 'neutral'>('positive');
   // Abbreviations state
@@ -158,62 +236,84 @@ export default function SettingsScreen({
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editEventTitle, setEditEventTitle] = useState('');
   const [editEventDate, setEditEventDate] = useState('');
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventType, setNewEventType] = useState('Other');
   const [draftEvents, setDraftEvents] = useState<(CalendarEvent & { selected: boolean })[] | null>(null);
   const [newComm, setNewComm] = useState('');
   const [isScanningRotation, setIsScanningRotation] = useState(false);
+  const [isScanningCalendar, setIsScanningCalendar] = useState(false);
+  const [showRotationMappingView, setShowRotationMappingView] = useState(false);
+  const calendarAbortRef = useRef<AbortController | null>(null);
+  const rotationAbortRef = useRef<AbortController | null>(null);
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
+
+  // Local profile state — buffered until "Save Changes" is clicked
+  const [localUserName, setLocalUserName] = useState(userName);
+  const [localSchoolName, setLocalSchoolName] = useState(schoolName);
+  const [localTeacherTitle, setLocalTeacherTitle] = useState(teacherTitle);
+  const [localTeacherFirstName, setLocalTeacherFirstName] = useState(teacherFirstName);
+  const [localTeacherLastName, setLocalTeacherLastName] = useState(teacherLastName);
 
   const handleUpdateSpecial = (letter: string, special: string) => {
     setSpecialsNames({ ...specialsNames, [letter]: special });
   };
 
   const handleScanRotation = async (file: File) => {
+    const controller = new AbortController();
+    rotationAbortRef.current = controller;
     setIsScanningRotation(true);
     const loadingToast = toast.loading('AI is extracting rotation mappings...');
+
+    const readAsDataURL = (f: Blob): Promise<string> => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(f);
+    });
+
     try {
-      const processFileData = async (processFile: File | Blob, isPdf = false) => {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const dataUrl = reader.result as string;
-          const base64Data = dataUrl.split(',')[1];
-          const mimeType = isPdf ? 'application/pdf' : dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';'));
-
-          const mapping = await extractRotationMapping(base64Data, mimeType);
-
-          if (mapping && Object.keys(mapping).length > 0) {
-            setRotationMapping(mapping);
-            toast.success(`Succesfully extracted ${Object.keys(mapping).length} date mappings!`, { id: loadingToast });
-          } else {
-            toast.error('AI could not find a rotation schedule in this file.', { id: loadingToast });
-          }
-          setIsScanningRotation(false);
-        };
-        reader.readAsDataURL(processFile);
-      };
+      let dataUrl: string;
+      let mimeType: string;
 
       if (file.type === 'application/pdf') {
         if (file.size > 4 * 1024 * 1024) {
           toast.error('PDF must be smaller than 4MB', { id: loadingToast });
-          setIsScanningRotation(false);
           return;
         }
-        await processFileData(file, true);
+        dataUrl = await readAsDataURL(file);
+        mimeType = 'application/pdf';
       } else if (file.type.startsWith('image/')) {
-        const compressedFile = await imageCompression(file, {
-          maxSizeMB: 1.9,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true
-        });
-        await processFileData(compressedFile);
+        const compressed = await imageCompression(file, { maxSizeMB: 1.9, maxWidthOrHeight: 1920, useWebWorker: true });
+        dataUrl = await readAsDataURL(compressed);
+        mimeType = dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';'));
       } else {
         toast.error('Please upload an image or PDF', { id: loadingToast });
-        setIsScanningRotation(false);
+        return;
       }
-    } catch (err) {
-      console.error('Rotation scan error:', err);
-      toast.error('Failed to scan rotation schedule.', { id: loadingToast });
+
+      const base64Data = dataUrl.split(',')[1];
+      const mapping = await extractRotationMapping(base64Data, mimeType, controller.signal);
+
+      if (mapping && Object.keys(mapping).length > 0) {
+        setRotationMapping(mapping);
+        toast.success(`Successfully extracted ${Object.keys(mapping).length} date mappings!`, { id: loadingToast });
+      } else {
+        toast.error('AI could not find a rotation schedule in this file.', { id: loadingToast });
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        toast.dismiss(loadingToast);
+        toast('Rotation scan cancelled');
+      } else {
+        console.error('Rotation scan error:', err);
+        toast.error(err?.message || 'Failed to scan rotation schedule.', { id: loadingToast });
+      }
+    } finally {
       setIsScanningRotation(false);
+      rotationAbortRef.current = null;
     }
   };
 
@@ -276,14 +376,16 @@ export default function SettingsScreen({
   // Quick Grader state
   const [totalQuestions, setTotalQuestions] = useState<number | ''>('');
 
-  // Notifications state
-  const [appAlerts, setAppAlerts] = useState(true);
+  // Notifications — managed via notificationPrefs prop (stored in Supabase)
 
   // Roster Management state
   const [rosterStudents, setRosterStudents] = useState<Student[]>([]);
   const [newStudentName, setNewStudentName] = useState('');
   const [newStudentSection, setNewStudentSection] = useState<string>(classes[0] || 'AM');
   const [isAddingStudent, setIsAddingStudent] = useState(false);
+  const [rosterFilter, setRosterFilter] = useState<string>('all');
+  const [editingStudentNameId, setEditingStudentNameId] = useState<string | null>(null);
+  const [editingStudentNameVal, setEditingStudentNameVal] = useState('');
 
   // Class Management state
   const [newClassName, setNewClassName] = useState('');
@@ -305,7 +407,7 @@ export default function SettingsScreen({
         name: newStudentName.trim(),
         class_id: newStudentSection,
         class_period: newStudentSection,
-        user_id: 'local',
+        user_id: userId,
         created_at: new Date().toISOString(),
         parent_guardian_names: [],
         parent_emails: [],
@@ -372,7 +474,7 @@ export default function SettingsScreen({
 
   const handleUpdateSection = async (id: string, section: string) => {
     try {
-      await updateStudent(id, { class_id: section, class_period: section });
+      await updateStudent(id, { class_period: section } as any);
       toast.success('Student section updated');
       fetchRoster();
       onImportComplete();
@@ -383,8 +485,14 @@ export default function SettingsScreen({
   };
 
   const handleSaveProfile = () => {
-    setUserName(userName);
-    setSchoolName(schoolName);
+    saveProfile({
+      ...profile,
+      userName: localUserName,
+      schoolName: localSchoolName,
+      teacherTitle: localTeacherTitle as import('../hooks/useClassroomData').Profile['teacherTitle'],
+      teacherFirstName: localTeacherFirstName,
+      teacherLastName: localTeacherLastName,
+    });
     toast.success('Profile updated successfully');
   };
 
@@ -402,7 +510,7 @@ export default function SettingsScreen({
       type: newIndicatorType,
       icon_name: iconName,
       category: 'behavior',
-      user_id: 'local',
+      user_id: userId,
       created_at: new Date().toISOString()
     };
     const updatedIndicators = [...indicators, { ...newInd, icon: getIconForName(iconName, newIndicatorType) }];
@@ -428,7 +536,7 @@ export default function SettingsScreen({
       icon_name: 'MessageSquare',
       category: 'communication',
       type: 'neutral',
-      user_id: 'local',
+      user_id: userId,
       created_at: new Date().toISOString()
     };
     setCommTypes([...commTypes, { ...newC, icon: <MessageSquare className="w-4 h-4" /> }]);
@@ -566,36 +674,124 @@ export default function SettingsScreen({
             exit={{ opacity: 0, scale: 0.95 }}
             className="space-y-8 max-w-3xl mx-auto"
           >
+            {/* Getting Started accordion */}
+            <div className="bg-white rounded-[32px] card-shadow border border-sage/30 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setGettingStartedOpen(o => !o)}
+                className="w-full flex items-center justify-between px-6 py-5 hover:bg-sage/5 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage border border-sage/20 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <span className="text-[13px] font-black text-sage uppercase tracking-widest">Getting Started</span>
+                </div>
+                <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", gettingStartedOpen && "rotate-180")} />
+              </button>
+              <AnimatePresence initial={false}>
+                {gettingStartedOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-4 space-y-2 border-t border-slate-100">
+                      {[
+                        { icon: <User className="w-4 h-4" />, title: 'Set up your profile', desc: 'Add your name and school so reports sign off correctly.', action: onGoToProfile, badge: 'Start here' },
+                        { icon: <Users className="w-4 h-4" />, title: 'Add your students', desc: 'Paste your whole class list and AI sorts it all out.', action: onGoToRoster, badge: null },
+                        { icon: <PenLine className="w-4 h-4" />, title: 'Add your first note', desc: 'Tap a student, tap an indicator, done in 5 seconds.', action: onGoToPulse, badge: null },
+                        { icon: <FileInput className="w-4 h-4" />, title: 'Compose your first report', desc: 'Turn your notes into a polished parent report with one tap of AI.', action: onGoToReport, badge: null },
+                        { icon: <Calendar className="w-4 h-4" />, title: 'Upload your school calendar', desc: 'Get specials rotation and event reminders automatically.', action: onGoToCalendar, badge: 'Optional' },
+                      ].map((step) => (
+                        <button
+                          key={step.title}
+                          type="button"
+                          onClick={step.action}
+                          className="w-full flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group mt-2"
+                        >
+                          <div className="w-8 h-8 rounded-xl bg-sage/10 text-sage border border-sage/20 flex items-center justify-center flex-shrink-0">
+                            {step.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-slate-800">{step.title}</span>
+                              {step.badge && (
+                                <span className={`text-[11px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${step.badge === 'Start here' ? 'bg-sage/10 text-sage' : 'bg-slate-100 text-slate-400'}`}>
+                                  {step.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-medium mt-0.5">{step.desc}</p>
+                          </div>
+                          <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
+              <h3 className="text-[15px] font-black text-blue-600 uppercase tracking-widest">Account</h3>
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
+                <p className="text-sm font-bold text-slate-700">{userEmail || 'Guest'}</p>
+              </div>
+              <button
+                onClick={async () => { await onSignOut(); }}
+                className="flex items-center gap-2 text-sm font-black text-red-400 hover:text-red-600 transition-colors"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+              {canInstallAndroid && (
+                <button
+                  onClick={triggerInstall}
+                  className="flex items-center gap-2 text-sm font-black text-sage hover:text-sage-dark transition-colors"
+                >
+                  📲 Install App to Home Screen
+                </button>
+              )}
+              {showIosInstructions && (
+                <div className="text-xs text-slate-500 leading-relaxed">
+                  <span className="font-black text-slate-600">Add to Home Screen:</span> tap the Share button <span>⬆️</span> in Safari, then tap <span className="font-black">Add to Home Screen</span>.
+                </div>
+              )}
+            </div>
+
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Account</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Preferences</h3>
               <div className="space-y-1">
                 <SettingsItem icon={<User />} label="Profile Settings" onClick={() => setView('profile')} />
                 <SettingsItem icon={<MessageCircle />} label="Notifications" onClick={() => setView('notifications')} />
-                <SettingsItem icon={<Shield />} label="Privacy & Security" onClick={() => setView('privacy')} />
                 <SettingsItem icon={<Sparkles />} label="Classroom Indicators" onClick={() => setView('indicators')} />
               </div>
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Teacher Tools</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Teacher Tools</h3>
               <div className="space-y-1">
                 <SettingsItem icon={<Users2 />} label="Roster Management" onClick={() => setView('roster')} />
                 <SettingsItem icon={<Folder />} label="Class Management" onClick={() => setView('classes')} />
-                <SettingsItem icon={<TrendingUp />} label="Quick Grade Table" onClick={() => setView('quick-grader')} />
-                <SettingsItem icon={<Calendar />} label="School Calendar" onClick={() => setView('calendar')} />
-                <SettingsItem icon={<School />} label="Rotation & Specials" onClick={() => setView('rotation')} />
+                {isFullMode && <SettingsItem icon={<TrendingUp />} label="Quick Grade Table" onClick={() => setView('quick-grader')} />}
+                {isFullMode && <SettingsItem icon={<Calendar />} label="School Calendar" onClick={() => setView('calendar')} />}
+                {isFullMode && <SettingsItem icon={<School />} label="Rotation & Specials" onClick={() => setView('rotation')} />}
                 <SettingsItem icon={<FileInput />} label="Data Management" onClick={() => setView('data-management')} />
                 <SettingsItem icon={<MessageSquare />} label="Abbreviations" onClick={() => setView('abbreviations')} />
               </div>
             </div>
 
+
             <StatsCard
-              notesCreated={stats.notes_created}
-              reportsGenerated={stats.reports_generated}
+              notesCreated={notes.length}
+              reportsGenerated={reportsCount}
             />
 
             <a
-              href="https://buymeacoffee.com/YOUR_USERNAME"
+              href="https://buymeacoffee.com/gregorylebh"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 flex items-start gap-4 p-6 bg-white rounded-[32px] card-shadow border border-slate-100 hover:border-amber-200 hover:shadow-amber-100/50 transition-all group no-print"
@@ -606,7 +802,7 @@ export default function SettingsScreen({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors">Support the Project</p>
                 <p className="text-[11px] text-slate-400 font-medium leading-relaxed mt-1">
-                  Core features are free to use. If Classroom Pulse is already saving you time, contributions help cover AI and hosting costs while the app continues to grow.
+                  Core features are free to use. If ShortHand is already saving you time, contributions help cover AI and hosting costs while the app continues to grow.
                 </p>
                 <span className="inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-black text-amber-500 group-hover:text-amber-600 transition-colors">
                   Buy me a coffee <Coffee className="w-3 h-3" />
@@ -614,46 +810,166 @@ export default function SettingsScreen({
               </div>
             </a>
 
-            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6 mt-6">
-              <h3 className="text-[13px] font-black text-terracotta ml-1">Danger Zone</h3>
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-2 mt-6">
+              <SettingsItem icon={<Shield />} label="Privacy & Security" onClick={() => setView('privacy')} />
+            </div>
 
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4 mt-6">
+              <h3 className="text-[15px] font-black text-slate-700 ml-1">Your Data</h3>
+              <p className="text-[11px] text-slate-400 ml-1">Download a copy of everything ShortHand has stored for you.</p>
               <button
                 onClick={async () => {
-                  if (window.confirm('Are you sure you want to clear ALL notes for EVERY student? This cannot be undone.')) {
-                    await supabase.from('notes').delete().not('id', 'is', null);
-                    toast.success('All class notes cleared.');
-                    onNoteAdded();
-                  }
-                }}
-                className="w-full py-2 bg-terracotta/10 border-2 border-terracotta/20 text-terracotta rounded-full font-black text-sm hover:bg-terracotta hover:text-white transition-all shadow-sm flex items-center justify-center gap-3"
-              >
-                <Trash2 className="w-4 h-4" /> Class Reset
-              </button>
-
-              <button
-                onClick={async () => {
-                  if (window.confirm('⚠️ This will erase ALL your student data, notes, and settings. Are you sure?')) {
-                    await Promise.all([
-                      supabase.from('notes').delete().not('id', 'is', null),
-                      supabase.from('students').delete().not('id', 'is', null),
-                      supabase.from('indicators').delete().not('id', 'is', null),
-                      supabase.from('comm_types').delete().not('id', 'is', null),
-                      supabase.from('classes').delete().not('id', 'is', null),
-                      supabase.from('calendar_events').delete().not('id', 'is', null),
-                      supabase.from('reports').delete().not('id', 'is', null),
-                      supabase.from('settings').delete().not('key', 'is', null),
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) { toast.error('Not signed in.'); return; }
+                  const userId = session.user.id;
+                  const loadingToast = toast.loading('Gathering your data...');
+                  try {
+                    const [notes, students, classes, indicators, commTypes, calendarEvents, reports, settings, tasks, studentGoals] = await Promise.all([
+                      supabase.from('notes').select('*').eq('user_id', userId),
+                      supabase.from('students').select('*').eq('user_id', userId),
+                      supabase.from('classes').select('*').eq('user_id', userId),
+                      supabase.from('indicators').select('*').eq('user_id', userId),
+                      supabase.from('comm_types').select('*').eq('user_id', userId),
+                      supabase.from('calendar_events').select('*').eq('user_id', userId),
+                      supabase.from('reports').select('*').eq('user_id', userId),
+                      supabase.from('settings').select('*').eq('user_id', userId),
+                      supabase.from('tasks').select('*').eq('user_id', userId),
+                      supabase.from('student_goals').select('*').eq('user_id', userId),
                     ]);
-                    localStorage.clear();
-                    window.location.reload();
+                    const exportData = {
+                      exported_at: new Date().toISOString(),
+                      user_id: userId,
+                      email: session.user.email,
+                      data: {
+                        classes: classes.data ?? [],
+                        students: students.data ?? [],
+                        notes: notes.data ?? [],
+                        indicators: indicators.data ?? [],
+                        comm_types: commTypes.data ?? [],
+                        calendar_events: calendarEvents.data ?? [],
+                        reports: reports.data ?? [],
+                        settings: settings.data ?? [],
+                        tasks: tasks.data ?? [],
+                        student_goals: studentGoals.data ?? [],
+                      },
+                    };
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `shorthand-data-${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.dismiss(loadingToast);
+                    toast.success('Data exported!');
+                  } catch (err: any) {
+                    toast.dismiss(loadingToast);
+                    toast.error(`Export failed: ${err.message}`);
                   }
                 }}
-                className="w-full py-2 bg-white border-2 border-terracotta/20 text-terracotta rounded-full font-black text-sm hover:bg-terracotta hover:text-white transition-all shadow-sm flex items-center justify-center gap-3"
+                className="flex items-center gap-2 text-[11px] font-bold text-sage hover:text-sage-dark transition-colors px-3 py-1.5 rounded-xl hover:bg-sage/10"
               >
-                <Trash2 className="w-4 h-4" /> Complete Factory Wipe
+                <Database className="w-3.5 h-3.5" /> Export My Data
               </button>
             </div>
 
-            <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-4 pb-4">Classroom Pulse v2.0.0</p>
+            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4 mt-6">
+              <h3 className="text-[15px] font-black text-terracotta ml-1">Danger Zone</h3>
+              <p className="text-[11px] text-slate-400 ml-1">These actions are permanent and cannot be undone.</p>
+
+              <div className="flex flex-col items-start gap-3 pt-2">
+                <button
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to clear ALL notes for EVERY student? This cannot be undone.')) {
+                      await supabase.from('notes').delete().not('id', 'is', null);
+                      toast.success('All class notes cleared.');
+                      onNoteAdded();
+                    }
+                  }}
+                  className="flex items-center gap-2 text-[11px] font-bold text-terracotta/70 hover:text-terracotta transition-colors px-3 py-1.5 rounded-xl hover:bg-terracotta/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Class Reset
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (window.confirm('⚠️ This will erase ALL your student data, notes, and settings. Are you sure?')) {
+                      await Promise.all([
+                        supabase.from('notes').delete().not('id', 'is', null),
+                        supabase.from('students').delete().not('id', 'is', null),
+                        supabase.from('indicators').delete().not('id', 'is', null),
+                        supabase.from('comm_types').delete().not('id', 'is', null),
+                        supabase.from('classes').delete().not('id', 'is', null),
+                        supabase.from('calendar_events').delete().not('id', 'is', null),
+                        supabase.from('reports').delete().not('id', 'is', null),
+                        supabase.from('settings').delete().not('key', 'is', null),
+                      ]);
+                      localStorage.clear();
+                      window.location.reload();
+                    }
+                  }}
+                  className="flex items-center gap-2 text-[11px] font-bold text-terracotta/70 hover:text-terracotta transition-colors px-3 py-1.5 rounded-xl hover:bg-terracotta/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Complete Factory Wipe
+                </button>
+
+                <button
+                  onClick={async () => {
+                    const confirmed = window.confirm('⚠️ PERMANENT: This will delete your account and ALL your data forever. You cannot undo this. Continue?');
+                    if (!confirmed) return;
+                    const doubleConfirmed = window.confirm('Last chance — are you absolutely sure you want to delete your account?');
+                    if (!doubleConfirmed) return;
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) { toast.error('Not signed in.'); return; }
+                    const loadingToast = toast.loading('Deleting your account...');
+                    try {
+                      const res = await fetch('https://muywwvbmpjotcffocyjb.supabase.co/functions/v1/delete-account', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${session.access_token}` },
+                      });
+                      const json = await res.json();
+                      toast.dismiss(loadingToast);
+                      if (!res.ok) { toast.error(`Error: ${json.error}`); return; }
+                      localStorage.clear();
+                      toast.success('Account deleted. Goodbye!');
+                      setTimeout(() => window.location.reload(), 1500);
+                    } catch (err: any) {
+                      toast.dismiss(loadingToast);
+                      toast.error(`Error: ${err.message}`);
+                    }
+                  }}
+                  className="flex items-center gap-2 text-[11px] font-bold text-red-500/70 hover:text-red-600 transition-colors px-3 py-1.5 rounded-xl hover:bg-red-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete My Account
+                </button>
+              </div>
+            </div>
+
+            {!isFullMode && (
+              <div className="bg-linear-to-br from-violet-50 to-indigo-50 border border-violet-100 rounded-[32px] p-6 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">✨</span>
+                  <p className="text-sm font-black text-violet-700">More tools are on the way</p>
+                </div>
+                <p className="text-[11px] text-violet-500 font-medium leading-relaxed">
+                  As you build your documentation habit, advanced features unlock — including AI-generated reports, student goal tracking, behavior insights, and a full analytics dashboard.
+                </p>
+                <p className="text-[11px] text-violet-400 font-bold uppercase tracking-wide">Keep logging. Great things are coming.</p>
+              </div>
+            )}
+
+            <div className="flex flex-col items-center gap-2 mt-4 pb-4">
+              <img src="/icon-192.png" alt="ShortHand" className="w-12 h-12 rounded-2xl shadow-sm" />
+              <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">ShortHand v2.0.0</p>
+              <a
+                href="https://www.getshorthand.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-bold text-sage/60 hover:text-sage transition-colors"
+              >
+                What can ShortHand do? →
+              </a>
+            </div>
           </motion.div>
         )}
 
@@ -671,10 +987,30 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Roster Management</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Roster Management</h3>
 
               <div className="space-y-4">
+                {/* Filter by class */}
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1 mb-1 block">Filter by Class</label>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => setRosterFilter('all')}
+                      className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all", rosterFilter === 'all' ? "bg-sage/15 border-sage text-sage-dark" : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100")}
+                    >All</button>
+                    {classes.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setRosterFilter(c)}
+                        className={cn("px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all", rosterFilter === c ? "bg-sage/15 border-sage text-sage-dark" : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100")}
+                      >{c}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Add new student */}
                 <div className="flex flex-col gap-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Add Student</label>
                   <input
                     type="text"
                     value={newStudentName}
@@ -689,7 +1025,7 @@ export default function SettingsScreen({
                       className="flex-1 px-4 py-3 bg-white border border-slate-100 rounded-full text-xs font-bold uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-2 focus:ring-sage/20 shadow-sm"
                     >
                       {classes.map(c => (
-                        <option key={c} value={c}>Class Period {c}</option>
+                        <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                     <button
@@ -703,28 +1039,49 @@ export default function SettingsScreen({
                 </div>
 
                 <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                  {rosterStudents.map(s => (
+                  {rosterStudents.filter(s => rosterFilter === 'all' || s.class_period === rosterFilter).map(s => (
                     <div key={s.id} className="flex items-center justify-between p-4 bg-white rounded-[32px] border border-slate-100 card-shadow">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-900">{s.name}</span>
-                        <div className="flex gap-2 mt-1 overflow-x-auto no-scrollbar max-w-[200px]">
+                      <div className="flex flex-col gap-1.5 flex-1 min-w-0 mr-3">
+                        {editingStudentNameId === s.id ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            value={editingStudentNameVal}
+                            onChange={e => setEditingStudentNameVal(e.target.value)}
+                            onBlur={async () => {
+                              const trimmed = editingStudentNameVal.trim();
+                              if (trimmed && trimmed !== s.name) await updateStudent(s.id, { name: trimmed });
+                              setEditingStudentNameId(null);
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                              if (e.key === 'Escape') setEditingStudentNameId(null);
+                            }}
+                            className="w-full px-2 py-1 text-sm font-bold border border-sage rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/30"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => { setEditingStudentNameId(s.id); setEditingStudentNameVal(s.name); }}
+                            className="text-sm font-bold text-slate-900 text-left hover:text-sage transition-colors"
+                            title="Click to rename"
+                          >
+                            {s.name}
+                          </button>
+                        )}
+                        <select
+                          value={s.class_period || classes[0]}
+                          onChange={(e) => handleUpdateSection(s.id, e.target.value)}
+                          className="w-full px-3 py-1.5 bg-sage/8 border border-sage/20 rounded-xl text-xs font-bold text-sage focus:outline-none focus:ring-2 focus:ring-sage/20 transition-all cursor-pointer"
+                        >
                           {classes.map(c => (
-                            <button
-                              key={c}
-                              onClick={() => handleUpdateSection(s.id, c)}
-                              className={cn(
-                                "px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest border transition-all whitespace-nowrap",
-                                (typeof s.class_id === 'object' ? (s.class_id as any)?.label || (s.class_id as any)?.value : s.class_id) === c ? "bg-sage text-white border-sage" : "bg-white text-slate-400 border-slate-100 hover:border-sage/30"
-                              )}
-                            >
-                              {c}
-                            </button>
+                            <option key={c} value={c}>{c}</option>
                           ))}
-                        </div>
+                        </select>
                       </div>
                       <button
                         onClick={() => handleRemoveStudent(s.id, s.name)}
-                        className="p-2 text-slate-300 hover:text-terracotta transition-colors"
+                        className="p-2 text-slate-300 hover:text-terracotta transition-colors flex-shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -751,7 +1108,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Class Management</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Class Management</h3>
 
               <div className="space-y-4">
                 <div className="flex gap-2">
@@ -788,7 +1145,12 @@ export default function SettingsScreen({
                       </button>
                     </div>
                   ))}
-                  {classes.length === 0 && <p className="text-center py-10 text-xs text-slate-400 italic">No classes created.</p>}
+                  {classes.length === 0 && (
+                    <div className="text-center py-8 space-y-1">
+                      <p className="text-xs font-black text-slate-400">No classes yet.</p>
+                      <p className="text-xs text-slate-400 leading-relaxed px-2">Add class periods above (e.g. <span className="font-bold">Homeroom</span>, <span className="font-bold">Period 1</span>, <span className="font-bold">AM</span>). Classes help organize notes and unlock the Class Summary view.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -809,7 +1171,7 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[13px] font-black text-slate-400 ml-1">Manage Indicators</h3>
+              <h3 className="text-[15px] font-black text-blue-600 ml-1">Manage Indicators</h3>
 
               <div className="space-y-4">
                 <div className="flex gap-2">
@@ -881,7 +1243,7 @@ export default function SettingsScreen({
               </div>
 
               <div className="space-y-4 pt-6 border-t border-slate-100">
-                <h3 className="text-[11px] font-bold text-slate-400 ml-1">Communication Types</h3>
+                <h3 className="text-[11px] font-bold text-blue-600 ml-1">Communication Types</h3>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -949,12 +1311,12 @@ export default function SettingsScreen({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Quick Grader</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Automatic Grade Calculation</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-blue-600">Automatic Grade Calculation</p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Total Number of Questions</label>
+                <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Total Number of Questions</label>
                 <input
                   type="number"
                   value={totalQuestions}
@@ -966,7 +1328,7 @@ export default function SettingsScreen({
 
               {totalQuestions !== '' && totalQuestions > 0 && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 px-6 py-3 bg-slate-50 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <div className="grid grid-cols-3 px-6 py-3 bg-slate-50 rounded-xl text-[11px] font-bold uppercase tracking-widest text-blue-600">
                     <span>Wrong</span>
                     <span className="text-center">Score</span>
                     <span className="text-right">Correct</span>
@@ -1015,27 +1377,74 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[11px] font-bold text-slate-400 ml-1">Profile Settings</h3>
+              <h3 className="text-[11px] font-bold text-blue-600 ml-1">Profile Settings</h3>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Title</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {(['Mr.', 'Mrs.', 'Ms.', 'Miss', 'Dr.'] as const).map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setLocalTeacherTitle(t)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all",
+                          localTeacherTitle === t
+                            ? "bg-sage/15 border-sage text-sage-dark shadow-sm"
+                            : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                        )}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">First Name</label>
+                    <input
+                      type="text"
+                      value={localTeacherFirstName}
+                      onChange={(e) => setLocalTeacherFirstName(e.target.value)}
+                      placeholder="e.g. John"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Last Name</label>
+                    <input
+                      type="text"
+                      value={localTeacherLastName}
+                      onChange={(e) => setLocalTeacherLastName(e.target.value)}
+                      placeholder="e.g. Smith"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Display Name (used in app header)</label>
                   <input
                     type="text"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
+                    value={localUserName}
+                    onChange={(e) => setLocalUserName(e.target.value)}
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">School Name</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Name</label>
                   <input
                     type="text"
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
+                    value={localSchoolName}
+                    onChange={(e) => setLocalSchoolName(e.target.value)}
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage transition-all"
                   />
                 </div>
+                {(localTeacherTitle || localTeacherLastName) && (
+                  <p className="text-[11px] text-slate-400 ml-1">
+                    Quick notes will be signed: <span className="font-bold text-slate-600">{localTeacherTitle} {localTeacherLastName || '___'}</span>
+                  </p>
+                )}
                 <button
                   onClick={handleSaveProfile}
                   className="w-full py-4 bg-sage text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-sage-dark transition-all shadow-lg shadow-sage/20"
@@ -1046,11 +1455,11 @@ export default function SettingsScreen({
             </div>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100">
-              <h3 className="text-[11px] font-bold text-slate-400 ml-1 mb-6">Appearance</h3>
+              <h3 className="text-[11px] font-bold text-blue-600 ml-1 mb-6">Appearance</h3>
               <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">Dark Mode</h4>
-                  <p className="text-[10px] text-slate-400 font-medium">Switch between light and dark theme</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Switch between light and dark theme</p>
                 </div>
                 <button
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -1083,26 +1492,101 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[11px] font-bold text-slate-400 ml-1">Notifications</h3>
+              <h3 className="text-[11px] font-bold text-blue-600 ml-1">Notifications</h3>
 
-              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">App Alerts</h4>
-                  <p className="text-[10px] text-slate-400 font-medium">Receive push notifications for student updates</p>
-                </div>
-                <button
-                  onClick={() => setAppAlerts(!appAlerts)}
-                  className={cn(
-                    "w-12 h-6 rounded-full transition-all relative",
-                    appAlerts ? "bg-sage" : "bg-slate-300"
+              {!notificationsSupported() && (
+                <p className="text-xs text-slate-400 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                  Notifications are not supported in this browser. Try opening the app in Chrome or Safari and adding it to your home screen.
+                </p>
+              )}
+
+              {notificationsSupported() && (
+                <div className="space-y-4">
+                  {/* Daily Reminder */}
+                  <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-sm">Daily Logging Reminder</h4>
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                          Reminds you to log notes — skips if you already have
+                        </p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const next = !notificationPrefs.dailyReminderEnabled;
+                          if (next) {
+                            const granted = await requestNotificationPermission();
+                            if (!granted) {
+                              toast.error('Please enable notifications in your browser or device settings first.');
+                              return;
+                            }
+                          }
+                          await saveNotificationPrefs({ ...notificationPrefs, dailyReminderEnabled: next });
+                        }}
+                        className={cn(
+                          "w-12 h-6 rounded-full transition-all relative flex-shrink-0",
+                          notificationPrefs.dailyReminderEnabled ? "bg-sage" : "bg-slate-300"
+                        )}
+                      >
+                        <motion.div
+                          animate={{ x: notificationPrefs.dailyReminderEnabled ? 24 : 4 }}
+                          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                        />
+                      </button>
+                    </div>
+
+                    {notificationPrefs.dailyReminderEnabled && (
+                      <div className="flex items-center gap-3">
+                        <label className="text-xs font-bold text-slate-500">Remind me at</label>
+                        <input
+                          type="time"
+                          value={notificationPrefs.dailyReminderTime}
+                          onChange={e => saveNotificationPrefs({ ...notificationPrefs, dailyReminderTime: e.target.value })}
+                          className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-sage"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Calendar Event Reminder */}
+                  <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">School Event Reminder</h4>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                        Morning alert on days with events from your calendar
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const next = !notificationPrefs.calendarEventReminderEnabled;
+                        if (next) {
+                          const granted = await requestNotificationPermission();
+                          if (!granted) {
+                            toast.error('Please enable notifications in your browser or device settings first.');
+                            return;
+                          }
+                        }
+                        await saveNotificationPrefs({ ...notificationPrefs, calendarEventReminderEnabled: next });
+                      }}
+                      className={cn(
+                        "w-12 h-6 rounded-full transition-all relative flex-shrink-0",
+                        notificationPrefs.calendarEventReminderEnabled ? "bg-sage" : "bg-slate-300"
+                      )}
+                    >
+                      <motion.div
+                        animate={{ x: notificationPrefs.calendarEventReminderEnabled ? 24 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                      />
+                    </button>
+                  </div>
+
+                  {(notificationPrefs.dailyReminderEnabled || notificationPrefs.calendarEventReminderEnabled) && (
+                    <p className="text-[11px] text-slate-400 font-medium px-1">
+                      Notifications fire when the app is open or running in the background. For the most reliable delivery, add ShortHand to your home screen.
+                    </p>
                   )}
-                >
-                  <motion.div
-                    animate={{ x: appAlerts ? 24 : 4 }}
-                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                  />
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -1121,12 +1605,63 @@ export default function SettingsScreen({
             </button>
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
-              <h3 className="text-[11px] font-bold text-slate-400 ml-1">Privacy & Security</h3>
+              <div>
+                <h3 className="text-[11px] font-bold text-blue-600 ml-1 mb-1">Privacy & Security</h3>
+                <p className="text-xs text-slate-400 ml-1">You're trusting this app with notes about real kids. Here's exactly how that data is protected.</p>
+              </div>
 
-              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                  Your data is saved locally in this browser using LocalStorage. It never leaves your device and is not sent to any cloud service. To back up your data, use the Data Management section.
-                </p>
+              <div className="space-y-3">
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Lock className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">Bank-Level Encryption</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">Every note is encrypted in transit using SSL/TLS — the same technology banks use. Data is stored securely in Supabase, not on your device. If anyone tried to intercept it, they'd see gibberish.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <Ban className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">No Data Selling. Ever.</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">This app is made by a teacher, not a data broker. Your notes and student information are never sold, shared, or used for advertising. Period.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <UserCheck className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">The "First Name" Rule</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">The app doesn't require full legal names or student IDs. You can use initials or nicknames to keep your records even more private.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <Database className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">You Own the Data</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">If you decide to stop using the app, you can delete your account and every single note instantly from the Data Management section. We don't keep a copy.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800 mb-0.5">AI with Boundaries</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">The AI only sees your notes when you explicitly ask it to write a report or answer a question. It doesn't watch you while you work.</p>
+                  </div>
+                </div>
+
               </div>
             </div>
           </motion.div>
@@ -1147,158 +1682,126 @@ export default function SettingsScreen({
 
             <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">School Calendar</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">School Calendar</h3>
                 {calendarEvents.length > 0 && (
                   <button
                     onClick={handleClearAllEvents}
                     className="flex items-center gap-1.5 text-terracotta hover:bg-terracotta/10 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <CalendarX className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-bold uppercase tracking-widest">Clear All</span>
+                    <span className="text-[11px] font-bold uppercase tracking-widest">Clear All</span>
                   </button>
                 )}
               </div>
 
               <div className="space-y-4">
-                <p className="text-sm text-slate-500">Upload your school calendar (PDF or Image) to view it quickly from the Pulse screen.</p>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
+                <p className="text-sm text-slate-500">Upload your school calendar (PDF or Image) to view it quickly from the Notes screen.</p>
 
-                    const loadingToast = toast.loading('Processing calendar with AI...');
-                    try {
-                      let dataToStore = '';
-                      if (file.type.startsWith('image/')) {
-                        const compressedFile = await imageCompression(file, {
-                          maxSizeMB: 1.9,
-                          maxWidthOrHeight: 1920,
-                          useWebWorker: true
-                        });
-                        const reader = new FileReader();
-                        reader.onloadend = async () => {
-                          dataToStore = reader.result as string;
-                          const base64Data = dataToStore.split(',')[1];
-                          const actualMimeType = dataToStore.substring(dataToStore.indexOf(':') + 1, dataToStore.indexOf(';'));
-                          try {
-                            try {
-                              localStorage.setItem('school_calendar', dataToStore);
-                            } catch (e) {
-                              console.warn("Could not save calendar image to localStorage due to quota limits.");
-                            }
+                {isScanningCalendar ? (
+                  <div className="flex items-center gap-3 p-4 bg-sage/5 border border-dashed border-sage/20 rounded-2xl">
+                    <Loader2 className="w-4 h-4 text-sage animate-spin flex-shrink-0" />
+                    <span className="text-sm text-slate-500 flex-1">AI is scanning your calendar…</span>
+                    <button
+                      onClick={() => { calendarAbortRef.current?.abort(); }}
+                      className="text-xs font-bold text-terracotta hover:text-red-600 transition-colors px-3 py-1.5 bg-red-50 rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
 
-                            // Call Gemini 3.1 Flash for Smart Scan
-                            const extractedEvents = await performSmartScan(base64Data, actualMimeType);
+                      const controller = new AbortController();
+                      calendarAbortRef.current = controller;
+                      setIsScanningCalendar(true);
+                      const loadingToast = toast.loading('Processing calendar with AI...');
 
-                            if (Array.isArray(extractedEvents) && extractedEvents.length > 0) {
-                              const today = new Date();
-                              today.setHours(0, 0, 0, 0);
-
-                              const futureEvents = extractedEvents.filter((event: any) => {
-                                if (!event.date) return false;
-                                const eventDate = new Date(event.date);
-                                return !isNaN(eventDate.getTime()) && eventDate >= today;
-                              });
-
-                              futureEvents.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                              const eventsWithIds = futureEvents.map((event: any) => ({
-                                ...event,
-                                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                                user_id: 'local',
-                                created_at: new Date().toISOString(),
-                                selected: false
-                              }));
-                              setDraftEvents(eventsWithIds);
-                              toast.success(`AI found ${futureEvents.length} upcoming draft events. Please review.`);
-                            } else {
-                              toast.warning('AI could not find any valid upcoming events in this file.');
-                            }
-
-                            toast.dismiss(loadingToast);
-                            toast.success('Calendar saved successfully');
-                            onNoteAdded();
-                            setView('main');
-                            setTimeout(() => setView('calendar'), 10);
-                          } catch (err: any) {
-                            console.error(err);
-                            toast.dismiss(loadingToast);
-                            toast.error(err.message || 'Error processing calendar data.');
-                          }
-                        };
-                        reader.readAsDataURL(compressedFile);
-                      } else if (file.type === 'application/pdf') {
-                        if (file.size > 4 * 1024 * 1024) {
+                      const finishScan = (events: any[], signal: AbortSignal) => {
+                        if (signal.aborted) return;
+                        if (Array.isArray(events) && events.length > 0) {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const futureEvents = events.filter((event: any) => {
+                            if (!event.date) return false;
+                            const eventDate = new Date(event.date);
+                            return !isNaN(eventDate.getTime()) && eventDate >= today;
+                          });
+                          futureEvents.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                          const eventsWithIds = futureEvents.map((event: any) => ({
+                            ...event,
+                            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                            user_id: userId,
+                            created_at: new Date().toISOString(),
+                            selected: false
+                          }));
+                          setDraftEvents(eventsWithIds);
                           toast.dismiss(loadingToast);
-                          toast.error('PDF must be smaller than 4MB');
-                          return;
+                          toast.success(`AI found ${futureEvents.length} upcoming draft events. Please review.`);
+                          onNoteAdded();
+                          setView('main');
+                          setTimeout(() => setView('calendar'), 10);
+                        } else {
+                          toast.dismiss(loadingToast);
+                          toast.warning('AI could not find any valid upcoming events in this file.');
                         }
-                        const reader = new FileReader();
-                        reader.onloadend = async () => {
-                          dataToStore = reader.result as string;
-                          const base64Data = dataToStore.split(',')[1];
-                          const actualMimeType = dataToStore.substring(dataToStore.indexOf(':') + 1, dataToStore.indexOf(';'));
-                          try {
+                        setIsScanningCalendar(false);
+                        calendarAbortRef.current = null;
+                      };
+
+                      try {
+                        if (file.type.startsWith('image/')) {
+                          const compressedFile = await imageCompression(file, { maxSizeMB: 1.9, maxWidthOrHeight: 1920, useWebWorker: true });
+                          const reader = new FileReader();
+                          reader.onloadend = async () => {
+                            const dataToStore = reader.result as string;
+                            try { localStorage.setItem('school_calendar', dataToStore); } catch {}
+                            const base64Data = dataToStore.split(',')[1];
+                            const actualMimeType = dataToStore.substring(dataToStore.indexOf(':') + 1, dataToStore.indexOf(';'));
                             try {
-                              localStorage.setItem('school_calendar', dataToStore);
-                            } catch (e) {
-                              console.warn("Could not save calendar PDF to localStorage due to quota limits.");
+                              const extractedEvents = await performSmartScan(base64Data, actualMimeType, controller.signal);
+                              finishScan(extractedEvents, controller.signal);
+                            } catch (err: any) {
+                              if (err?.name === 'AbortError') { toast.dismiss(loadingToast); toast('Calendar scan cancelled'); }
+                              else { toast.dismiss(loadingToast); toast.error(err.message || 'Error processing calendar data.'); }
+                              setIsScanningCalendar(false);
+                              calendarAbortRef.current = null;
                             }
-
-                            // Call Gemini 3.1 Flash for Smart Scan
-                            const extractedEvents = await performSmartScan(base64Data, actualMimeType);
-
-                            if (Array.isArray(extractedEvents) && extractedEvents.length > 0) {
-                              const today = new Date();
-                              today.setHours(0, 0, 0, 0);
-
-                              const futureEvents = extractedEvents.filter((event: any) => {
-                                if (!event.date) return false;
-                                const eventDate = new Date(event.date);
-                                return !isNaN(eventDate.getTime()) && eventDate >= today;
-                              });
-
-                              futureEvents.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                              const eventsWithIds = futureEvents.map((event: any) => ({
-                                ...event,
-                                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                                user_id: 'local',
-                                created_at: new Date().toISOString(),
-                                selected: false
-                              }));
-                              setDraftEvents(eventsWithIds);
-                              toast.success(`AI found ${futureEvents.length} upcoming draft events. Please review.`);
-                            } else {
-                              toast.warning('AI could not find any valid upcoming events in this file.');
+                          };
+                          reader.readAsDataURL(compressedFile);
+                        } else if (file.type === 'application/pdf') {
+                          if (file.size > 4 * 1024 * 1024) { toast.dismiss(loadingToast); toast.error('PDF must be smaller than 4MB'); setIsScanningCalendar(false); return; }
+                          const reader = new FileReader();
+                          reader.onloadend = async () => {
+                            const dataToStore = reader.result as string;
+                            try { localStorage.setItem('school_calendar', dataToStore); } catch {}
+                            const base64Data = dataToStore.split(',')[1];
+                            const actualMimeType = dataToStore.substring(dataToStore.indexOf(':') + 1, dataToStore.indexOf(';'));
+                            try {
+                              const extractedEvents = await performSmartScan(base64Data, actualMimeType, controller.signal);
+                              finishScan(extractedEvents, controller.signal);
+                            } catch (err: any) {
+                              if (err?.name === 'AbortError') { toast.dismiss(loadingToast); toast('Calendar scan cancelled'); }
+                              else { toast.dismiss(loadingToast); toast.error(err.message || 'Error processing calendar data.'); }
+                              setIsScanningCalendar(false);
+                              calendarAbortRef.current = null;
                             }
-
-                            toast.dismiss(loadingToast);
-                            toast.success('Calendar saved successfully');
-                            onNoteAdded();
-                            setView('main');
-                            setTimeout(() => setView('calendar'), 10);
-                          } catch (err: any) {
-                            console.error(err);
-                            toast.dismiss(loadingToast);
-                            toast.error(err.message || 'Error processing calendar data.');
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      } else {
-                        toast.dismiss(loadingToast);
-                        toast.error('Please upload an image or PDF');
+                          };
+                          reader.readAsDataURL(file);
+                        } else {
+                          toast.dismiss(loadingToast); toast.error('Please upload an image or PDF'); setIsScanningCalendar(false);
+                        }
+                      } catch (err) {
+                        toast.dismiss(loadingToast); toast.error('Error processing file'); setIsScanningCalendar(false);
                       }
-                    } catch (err) {
-                      console.error(err);
-                      toast.dismiss(loadingToast);
-                      toast.error('Error processing file');
-                    }
-                  }}
-                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sage/10 file:text-sage hover:file:bg-sage/20 transition-all"
-                />
+                    }}
+                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sage/10 file:text-sage hover:file:bg-sage/20 transition-all"
+                  />
+                )}
 
                 {localStorage.getItem('school_calendar') && (
                   <button
@@ -1308,7 +1811,7 @@ export default function SettingsScreen({
                       setView('main');
                       setTimeout(() => setView('calendar'), 10);
                     }}
-                    className="w-full py-3 bg-terracotta/10 text-terracotta rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-terracotta/20 transition-colors"
+                    className="w-full py-3 bg-terracotta/10 text-terracotta rounded-2xl font-bold text-[11px] uppercase tracking-widest hover:bg-terracotta/20 transition-colors"
                   >
                     Remove Current Calendar
                   </button>
@@ -1324,13 +1827,13 @@ export default function SettingsScreen({
                       <div className="flex gap-2">
                         <button
                           onClick={() => setDraftEvents(draftEvents.map(e => ({ ...e, selected: true })))}
-                          className="px-3 py-1.5 bg-sage/10 text-sage hover:bg-sage/20 rounded-lg text-[10px] font-bold transition-colors flex-1"
+                          className="px-3 py-1.5 bg-sage/10 text-sage hover:bg-sage/20 rounded-lg text-[11px] font-bold transition-colors flex-1"
                         >
                           Select All
                         </button>
                         <button
                           onClick={() => setDraftEvents(draftEvents.map(e => ({ ...e, selected: false })))}
-                          className="px-3 py-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-[10px] font-bold transition-colors flex-1"
+                          className="px-3 py-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-[11px] font-bold transition-colors flex-1"
                         >
                           Deselect All
                         </button>
@@ -1353,7 +1856,7 @@ export default function SettingsScreen({
                             <div className="flex-1 min-w-0">
                               <p className={cn("text-xs font-bold truncate transition-colors", event.selected ? "text-slate-800" : "text-slate-400")}>{event.title}</p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className={cn("text-[10px] font-medium", event.selected ? "text-terracotta" : "text-slate-400")}>{event.date}</span>
+                                <span className={cn("text-[11px] font-medium", event.selected ? "text-terracotta" : "text-slate-400")}>{event.date}</span>
                                 <span className="text-[8px] uppercase tracking-tighter bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md">{event.type}</span>
                               </div>
                             </div>
@@ -1364,13 +1867,13 @@ export default function SettingsScreen({
                     <div className="flex gap-2 pt-2">
                       <button
                         onClick={saveDraftEvents}
-                        className="flex-1 py-3 bg-terracotta text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-terracotta-dark shadow-md shadow-terracotta/20 transition-all"
+                        className="flex-1 py-3 bg-terracotta text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-terracotta-dark shadow-md shadow-terracotta/20 transition-all"
                       >
                         Save Selected Dates
                       </button>
                       <button
                         onClick={() => setDraftEvents(null)}
-                        className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                        className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-colors"
                       >
                         Cancel
                       </button>
@@ -1378,9 +1881,88 @@ export default function SettingsScreen({
                   </div>
                 )}
 
+                {/* Manual Add Event */}
+                <div className="pt-2">
+                  {!showAddEvent ? (
+                    <button
+                      onClick={() => setShowAddEvent(true)}
+                      className="w-full py-3 border-2 border-dashed border-sage/30 text-sage hover:border-sage/60 hover:bg-sage/5 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                    >
+                      <span className="text-base leading-none">+</span> Add Event Manually
+                    </button>
+                  ) : (
+                    <div className="bg-sage/5 rounded-2xl p-4 space-y-3 border border-sage/20">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-sage">New Event</p>
+                      <input
+                        type="text"
+                        value={newEventTitle}
+                        onChange={e => setNewEventTitle(e.target.value)}
+                        placeholder="Event name (e.g. Picture Day)"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-sage"
+                      />
+                      <input
+                        type="date"
+                        value={newEventDate}
+                        onChange={e => setNewEventDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+                      />
+                      <select
+                        value={newEventType}
+                        onChange={e => setNewEventType(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-sage"
+                      >
+                        {['Holiday', 'Early Dismissal', 'Conference', 'Other'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            if (!newEventTitle.trim() || !newEventDate) {
+                              toast.error('Please enter a title and date.');
+                              return;
+                            }
+                            const newEvent: CalendarEvent = {
+                              id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                              title: newEventTitle.trim(),
+                              date: newEventDate,
+                              type: newEventType,
+                              user_id: userId,
+                              created_at: new Date().toISOString(),
+                            };
+                            const updated = [...calendarEvents, newEvent].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                            setCalendarEvents(updated);
+                            setNewEventTitle('');
+                            setNewEventDate('');
+                            setNewEventType('Other');
+                            setShowAddEvent(false);
+                            toast.success('Event added!');
+                          }}
+                          className="flex-1 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-colors"
+                        >
+                          Save Event
+                        </button>
+                        <button
+                          onClick={() => { setShowAddEvent(false); setNewEventTitle(''); setNewEventDate(''); setNewEventType('Other'); }}
+                          className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {calendarEvents.length === 0 && !draftEvents && (
+                  <div className="pt-4 text-center space-y-1">
+                    <p className="text-xs font-black text-slate-400">No school events added yet.</p>
+                    <p className="text-xs text-slate-400 leading-relaxed">Upload a calendar image or PDF above to automatically import events, or add them manually. Upcoming events will show as a reminder on your home screen.</p>
+                  </div>
+                )}
+
                 {calendarEvents.length > 0 && !draftEvents && (
                   <div className="pt-6 space-y-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Your Calendar Events</h4>
+                    <h4 className="text-[11px] font-bold uppercase tracking-widest text-blue-600 ml-1">Your Calendar Events</h4>
                     <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                       {[...calendarEvents]
                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -1408,13 +1990,13 @@ export default function SettingsScreen({
                                   <div className="flex gap-2">
                                     <button
                                       onClick={handleUpdateEvent}
-                                      className="flex-1 py-2 bg-sage text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-colors"
+                                      className="flex-1 py-2 bg-sage text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-sage-dark transition-colors"
                                     >
                                       Save
                                     </button>
                                     <button
                                       onClick={() => setEditingEventId(null)}
-                                      className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                                      className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
                                     >
                                       Cancel
                                     </button>
@@ -1474,10 +2056,10 @@ export default function SettingsScreen({
                                             AI Classification
                                           </div>
                                           <div className="flex gap-2">
-                                            <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[10px] font-bold shadow-sm">
+                                            <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-bold shadow-sm">
                                               {event.type}
                                             </span>
-                                            <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[10px] font-bold shadow-sm">
+                                            <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-bold shadow-sm">
                                               Priority: High
                                             </span>
                                           </div>
@@ -1521,23 +2103,159 @@ export default function SettingsScreen({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Rotation & Specials</h3>
-                  <p className="text-[11px] font-bold text-slate-400">Configure your daily rotation</p>
+                  <p className="text-[11px] font-bold text-slate-400">Choose how your school tracks specials</p>
                 </div>
               </div>
 
-              <div className="space-y-6 pt-4">
-                <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-4">
-                  <h4 className="text-[11px] font-bold text-slate-400">Specials Mapping</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {['A', 'B', 'C', 'D', 'E'].map(letter => (
-                      <div key={letter} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                        <div className="w-8 h-8 bg-sage/10 text-sage rounded-lg flex items-center justify-center font-bold text-xs">
-                          {letter}
+              {/* Mode selector */}
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { id: 'off', label: 'Off', desc: 'Hide rotation' },
+                  { id: 'letter-day', label: 'Letter Day', desc: 'A/B/C… from calendar' },
+                  { id: 'day-of-week', label: 'Day of Week', desc: 'Mon=Art, Tue=PE…' },
+                  { id: 'rolling', label: 'Rolling Days', desc: 'Cycles A→B→C→…' },
+                ] as { id: SpecialsMode; label: string; desc: string }[]).map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setSpecialsMode(m.id)}
+                    className={cn(
+                      'p-4 rounded-2xl border-2 text-left transition-all',
+                      specialsMode === m.id
+                        ? 'border-sage bg-sage/5'
+                        : 'border-slate-100 bg-slate-50 hover:border-slate-200'
+                    )}
+                  >
+                    <p className={cn('text-xs font-bold', specialsMode === m.id ? 'text-sage-dark' : 'text-slate-700')}>{m.label}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{m.desc}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Off mode */}
+              {specialsMode === 'off' && (
+                <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 text-center">
+                  <p className="text-sm text-slate-400 font-medium">Rotation is disabled. The badge in the header will be hidden.</p>
+                </div>
+              )}
+
+              {/* Letter Day mode */}
+              {specialsMode === 'letter-day' && (
+                <div className="space-y-4">
+                  <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-4">
+                    <h4 className="text-[11px] font-bold text-slate-400">Specials by Letter</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {['A', 'B', 'C', 'D', 'E'].map(letter => (
+                        <div key={letter} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                          <div className="w-8 h-8 bg-sage/10 text-sage rounded-lg flex items-center justify-center font-bold text-xs">{letter}</div>
+                          <input
+                            type="text"
+                            value={specialsNames[letter] || ''}
+                            onChange={(e) => handleUpdateSpecial(letter, e.target.value)}
+                            placeholder="e.g. Art"
+                            className="flex-1 text-sm font-medium focus:outline-none bg-transparent"
+                          />
                         </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-sage/5 rounded-[24px] p-6 border border-dashed border-sage/20 space-y-4 text-center">
+                    <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm mx-auto border border-sage/10">
+                      <Sparkles className="w-5 h-5 text-sage" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">AI Rotation Scan</h4>
+                      <p className="text-xs text-slate-500 mt-1">Upload your school calendar to map dates to letter days automatically.</p>
+                    </div>
+                    {isScanningRotation ? (
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-6 py-3 bg-orange-100 text-orange-500 rounded-full font-bold text-xs">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Scanning...
+                        </div>
+                        <button
+                          onClick={() => { rotationAbortRef.current?.abort(); }}
+                          className="text-xs font-bold text-terracotta hover:text-red-600 transition-colors px-4 py-3 bg-red-50 rounded-full"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative inline-block">
+                        <input
+                          type="file"
+                          id="rotation-upload"
+                          className="hidden"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => { const file = e.target.files?.[0]; if (file) handleScanRotation(file); }}
+                        />
+                        <label
+                          htmlFor="rotation-upload"
+                          className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 cursor-pointer"
+                        >
+                          <Upload className="w-4 h-4" /> Scan Calendar
+                        </label>
+                      </div>
+                    )}
+                    {Object.keys(rotationMapping).length > 0 && (
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => setShowRotationMappingView(v => !v)}
+                          className="text-[11px] font-bold text-sage flex items-center justify-center gap-1.5 hover:text-sage-dark transition-colors"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {Object.keys(rotationMapping).length} date mappings active
+                          <ChevronDown className={cn('w-3 h-3 transition-transform', showRotationMappingView && 'rotate-180')} />
+                        </button>
+                        <AnimatePresence>
+                          {showRotationMappingView && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="max-h-64 overflow-y-auto space-y-1 pt-2 text-left">
+                                {Object.entries(rotationMapping)
+                                  .sort(([a], [b]) => a.localeCompare(b))
+                                  .map(([date, letter]) => {
+                                    const [y, m, d] = date.split('-').map(Number);
+                                    const label = new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                                    return (
+                                      <div key={date} className="flex items-center justify-between px-3 py-1.5 bg-white rounded-lg border border-slate-100 text-xs">
+                                        <span className="text-slate-500">{label}</span>
+                                        <span className="font-black text-orange-500 w-6 text-center">{letter}</span>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Day of Week mode */}
+              {specialsMode === 'day-of-week' && (
+                <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-4">
+                  <h4 className="text-[11px] font-bold text-slate-400">Assign a Special to Each Day</h4>
+                  <div className="space-y-3">
+                    {[
+                      { key: '1', label: 'Monday' },
+                      { key: '2', label: 'Tuesday' },
+                      { key: '3', label: 'Wednesday' },
+                      { key: '4', label: 'Thursday' },
+                      { key: '5', label: 'Friday' },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                        <div className="w-20 text-xs font-bold text-slate-500 shrink-0">{label}</div>
                         <input
                           type="text"
-                          value={specialsNames[letter] || ''}
-                          onChange={(e) => handleUpdateSpecial(letter, e.target.value)}
+                          value={dayOfWeekSpecials[key] || ''}
+                          onChange={(e) => setDayOfWeekSpecials({ ...dayOfWeekSpecials, [key]: e.target.value })}
                           placeholder="e.g. Art"
                           className="flex-1 text-sm font-medium focus:outline-none bg-transparent"
                         />
@@ -1545,59 +2263,64 @@ export default function SettingsScreen({
                     ))}
                   </div>
                 </div>
+              )}
 
-                <div className="bg-sage/5 rounded-[24px] p-8 border border-dashed border-sage/20 space-y-4 text-center">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm mx-auto border border-sage/10">
-                    <Sparkles className="w-6 h-6 text-sage" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">AI Rotation Scan</h4>
-                    <p className="text-xs text-slate-500 mt-1">Upload your calendar to map dates to letter days for the whole year.</p>
-                  </div>
-
-                  <div className="relative inline-block">
-                    <input
-                      type="file"
-                      id="rotation-upload"
-                      className="hidden"
-                      accept="image/*,application/pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleScanRotation(file);
-                      }}
-                      disabled={isScanningRotation}
-                    />
-                    <label
-                      htmlFor="rotation-upload"
-                      className={cn(
-                        "flex items-center gap-2 px-6 py-3 bg-linear-to-r from-orange-400 to-orange-500 text-white rounded-full font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-orange-200/50 cursor-pointer",
-                        isScanningRotation && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      {isScanningRotation ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Scanning...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" />
-                          Scan Calendar
-                        </>
-                      )}
-                    </label>
-                  </div>
-
-                  {Object.keys(rotationMapping).length > 0 && (
-                    <div className="pt-2">
-                      <p className="text-[11px] font-bold text-sage flex items-center justify-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {Object.keys(rotationMapping).length} mappings active
-                      </p>
+              {/* Rolling School Days mode */}
+              {specialsMode === 'rolling' && (
+                <div className="space-y-4">
+                  <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-4">
+                    <h4 className="text-[11px] font-bold text-slate-400">Rolling Cycle Setup</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Start Date (Day A)</label>
+                        <input
+                          type="date"
+                          value={rollingStartDate}
+                          onChange={(e) => saveRollingConfig(e.target.value, rollingLetterCount)}
+                          className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-sage w-full"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1.5">Pick the first day of your school year, or any day you know was Day A.</p>
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Number of Days in Cycle</label>
+                        <div className="flex gap-2 flex-wrap">
+                          {[4, 5, 6, 7, 8].map(n => (
+                            <button
+                              key={n}
+                              onClick={() => saveRollingConfig(rollingStartDate, n)}
+                              className={cn(
+                                'px-4 py-2 rounded-xl text-xs font-bold transition-all',
+                                rollingLetterCount === n ? 'bg-sage text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-sage/40'
+                              )}
+                            >
+                              {n} days ({Array.from({ length: n }, (_, i) => String.fromCharCode(65 + i)).join('-')})
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-3">
+                    <h4 className="text-[11px] font-bold text-slate-400">Specials by Letter</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Array.from({ length: rollingLetterCount }, (_, i) => String.fromCharCode(65 + i)).map(letter => (
+                        <div key={letter} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                          <div className="w-8 h-8 bg-sage/10 text-sage rounded-lg flex items-center justify-center font-bold text-xs">{letter}</div>
+                          <input
+                            type="text"
+                            value={specialsNames[letter] || ''}
+                            onChange={(e) => handleUpdateSpecial(letter, e.target.value)}
+                            placeholder="e.g. Art"
+                            className="flex-1 text-sm font-medium focus:outline-none bg-transparent"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-slate-400">Snow day? Use the "Override Today" option in the header to correct the cycle for the day.</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -1615,57 +2338,16 @@ export default function SettingsScreen({
               <span className="text-[11px] font-bold">Back to Settings</span>
             </button>
 
-            <ImportScreen onImportComplete={() => { onImportComplete(); setView('main'); }} classes={classes} students={students} addStudent={addStudent} updateStudent={updateStudent} />
-
-            <div className="bg-white rounded-[32px] p-8 card-shadow border border-slate-100 space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+              <span className="text-amber-400 text-lg flex-shrink-0">💡</span>
               <div>
-                <h3 className="text-[13px] font-black text-slate-400 ml-1">Migrate to Supabase</h3>
-                <p className="text-xs text-slate-400 mt-2 ml-1 leading-relaxed">
-                  One-time migration. Copies all your students, notes, tasks, and settings from this browser into the cloud database. Your local data stays untouched as a backup.
-                </p>
+                <p className="text-xs font-black text-amber-700">Started with initials or nicknames?</p>
+                <p className="text-xs text-amber-600 mt-0.5 leading-snug">You can update any student's name anytime. Go to <button type="button" onClick={() => setView('roster')} className="font-black underline">Roster Management</button> and tap a name to edit it.</p>
               </div>
-
-              {migrationDone && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-sage/10 border border-sage/20 rounded-2xl">
-                  <CheckCircle2 className="w-4 h-4 text-sage flex-shrink-0" />
-                  <span className="text-xs font-bold text-sage">Migration complete! Check Supabase Table Editor to verify your data.</span>
-                </div>
-              )}
-
-              <button
-                disabled={isMigrating || migrationDone}
-                onClick={async () => {
-                  if (!window.confirm('This will copy all your localStorage data into Supabase. Run this once. Continue?')) return;
-                  setIsMigrating(true);
-                  const loadingToast = toast.loading('Migrating your data to Supabase...');
-                  try {
-                    const result = await migrateFromLocalStorage();
-                    toast.dismiss(loadingToast);
-                    if (result.errors.length > 0) {
-                      toast.error(`Migration had ${result.errors.length} error(s). Check console for details.`, { duration: 8000 });
-                    } else {
-                      toast.success(`Migrated: ${result.students} students, ${result.notes} notes, ${result.tasks} tasks.`, { duration: 6000 });
-                      setMigrationDone(true);
-                    }
-                  } catch (err) {
-                    toast.dismiss(loadingToast);
-                    toast.error('Migration failed. Check console for details.');
-                    console.error('Migration error:', err);
-                  } finally {
-                    setIsMigrating(false);
-                  }
-                }}
-                className="w-full py-3 bg-sage text-white rounded-full font-black text-sm hover:bg-sage-dark transition-all shadow-md shadow-sage/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isMigrating ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Migrating...</>
-                ) : migrationDone ? (
-                  <><CheckCircle2 className="w-4 h-4" /> Migration Complete</>
-                ) : (
-                  <><Sparkles className="w-4 h-4" /> Migrate localStorage → Supabase</>
-                )}
-              </button>
             </div>
+
+            <ImportScreen onImportComplete={() => { onImportComplete(); setView('main'); }} classes={classes} students={students} addStudent={addStudent} updateStudent={updateStudent} userId={userId} />
+
           </motion.div>
         )}
         {view === 'abbreviations' && (
@@ -1765,7 +2447,10 @@ export default function SettingsScreen({
 
               {/* Existing abbreviations */}
               {abbreviations.length === 0 ? (
-                <p className="text-center text-sm text-slate-400 font-medium py-4">No abbreviations yet. Add one above or let AI suggest some.</p>
+                <div className="text-center py-5 space-y-1">
+                  <p className="text-sm font-black text-slate-400">No shortcuts yet.</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Create quick expansions to speed up note-taking — e.g. <span className="font-bold">hwk</span> → <span className="font-bold">didn't complete homework</span>. Or tap <span className="font-bold text-orange-400">Suggest from My Notes</span> to let AI find common ones automatically.</p>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <p className="text-xs font-black text-slate-500 uppercase tracking-wide">Active ({abbreviations.length})</p>
@@ -1774,7 +2459,7 @@ export default function SettingsScreen({
                       <span className="text-sm font-black text-slate-700 bg-white px-2 py-0.5 rounded-lg border border-slate-200 min-w-[48px] text-center">{abbr.abbreviation}</span>
                       <ArrowRight className="w-3 h-3 text-slate-300 flex-shrink-0" />
                       <span className="flex-1 text-sm text-slate-600 font-medium">{abbr.expansion}</span>
-                      {abbr.caseSensitive && <span className="text-[10px] font-black text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">Aa</span>}
+                      {abbr.caseSensitive && <span className="text-[11px] font-black text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">Aa</span>}
                       <button
                         onClick={() => { saveAbbreviations(abbreviations.filter(a => a.id !== abbr.id)); toast.success('Removed'); }}
                         className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"
