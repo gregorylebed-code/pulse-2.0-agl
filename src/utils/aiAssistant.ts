@@ -6,12 +6,11 @@ export async function askAboutStudents(
   notes: Note[],
   students: Student[]
 ): Promise<string> {
-  const firstNameOnly = (name: string) => name?.split(' ')[0] || name;
-  const studentList = students.map(s => firstNameOnly(s.name)).join(', ');
+  const studentList = students.map(s => s.name).join(', ');
 
   const notesContext = notes
     .map(n =>
-      `[${new Date(n.created_at).toLocaleDateString()}] ${firstNameOnly(n.student_name)}: ${n.content}` +
+      `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name}: ${n.content}` +
       (n.tags?.length ? ` (${n.tags.join(', ')})` : '')
     )
     .join('\n');

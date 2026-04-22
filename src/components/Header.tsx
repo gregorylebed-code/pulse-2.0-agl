@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, PenLine, RotateCcw, EyeOff, Eye } from 'lucide-react';
-import { useAliasMode } from '../context/AliasModeContext';
+import { Sparkles, Edit2, Plus, School, ChevronDown, ClipboardList, Beaker, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
-import { getForecast, SpecialsConfig } from '../utils/rotationHelpers';
-import { isFullMode } from '../lib/mode';
+import ClassroomPulseLogo from './ClassroomPulseLogo';
+import { getForecast } from '../utils/rotationHelpers';
 
 interface Task { id: string; text: string; completed: boolean; color?: string; }
 
@@ -18,8 +17,8 @@ interface HeaderProps {
   todayRotation: { letter: string; special: string } | null;
   showRotationForecast: boolean;
   setShowRotationForecast: (v: boolean) => void;
-  specialsConfig: SpecialsConfig;
-  onSetTodayOverride: (letter: string | null) => void;
+  rotationMapping: Record<string, string>;
+  specialsNames: Record<string, string>;
   tasks: Task[];
   setShowTasks: (v: boolean) => void;
 }
@@ -42,17 +41,12 @@ export default function Header({
   todayRotation,
   showRotationForecast,
   setShowRotationForecast,
-  specialsConfig,
-  onSetTodayOverride,
+  rotationMapping,
+  specialsNames,
   tasks,
   setShowTasks,
 }: HeaderProps) {
-  const forecast = getForecast(specialsConfig);
-  const [showOverridePicker, setShowOverridePicker] = useState(false);
-  const { aliasMode, toggleAliasMode } = useAliasMode();
-  const letters = Array.from({ length: specialsConfig.rollingLetterCount || 5 }, (_, i) => String.fromCharCode(65 + i));
-  const canOverride = specialsConfig.mode === 'letter-day' || specialsConfig.mode === 'rolling';
-  const hasOverride = !!specialsConfig.todayOverride;
+  const forecast = getForecast(rotationMapping, specialsNames);
   const pendingTasks = tasks.filter(t => !t.completed).length;
 
   return (
@@ -71,7 +65,7 @@ export default function Header({
                   placeholder="e.g., Mr. Smith"
                   className="px-3 py-1.5 bg-white border border-slate-100 rounded-lg text-xs focus:outline-none focus:border-sage shadow-sm w-48"
                 />
-                <button onClick={saveName} className="p-1.5 bg-sage text-white rounded-xl hover:bg-sage-dark transition-all">
+                <button onClick={saveName} className="p-1.5 bg-sage text-white rounded-lg hover:bg-sage-dark transition-all">
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -79,7 +73,7 @@ export default function Header({
           ) : (
             <div className="group relative">
               <div className="flex items-center gap-2 pr-8">
-                <h1 className="text-base font-bold text-sage-dark leading-tight">
+                <h1 className="text-sm font-bold text-sage-dark leading-tight">
                   {getGreeting(userName)}
                 </h1>
                 <button
@@ -90,48 +84,36 @@ export default function Header({
                   <Edit2 className="w-3 h-3" />
                 </button>
               </div>
-              <div className="flex items-center mt-0.5">
-                <p className="text-[11px] font-medium text-slate-300 italic leading-snug">"{quote}"</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Sparkles className="w-2.5 h-2.5 text-terracotta" />
+                <p className="text-[9px] font-medium text-slate-400 italic truncate max-w-[180px]">"{quote}"</p>
+                <ClassroomPulseLogo size={14} />
+                <span className="text-[8px] font-semibold text-slate-300">v2.0</span>
               </div>
             </div>
           )}
         </div>
 
-        <span className="self-center text-[16px] font-bold tracking-wide mx-2 flex-shrink-0 flex">
-          {['S','h','o','r','t','H','a','n','d'].map((letter, i) => {
-            const colors = ['#e2725b','#34d399','#f59e0b','#60a5fa','#a78bfa','#e2725b','#34d399','#f59e0b','#60a5fa'];
-            return (
-              <motion.span
-                key={i}
-                style={{ color: colors[i], display: 'inline-block' }}
-                animate={{ y: [0, -5, 0] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.1 }}
-              >
-                {letter}
-              </motion.span>
-            );
-          })}
-        </span>
-        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-2 ml-4">
           {/* Rotation Dashboard Badge */}
-          {isFullMode && <div className="relative">
+          <div className="relative">
             <button
               onClick={() => setShowRotationForecast(!showRotationForecast)}
               className={cn(
-                'p-2 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center gap-1.5 transition-all hover:border-sage/30 group',
+                'px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center gap-3 transition-all hover:border-sage/30 group',
                 showRotationForecast && 'ring-2 ring-sage/20 border-sage/40'
               )}
-              title={specialsConfig.mode === 'off' ? 'Rotation off' : todayRotation ? `Day ${todayRotation.letter}: ${todayRotation.special}` : 'No School'}
             >
               <div className="p-1.5 bg-sage/10 text-sage rounded-lg group-hover:bg-sage/20 transition-colors">
                 <School className="w-4 h-4" />
               </div>
-              {todayRotation && specialsConfig.mode !== 'off' && (
-                <span className="text-[11px] font-bold text-slate-600 max-w-[80px] truncate">
-                  {todayRotation.special}
-                </span>
-              )}
-              <ChevronDown className={cn('w-3 h-3 text-slate-300 transition-transform', showRotationForecast && 'rotate-180')} />
+              <div className="text-left">
+                <p className="text-[11px] font-bold text-slate-400 leading-none">Rotation</p>
+                <p className="text-xs font-bold text-sage-dark">
+                  {todayRotation ? `Day ${todayRotation.letter}: ${todayRotation.special}` : 'No School'}
+                </p>
+              </div>
+              <ChevronDown className={cn('w-3.5 h-3.5 text-slate-300 transition-transform', showRotationForecast && 'rotate-180')} />
             </button>
 
             <AnimatePresence>
@@ -158,92 +140,44 @@ export default function Header({
                       {forecast.map((day, idx) => (
                         <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100/50">
                           <div className="flex flex-col">
-                            <span className="text-[11px] font-bold text-slate-400">
+                            <span className="text-[10px] font-bold text-slate-400">
                               {day.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                             </span>
                             <span className="text-xs font-bold text-slate-700">{day.special}</span>
                           </div>
-                          <div className="px-2 py-1 bg-sage/10 text-sage rounded-lg text-[11px] font-black underline decoration-2 underline-offset-2">
+                          <div className="px-2 py-1 bg-sage/10 text-sage rounded-lg text-[10px] font-black underline decoration-2 underline-offset-2">
                             Day {day.letter}
                           </div>
                         </div>
                       ))}
-                      {forecast.length === 0 && specialsConfig.mode !== 'off' && (
-                        <div className="text-center py-4 text-[11px] font-medium text-slate-400 italic">
-                          {specialsConfig.mode === 'letter-day'
-                            ? 'No rotation data found. Scan your calendar in Settings.'
-                            : specialsConfig.mode === 'rolling'
-                            ? 'Set a start date in Settings → Rotation & Specials.'
-                            : 'Configure specials in Settings → Rotation & Specials.'}
-                        </div>
-                      )}
-                      {specialsConfig.mode === 'off' && (
-                        <div className="text-center py-4 text-[11px] font-medium text-slate-400 italic">
-                          Rotation is turned off. Enable it in Settings.
+                      {forecast.length === 0 && (
+                        <div className="text-center py-4 text-[10px] font-medium text-slate-400 italic">
+                          No rotation data found. Scan your calendar in Settings.
                         </div>
                       )}
                     </div>
-
-                    {/* Today override — only for letter-day and rolling modes */}
-                    {canOverride && (
-                      <div className="mt-4 pt-4 border-t border-slate-100">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-bold text-slate-400">Override Today</span>
-                          {hasOverride && (
-                            <button
-                              onClick={() => { onSetTodayOverride(null); setShowOverridePicker(false); }}
-                              className="flex items-center gap-1 text-[11px] font-bold text-terracotta hover:underline"
-                            >
-                              <RotateCcw className="w-2.5 h-2.5" /> Clear
-                            </button>
-                          )}
-                        </div>
-                        {hasOverride ? (
-                          <p className="text-[11px] text-sage font-bold">
-                            Today set to Day {specialsConfig.todayOverride!.letter} ({specialsConfig.specialsNames[specialsConfig.todayOverride!.letter] || 'No Special'})
-                          </p>
-                        ) : showOverridePicker ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {letters.map(l => (
-                              <button
-                                key={l}
-                                onClick={() => { onSetTodayOverride(l); setShowOverridePicker(false); }}
-                                className="w-8 h-8 bg-sage/10 text-sage rounded-lg text-[11px] font-black hover:bg-sage/20 transition-colors"
-                              >
-                                {l}
-                              </button>
-                            ))}
-                            <button onClick={() => setShowOverridePicker(false)} className="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg text-[11px] font-black hover:bg-slate-200 transition-colors">✕</button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setShowOverridePicker(true)}
-                            className="text-[11px] font-bold text-slate-400 hover:text-sage transition-colors"
-                          >
-                            + Set today's day letter
-                          </button>
-                        )}
-                      </div>
-                    )}
                   </motion.div>
                 </>
               )}
             </AnimatePresence>
-          </div>}
+          </div>
 
-          {/* Alias Mode Toggle — below rotation badge */}
           <button
-            onClick={toggleAliasMode}
-            title={aliasMode ? 'Student names are hidden — tap to show them' : 'Tap to hide student names (great for public spaces)'}
-            className={cn(
-              'p-1.5 rounded-xl border transition-all',
-              aliasMode
-                ? 'bg-amber-50 border-amber-200 text-amber-500'
-                : 'bg-white border-slate-100 text-slate-300 hover:text-slate-400'
-            )}
+            onClick={() => setShowTasks(true)}
+            className="p-2.5 bg-white text-slate-400 rounded-xl hover:text-sage transition-all shadow-sm border border-slate-100 flex items-center justify-center relative no-print"
+            title="Daily Tasks"
           >
-            {aliasMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <ClipboardList className="w-5 h-5" />
+            {pendingTasks > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-terracotta text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                {pendingTasks}
+              </span>
+            )}
           </button>
+
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-100">
+            <Activity className="text-sage w-5 h-5" />
+          </div>
         </div>
       </div>
     </header>

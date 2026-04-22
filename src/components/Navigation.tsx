@@ -1,53 +1,42 @@
 import React from 'react';
-import { Activity, Users, Settings, BarChart2, Star } from 'lucide-react';
+import { Activity, Users, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../utils/cn';
-import { isFullMode } from '../lib/mode';
 
 interface NavigationProps {
-  activeTab: 'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings';
-  setActiveTab: (tab: 'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings') => void;
+  activeTab: 'pulse' | 'students' | 'settings';
+  setActiveTab: (tab: 'pulse' | 'students' | 'settings') => void;
 }
 
 function NavButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
-    <motion.button
+    <button
       onClick={onClick}
-      whileTap={{ scale: 0.92 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-      className="relative flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-colors duration-200 min-w-0 flex-1"
+      className={cn(
+        'flex flex-col items-center gap-1 transition-all duration-300 relative',
+        active ? 'text-[#4169E1]' : 'text-slate-400 hover:text-slate-500'
+      )}
     >
+      {React.cloneElement(icon as React.ReactElement, { className: 'w-7 h-7', strokeWidth: 2.5 })}
+      <span className={cn('text-sm font-black', !active && 'text-slate-500')}>{label}</span>
       {active && (
         <motion.div
-          layoutId="nav-active"
-          className="absolute inset-0 bg-white rounded-2xl"
-          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          layoutId="nav-dot"
+          className="absolute -bottom-2.5 w-2 h-2 bg-[#4169E1] rounded-full"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         />
       )}
-      {React.cloneElement(icon as React.ReactElement, {
-        className: cn('w-5 h-5 relative z-10 transition-colors duration-200', active ? 'text-teal-600' : 'text-white'),
-        strokeWidth: active ? 2.5 : 1.8,
-      })}
-      <span className={cn(
-        'text-[10px] font-black tracking-wide relative z-10 transition-colors duration-200',
-        active ? 'text-teal-600' : 'text-white'
-      )}>
-        {label}
-      </span>
-    </motion.button>
+    </button>
   );
 }
 
 export default function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-50 no-print flex items-center justify-around px-2"
-      style={{ background: '#14B8A6', paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(72px + env(safe-area-inset-bottom))' }}
-    >
-      <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Log Notes" />
-      <NavButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users />} label="Student Hub" />
-      {isFullMode && <NavButton active={activeTab === 'insights'} onClick={() => setActiveTab('insights')} icon={<BarChart2 />} label="Insights" />}
-      {isFullMode && <NavButton active={activeTab === 'shoutouts'} onClick={() => setActiveTab('shoutouts')} icon={<Star />} label="Shoutouts" />}
+    <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white shadow-[0_-2px_15px_rgba(0,0,0,0.05)] flex items-center justify-around px-8 z-50 no-print border-t border-slate-100">
+      <NavButton active={activeTab === 'pulse'} onClick={() => setActiveTab('pulse')} icon={<Activity />} label="Pulse" />
+      <NavButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users />} label="Students" />
       <NavButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings />} label="Settings" />
     </nav>
   );

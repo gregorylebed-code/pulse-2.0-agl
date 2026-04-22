@@ -1,105 +1,130 @@
-import { Note, Shoutout, SELTopic, SELLesson, GoalCategory } from "../types";
-import { supabase } from "./supabase";
-import { getStudentPronounInfo, buildPronounInstruction, PronounInfo } from "./pronounUtils";
-export type { PronounInfo };
+import { GoogleGenAI, Type } from "@google/genai";
+import { Note } from "../types";
 
-const stripEmDashes = (text: string) => text.replace(/\s*—\s*/g, ' - ');
+const ai = new GoogleGenAI({
+  // @ts-ignore
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY || ''
+});
 
-async function logTokenUsage(callType: string, usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-  supabase.from('token_usage').insert({
-    user_id: user.id,
-    call_type: callType,
-    prompt_tokens: usage.prompt_tokens,
-    completion_tokens: usage.completion_tokens,
-    total_tokens: usage.total_tokens,
-  }).then(); // fire-and-forget
+// Throttle: max 1 request/sec to stay well under Gemini's 15 RPM free limit
+let lastCallTime = 0;
+const MIN_GAP_MS = 1000;
+async function throttledGenerate(fn: () => Promise<any>) {
+  const now = Date.now();
+  const wait = Math.max(0, MIN_GAP_MS - (now - lastCallTime));
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastCallTime = Date.now();
+  return fn();
 }
 
-async function callGroq(prompt: string, isJson: boolean, imageData?: { data: string; mimeType: string }, callType = 'unknown', signal?: AbortSignal): Promise<string> {
-  let messages: any[];
-
-  if (imageData?.mimeType.startsWith('image/')) {
-    const base64 = imageData.data.includes(',') ? imageData.data.split(',')[1] : imageData.data;
-    messages = [{
-      role: 'user',
-      content: [
-        { type: 'image_url', image_url: { url: `data:${imageData.mimeType};base64,${base64}` } },
-        { type: 'text', text: prompt }
-      ]
-    }];
-  } else {
-    messages = [{ role: 'user', content: prompt }];
+// Helper for Groq/Llama fallback
+async function callGroqBackup(prompt: string, isJson: boolean) {
+  // @ts-ignore
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  
+  if (!apiKey) {
+    console.error('Missing VITE_GROQ_API_KEY in environment');
+    throw new Error("Missing backup API key");
   }
 
-  const model = imageData?.mimeType.startsWith('image/') ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.3-70b-versatile';
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: isJson ? { type: "json_object" } : undefined
+    })
+  });
 
-  // Combine caller's abort signal with a 90-second hard timeout
-  const timeoutController = new AbortController();
-  const timeoutId = setTimeout(() => timeoutController.abort(), 90_000);
-  const combinedSignal = signal
-    ? AbortSignal.any([signal, timeoutController.signal])
-    : timeoutController.signal;
+  if (!response.ok) {
+    throw new Error(`Groq API error: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  const content = data.choices[0].message.content;
+  
+  // Dispatch event for UI
+  window.dispatchEvent(new CustomEvent('gemini-fallback-triggered'));
+  
+  return content;
+}
 
-  const { data: { session } } = await supabase.auth.getSession();
-
-  let response: Response;
+// Centralized wrapper for Gemini with Fallback
+async function safeGenerateContent(config: {
+  prompt: string;
+  isJson?: boolean;
+  mimeType?: string;
+  fileData?: string;
+  schema?: any;
+}) {
   try {
-    // All AI calls go through our server-side proxy — key never touches the browser
-    response = await fetch('/api/groq', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        response_format: isJson ? { type: 'json_object' } : undefined
-      }),
-      signal: combinedSignal,
-    });
+    let contents: any;
+    
+    if (config.fileData && config.mimeType) {
+      contents = {
+        parts: [
+          { inlineData: { data: config.fileData.split(',')[1] || config.fileData, mimeType: config.mimeType } },
+          { text: config.prompt }
+        ]
+      };
+    } else {
+      contents = {
+        parts: [{ text: config.prompt }]
+      };
+    }
+
+    const response = await throttledGenerate(() => ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents,
+      config: config.isJson ? { responseMimeType: "application/json", responseSchema: config.schema } : undefined
+    }));
+
+    return response.text;
   } catch (err: any) {
-    clearTimeout(timeoutId);
-    // Distinguish user-cancel from hard timeout
-    if (err?.name === 'AbortError' && timeoutController.signal.aborted && !signal?.aborted) {
-      throw new Error('AI request timed out after 90 seconds. Please try again.');
+    // If rate limited (429) or other failure, try fallback
+    const isRateLimit = err.message?.includes('429') || err.status === 429;
+    
+    if (isRateLimit || err) {
+      console.warn("Gemini failure, switching to Llama backup:", err.message);
+      try {
+        return await callGroqBackup(config.prompt, !!config.isJson);
+      } catch (fallbackErr) {
+        console.error("Backup failed too:", fallbackErr);
+        throw err; // Throw original error if fallback fails
+      }
     }
     throw err;
   }
-  clearTimeout(timeoutId);
-
-  if (!response.ok) {
-    const errBody = await response.json().catch(() => ({}));
-    const errMsg = errBody?.error?.message || JSON.stringify(errBody);
-    throw new Error(`Groq API error: ${response.status} — ${errMsg}`);
-  }
-
-  const data = await response.json();
-  if (data.usage) logTokenUsage(callType, data.usage);
-  return data.choices[0].message.content as string;
 }
 
-export async function extractRotationMapping(fileData: string, mimeType: string, signal?: AbortSignal) {
+export async function extractRotationMapping(fileData: string, mimeType: string) {
   const prompt = `Analyze this school calendar or rotation schedule (e.g., 'Special Area Calendar.pdf').
             I need to map specific dates to their "Letter Days" (e.g., A, B, C, D, E).
-
+            
             1. Look for a sequence of days (usually A-E or A-F).
             2. Extract EVERY school date and its corresponding Letter Day for the entire academic year shown.
             3. Ignore weekends and major holidays (only map days where a Letter Day is explicitly assigned).
             4. Snow days or unexpected school closings should NOT shift the sequence in this extraction; just give me the static mapping as printed on the provided calendar.
             5. Ensure the year is correct (2025-2026). If a date is "9/2", return it as "2025-09-02".
-
+            
             Return a JSON object where keys are "YYYY-MM-DD" and values are the Letter Day (e.g., "A"): { "2025-09-02": "A", "2025-09-03": "B", ... }.
-
+            
             IMPORTANT: Map EVERY date found. If a month is missing or cutoff, do your best with what is visible.`;
 
-  const imageData = mimeType.startsWith('image/') ? { data: fileData, mimeType } : undefined;
-  const text = await callGroq(prompt, true, imageData, 'extract_rotation_mapping', signal);
+  const text = await safeGenerateContent({
+    prompt,
+    fileData,
+    mimeType,
+    isJson: true
+  });
 
   try {
     let cleanText = text || '{}';
+    // Extraction logic similar to performSmartScan
     const objStart = cleanText.indexOf('{');
     const objEnd = cleanText.lastIndexOf('}');
     if (objStart !== -1 && objEnd !== -1) {
@@ -112,37 +137,42 @@ export async function extractRotationMapping(fileData: string, mimeType: string,
   }
 }
 
-export async function performSmartScan(fileData: string, mimeType: string, signal?: AbortSignal) {
+export async function performSmartScan(fileData: string, mimeType: string) {
   const prompt = `Analyze this document (likely a school calendar or schedule screenshot).
-            Specifically look for a "Chronological List" of dates and events.
+            Specifically look for a "Chronological List" of dates and events. 
             Identify any text that looks like a date (e.g., "3/20", "March 20th", "Next Tuesday").
             If the scan is messy, prioritize "Bold" text or "Headers" as those are usually the event titles.
-
+            
             Extract events such as:
             - School Holidays / Days Off
             - Early Dismissals / Half Days
             - Parent-Teacher Conference Windows
             - Any other notable school events
-
+            
             Format Standardizer: Automatically convert all found dates into a strict standard format: "YYYY-MM-DD" (e.g., "2026-03-20" or "2026-04-04"). This is required to prevent "Invalid Date" errors in the system.
             IMPORTANT: Assume the current academic year is 2025-2026. Do NOT default to year 2001. If a year is not specified, infer it based on a typical US school year starting in August 2025 and ending in June 2026.
             Date Sorting: Ensure the final JSON array is sorted by the soonest date first.
-
-            IMPORTANT: Do NOT include regular weekend days (Saturday/Sunday) unless a specific school event falls on that day.
+            
             Return a JSON array of objects EXCLUSIVELY: [{ "date": "YYYY-MM-DD", "type": "Holiday" | "Early Dismissal" | "Conference" | "Other", "title": "Name of event paired with the date" }]. Do NOT wrap the array in an object like { "events": [...] }.`;
 
-  const imageData = mimeType.startsWith('image/') ? { data: fileData, mimeType } : undefined;
-  const text = await callGroq(prompt, true, imageData, 'smart_scan', signal);
+  const text = await safeGenerateContent({
+    prompt,
+    fileData,
+    mimeType,
+    isJson: true
+  });
 
   try {
     let cleanText = text || '[]';
-
+    
+    // Aggressive JSON Array Extraction for Llama Fallback
     const arrayStart = cleanText.indexOf('[');
     const arrayEnd = cleanText.lastIndexOf(']');
-
+    
     if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
         cleanText = cleanText.substring(arrayStart, arrayEnd + 1);
     } else {
+        // Fallback: If no array brackets found, it might be an object wrapping the array
         const objStart = cleanText.indexOf('{');
         const objEnd = cleanText.lastIndexOf('}');
         if(objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
@@ -151,282 +181,189 @@ export async function performSmartScan(fileData: string, mimeType: string, signa
     }
 
     let parsed = JSON.parse(cleanText);
-
+    
+    // Llama fallback fix: Handle case where it returned an object like { events: [...] }
     if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.events)) {
         parsed = parsed.events;
     } else if (parsed && !Array.isArray(parsed)) {
+        // If it's an object but doesn't have an events array, try to find an array property
         const arrayProps = Object.values(parsed).filter(val => Array.isArray(val));
         if (arrayProps.length > 0) {
             parsed = arrayProps[0];
         } else {
-            parsed = [];
+            parsed = []; // Fallback to empty array if no array found
         }
     }
-
-    const events = Array.isArray(parsed) ? parsed : [];
-    // Strip out weekends (Saturday=6, Sunday=0) as a safety net
-    return events.filter((e: any) => {
-      if (!e.date) return true;
-      const [y, m, d] = e.date.split('-').map(Number);
-      const day = new Date(y, m - 1, d).getDay();
-      return day !== 0 && day !== 6;
-    });
+    
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
     console.error("Failed to parse JSON from AI response:", e);
     return [];
   }
 }
 
-export async function cleanNoteContent(content: string): Promise<string> {
-  const prompt = `You are editing a teacher's shorthand classroom observation note.
-
-Remove only filler words that are implied by context: leading "was/is/has/had", trailing "today/this morning/right now", and filler openers like "he was", "she was", "they were", "student was".
-
-Keep the core observation intact. Do not rewrite, rephrase, or add anything. If the note is already clean, return it unchanged.
-
-Examples:
-- "was playing around in math today" → "playing around in math"
-- "she was off task during reading" → "off task during reading"
-- "had a great day today" → "great day"
-- "refusing to work" → "refusing to work"
-- "helped a classmate with her math" → "helped a classmate with her math"
-
-Note: "${content}"
-
-Return only the cleaned note text — no quotes, no explanation.`;
-
-  try {
-    const result = await callGroq(prompt, false, undefined, 'clean_note');
-    const cleaned = result.trim().replace(/^["']|["']$/g, '');
-    return cleaned || content;
-  } catch {
-    return content;
-  }
-}
-
 export async function categorizeNote(content: string, currentTime: string, hasImage: boolean, availableIndicators: string[] = []) {
-  const indicatorList = availableIndicators.length > 0
-    ? availableIndicators.join(', ')
-    : 'Behavior, Academic, Social, Attendance, Health, Other';
+  const indicatorContext = availableIndicators.length > 0 
+    ? `Choose from these specific indicators if they apply: ${availableIndicators.join(', ')}. Otherwise, use general categories.`
+    : `Choose from: Behavior, Academic, Social, Attendance, Health, Other.`;
 
-  const prompt = `You are a conservative note categorizer for a teacher app. Categorize this student observation note.
+  const prompt = `Categorize this student observation note: "${content}". 
+      Current time is ${currentTime}. 
+      Note has image: ${hasImage}.
+      ${indicatorContext}
+      Return a JSON object with:
+      - tags: array of strings
+      - sentiment: string (Positive, Neutral, Negative)`;
 
-Note: "${content}"
-Current time: ${currentTime}
-Has image: ${hasImage}
-Available tags: ${indicatorList}
-
-STRICT RULES — follow these exactly:
-- Only apply a tag if the note DIRECTLY and CLEARLY describes that behavior or situation.
-- Do NOT infer intent, assume what might have happened, or add tags based on what could be implied.
-- If a note describes multiple distinct situations (e.g. did well in math AND was disruptive in science), apply a tag for EACH situation — including positive ones.
-- Do NOT apply multiple tags for the same situation — e.g. don't tag both "Distracted" and "Disruption" for a single off-task incident unless the note clearly describes both.
-- A student being on the wrong website is NOT a "disruption" unless the note explicitly says they disturbed other students.
-- A "technical issue" means a device or software malfunction — NOT student misuse or rule-breaking.
-- If a note is about rule-breaking or off-task behavior, use "Behavior" only — do not also add "Academic" or other tags unless they are clearly described.
-- If no tag fits clearly, return an empty array [].
-- Prefer accuracy over brevity — if there are genuinely two distinct situations, use two tags.
-
-EXAMPLES of direct matches (these are NOT inferences — apply the tag):
-- "forgot Chromebook", "didn't bring pencil", "no homework", "missing materials" → Unprepared
-- "hit another student", "pushed", "kicked" → tag the relevant behavior (e.g. Physical Aggression if available, otherwise Behavior)
-- "called out repeatedly", "talking while teacher is talking" → Disruption
-- "refused to work", "put head down", "doing nothing" → Off Task (or closest available tag)
-- "cried", "upset", "seemed anxious" → tag the relevant emotional/social tag if available
-
-Return a JSON object:
-- tags: array of strings (use exact tag names from the available list, or [] if none fit)
-- sentiment: "Positive", "Neutral", or "Negative"`;
-
-  const responseText = await callGroq(prompt, true, undefined, 'categorize_note');
+  const responseText = await safeGenerateContent({
+    prompt,
+    isJson: true,
+    schema: {
+      type: Type.OBJECT,
+      properties: {
+        tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+        sentiment: { type: Type.STRING }
+      },
+      required: ["tags", "sentiment"]
+    }
+  });
 
   try {
-    const parsed = JSON.parse(responseText || '{"tags":[],"sentiment":"Neutral"}');
-    // Ensure tags is always an array
-    if (!Array.isArray(parsed.tags)) parsed.tags = [];
-    return parsed;
+    return JSON.parse(responseText || '{"tags":["Other"],"sentiment":"Neutral"}');
   } catch (e) {
-    return { tags: [], sentiment: "Neutral" };
+    return { tags: ["Other"], sentiment: "Neutral" };
   }
 }
 
-export interface ReportData {
-  opening: string;
-  glow: string;
-  grow: string;
-  goal: string;
-  closing: string;
-}
-
-function parseReportJson(raw: string): ReportData | null {
-  console.log('[parseReportJson] raw:', raw?.substring(0, 300));
-  try {
-    // Strip markdown code fences if present (e.g. ```json ... ```)
-    let clean = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    // Extract first JSON object
-    const start = clean.indexOf('{');
-    const end = clean.lastIndexOf('}');
-    if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1);
-    const parsed = JSON.parse(clean);
-    const { opening, glow, grow, goal, closing } = parsed;
-    if (!opening || !glow || !grow || !goal || !closing) { console.log('[parseReportJson] missing fields:', { opening: !!opening, glow: !!glow, grow: !!grow, goal: !!goal, closing: !!closing }); return null; }
-    return {
-      opening: stripEmDashes(opening),
-      glow: stripEmDashes(glow),
-      grow: stripEmDashes(grow),
-      goal: stripEmDashes(goal),
-      closing: stripEmDashes(closing),
-    };
-  } catch (e) {
-    console.error('[parseReportJson] parse error:', e);
-    return null;
-  }
-}
-
-export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard', shoutouts: Shoutout[] = [], studentPronouns?: string | null): Promise<{ report: ReportData | null; pronounInfo: PronounInfo }> {
-  const firstNameOnly = (name: string) => name?.split(' ')[0] || name;
-  const notesText = notes.map(n => {
-    const tagStr = n.tags?.length ? `[${n.tags.join(', ')}]` : '';
-    const body = [n.content, tagStr].filter(Boolean).join(' ');
-    return `[${new Date(n.created_at).toLocaleDateString()}] ${firstNameOnly(n.student_name)}: ${body}`;
-  }).join('\n');
-  const studentFirstName = notes[0]?.student_name?.split(' ')[0] || 'your child';
-  const pronounInfo = getStudentPronounInfo(studentFirstName, studentPronouns);
-  const pronounInstruction = buildPronounInstruction(pronounInfo);
-  const shoutoutsText = shoutouts.length > 0
-    ? '\n\nShoutouts (positive moments worth highlighting):\n' +
-      shoutouts.map(s => `- ${s.category ? `[${s.category}] ` : ''}${s.content} (${new Date(s.created_at).toLocaleDateString()})`).join('\n')
-    : '';
-
-  let lengthInstruction = "Keep each section to 2-3 sentences.";
-  if (length === 'Quick Note') {
-    lengthInstruction = "Keep each section to 1 sentence only — very brief.";
-  } else if (length === 'Detailed') {
-    lengthInstruction = "You can write up to 4 sentences per section.";
-  }
-
-  const prompt = `You are a warm, supportive teacher writing a parent communication letter about a student's recent progress in school.
-
-TONE RULES:
+export async function summarizeNotes(notes: Note[], length: 'Quick Pulse' | 'Standard' | 'Detailed' = 'Standard') {
+  const notesText = notes.map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name}: ${n.content}`).join('\n');
+  
+  const toneRules = `
+TONE AND FORMAT RULES:
 - 8th Grade Reading Level: Use simple, direct language. No academic jargon like 'demonstrates,' 'interpersonal skills,' or 'prosocial.'
-- South Jersey Teacher Vibe: Write like you're talking to a parent over coffee. Use phrases like "They've been doing great with..." or "We're working on...".
-- IMPORTANT: ${pronounInstruction}
-- Trend Analysis: Look at the notes as a whole and identify any patterns or improvements over time.
-- ${lengthInstruction}
+- South Jersey Teacher Vibe: Write it like a warm, supportive teacher talking to a parent over coffee. Use phrases like "He's doing great with..." or "We're working on...".
+- Format: Keep the Glow, Grow, Goal structure, but make the headers bold (e.g., **Glow:**).
+- Brevity: Keep each section to 2-3 sentences max.
+- Trend Analysis: Please look at the existing notes and compare them to previous observations to identify any repeating patterns or improvements.
+`;
 
-Use the Glow / Grow / Goal framework:
-- Glow: a genuine strength or positive observation
-- Grow: one area to work on, framed kindly
-- Goal: a concrete, encouraging next step
+  let lengthInstruction = "";
+  if (length === 'Quick Pulse') {
+    lengthInstruction = "Make this extra brief, maybe just one sentence per section.";
+  } else if (length === 'Detailed') {
+    lengthInstruction = "You can add a warm opening and closing sentence, but strict 2-3 sentences per section still applies.";
+  }
 
-Return ONLY valid JSON — no markdown, no extra commentary:
-{
-  "opening": "A warm 1-2 sentence opener addressing the family (e.g. 'Dear ${studentFirstName}\\'s family, I wanted to reach out and share how things have been going in class lately.')",
-  "glow": "The Glow section text only — no label or header.",
-  "grow": "The Grow section text only — no label or header.",
-  "goal": "The Goal section text only — no label or header.",
-  "closing": "A warm 1 sentence closing (e.g. 'Thank you for your continued support — it truly makes a difference.')"
+  const prompt = `Summarize these student observations.\n${toneRules}\n${lengthInstruction}\n\nNotes:\n${notesText}`;
+  return await safeGenerateContent({ prompt });
 }
-
-Notes:
-${notesText}${shoutoutsText}`;
-
-  const raw = await callGroq(prompt, true, undefined, 'summarize_notes');
-  const report = parseReportJson(raw);
-  return { report, pronounInfo };
-}
-
-export async function refineQuickNote(currentNote: string, instructions: string, studentPronouns?: string | null, studentFirstName?: string): Promise<string> {
-  const pronounInfo = getStudentPronounInfo(studentFirstName || '', studentPronouns);
-  const pronounInstruction = buildPronounInstruction(pronounInfo);
-  const prompt = `Here is a short note a teacher drafted to send to a parent:
-
-"${currentNote}"
-
-The teacher wants to refine it with this instruction: "${instructions}"
-
-Rewrite the note following the instruction. Keep it concise, warm, and appropriate for a parent message.
-IMPORTANT: ${pronounInstruction}
-Return only the revised note text — no labels, no quotes, no extra commentary.`;
-
-  return stripEmDashes((await callGroq(prompt, false, undefined, 'refine_quick_note')).trim());
-}
-
-export async function refineReport(current: ReportData, instructions: string, studentPronouns?: string | null, studentFirstName?: string): Promise<ReportData | null> {
-  const pronounInfo = getStudentPronounInfo(studentFirstName || '', studentPronouns);
-  const pronounInstruction = buildPronounInstruction(pronounInfo);
-  const prompt = `Here is a student progress report structured as a parent letter with Glow / Grow / Goal sections:
-
-Opening: "${current.opening}"
-Glow: "${current.glow}"
-Grow: "${current.grow}"
-Goal: "${current.goal}"
-Closing: "${current.closing}"
+export async function refineReport(currentContent: string, instructions: string) {
+  const prompt = `Here is a student progress report:
+      
+"${currentContent}"
 
 The teacher wants to refine this report with the following instructions:
 "${instructions}"
 
 Please rewrite the report based on these instructions while maintaining the Glow, Grow, Goal structure and the South Jersey Teacher Vibe (8th grade reading level, warm, supportive, no jargon).
-IMPORTANT: ${pronounInstruction}
 
-Return ONLY valid JSON — no markdown, no extra commentary:
-{"opening":"...","glow":"...","grow":"...","goal":"...","closing":"..."}`;
+IMPORTANT: Return ONLY the revised report text. Do not include any introduction, explanation, or commentary such as "Here is a revised version..." — the output will be copied directly into a parent email.`;
 
-  const raw = await callGroq(prompt, true, undefined, 'refine_report');
-  return parseReportJson(raw);
+  return await safeGenerateContent({ prompt });
 }
 
 export async function magicImport(rosterText: string) {
   const prompt = `Extract student information from this messy roster text:
       "${rosterText}"
-
-      Return a JSON object with a "students" array. Each student object must have:
+      
+      Return a JSON array of objects, each with:
       - name: Full Name (Properly formatted)
       - parent_guardian_names: Array of Parent/Guardian Names (if found, else empty array)
       - parent_emails: Array of objects { value: string, label: string } (Labels like "Home", "Work", "Personal", etc.)
       - parent_phones: Array of objects { value: string, label: string } (Labels like "Cell", "Home", "Work", etc.)
-      - class_name: The name of the class or section (e.g. "Homeroom", "Science Block B", "AM", "PM")
+      - class_name: The name of the class or section (e.g. "Homeroom", "Science Block B", "AM", "PM")`;
 
-      Example: { "students": [{ "name": "Jane Doe", "parent_guardian_names": ["John Doe"], "parent_emails": [], "parent_phones": [], "class_name": "AM" }] }`;
-
-  const responseText = await callGroq(prompt, true, undefined, 'magic_import');
+  const responseText = await safeGenerateContent({
+    prompt,
+    isJson: true,
+    schema: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          parent_guardian_names: { type: Type.ARRAY, items: { type: Type.STRING } },
+          parent_emails: { 
+            type: Type.ARRAY, 
+            items: { 
+              type: Type.OBJECT,
+              properties: {
+                value: { type: Type.STRING },
+                label: { type: Type.STRING }
+              },
+              required: ["value", "label"]
+            } 
+          },
+          parent_phones: { 
+            type: Type.ARRAY, 
+            items: { 
+              type: Type.OBJECT,
+              properties: {
+                value: { type: Type.STRING },
+                label: { type: Type.STRING }
+              },
+              required: ["value", "label"]
+            } 
+          },
+          class_name: { type: Type.STRING }
+        },
+        required: ["name", "class_name", "parent_guardian_names", "parent_emails", "parent_phones"]
+      }
+    }
+  });
 
   try {
-    const parsed = JSON.parse(responseText || '{}');
-    // Handle both { students: [...] } and direct array responses
-    if (Array.isArray(parsed)) return parsed;
-    if (Array.isArray(parsed.students)) return parsed.students;
-    return [];
+    return JSON.parse(responseText || '[]');
   } catch (e) {
     return [];
   }
 }
 
 export async function draftParentSquareMessage(content: string, studentName: string) {
-  const firstName = studentName.split(' ')[0];
   const prompt = `Draft a professional and supportive ParentSquare message based on this observation:
-      Student: ${firstName}
+      Student: ${studentName}
       Observation: ${content}
-
+      
       The tone should be collaborative and focus on student growth.`;
-  return stripEmDashes(await callGroq(prompt, false, undefined, 'draft_parentsquare'));
+  return await safeGenerateContent({ prompt });
 }
 
 export async function parseVoiceLog(transcript: string, students: string[], indicators: string[]) {
-  const firstNames = students.map(s => s.split(' ')[0]);
   const prompt = `Parse this teacher's voice note: "${transcript}".
-
-      Available Students: ${firstNames.join(', ')}
+      
+      Available Students: ${students.join(', ')}
       Available Indicators: ${indicators.join(', ')}
-
+      
       Extract:
       1. student_name: The name of the student mentioned (must match one from the list if possible, else return the name found).
-      2. content: The core observation/note without the student's name. Never write indicator/tag names in the content field — not as labels, not inline, not as "indicators: X". If a concept is captured as a tag, it must be SILENT in the content text.
-      3. tags: Array of indicators that match. CRITICAL — match based on the FULL meaning, not just a keyword. If the note says a student "had trouble with", "struggled with", or "was disruptive during" something, do NOT pick the positive tag for that topic. Instead pick a growth/negative indicator that fits (e.g. Peer Conflict, Disruption, Off Task). Only pick a positive indicator if the note clearly describes the student doing that thing well.
+      2. content: The core observation/note without the student's name.
+      3. tags: Array of indicators that match the sentiment or keywords.
+      
+      Return as JSON.`;
 
-      Return as JSON object with fields: student_name, content, tags.`;
-
-  const responseText = await callGroq(prompt, true, undefined, 'parse_voice_log');
+  const responseText = await safeGenerateContent({
+    prompt,
+    isJson: true,
+    schema: {
+      type: Type.OBJECT,
+      properties: {
+        student_name: { type: Type.STRING },
+        content: { type: Type.STRING },
+        tags: { type: Type.ARRAY, items: { type: Type.STRING } }
+      },
+      required: ["student_name", "content", "tags"]
+    }
+  });
 
   try {
     return JSON.parse(responseText || 'null');
@@ -442,216 +379,62 @@ export async function suggestAbbreviations(noteContents: string[]): Promise<Arra
 Notes:
 ${sample}
 
-Return a JSON object with an "abbreviations" array of up to 8 suggestions, each with:
+Return a JSON array of up to 8 suggestions, each with:
 - abbreviation: the short form found in the notes (e.g. "ss", "ela", "iep", "sw")
 - expansion: what it likely means in a classroom context (e.g. "Social Studies", "English Language Arts", "Individualized Education Program", "social worker")
 
 Only suggest abbreviations that appear at least twice OR are very common classroom abbreviations. Do not suggest single letters.
-Example: { "abbreviations": [{ "abbreviation": "ss", "expansion": "Social Studies" }] }`;
+Return as a JSON array: [{ "abbreviation": "ss", "expansion": "Social Studies" }, ...]`;
 
-  const responseText = await callGroq(prompt, true, undefined, 'suggest_abbreviations');
+  const responseText = await safeGenerateContent({
+    prompt,
+    isJson: true,
+    schema: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          abbreviation: { type: Type.STRING },
+          expansion: { type: Type.STRING },
+        },
+        required: ['abbreviation', 'expansion'],
+      },
+    },
+  });
 
   try {
-    const parsed = JSON.parse(responseText || '{}');
-    if (Array.isArray(parsed)) return parsed;
-    if (Array.isArray(parsed.abbreviations)) return parsed.abbreviations;
-    return [];
+    const parsed = JSON.parse(responseText || '[]');
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
     return [];
   }
 }
 
 export async function summarizeClassPeriod(notes: Note[], className: string): Promise<string> {
-  const firstNameOnly = (name: string) => name?.split(' ')[0] || name;
   const notesText = notes
-    .map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${firstNameOnly(n.student_name || n.class_name || 'Class')}: ${n.content}`)
+    .map(n => `[${new Date(n.created_at).toLocaleDateString()}] ${n.student_name || n.class_name || 'Class'}: ${n.content}`)
     .join('\n');
 
-  const prompt = `You are writing a blunt, factual observation summary for a teacher's internal record about class "${className}".
+  const prompt = `You are summarizing observation notes for a class period called "${className}" for a teacher.
 
 Notes:
 ${notesText}
 
-Report what was actually observed: behavioral patterns, engagement levels, social dynamics, specific concerns, and anything noteworthy. Be direct — do not soften problems or lead with positives. If something is a concern, name it plainly. If the class was unremarkable, say so. 3-5 sentences max. No jargon. This is for the teacher only.`;
+Write a concise, clear summary (3-6 sentences) of what was observed across this class during this period. Group themes — highlight what went well, any patterns of concern, and any standout moments. Use plain language, no jargon. Do not address parents — this is for the teacher's own record.`;
 
-  const responseText = await callGroq(prompt, false, undefined, 'summarize_class_period');
-  return stripEmDashes(responseText.trim());
+  let responseText = '';
+  try {
+    const response = await throttledGenerate(() =>
+      ai.models.generateContent({ model: 'gemini-2.0-flash', contents: prompt })
+    );
+    responseText = response.text || '';
+  } catch (geminiErr) {
+    responseText = await callGroqBackup(prompt, false);
+  }
+  return responseText.trim();
 }
 
 export async function queryStudentInsights(prompt: string): Promise<string> {
-  const result = await callGroq(prompt, false, undefined, 'query_student_insights');
-  return stripEmDashes((result || '').trim());
-}
-
-export async function suggestSELTopics(notes: Note[], deliveredTitles: string[]): Promise<SELTopic[]> {
-  const notesText = notes.map(n => n.content).join('\n- ');
-  const avoidText = deliveredTitles.length > 0
-    ? `Previously delivered lessons (do NOT suggest similar topics): ${deliveredTitles.join(', ')}`
-    : 'No previous lessons — all topics are available.';
-
-  const prompt = `You are an SEL specialist reviewing anonymized classroom observation notes.
-
-Observations (student names removed):
-- ${notesText}
-
-${avoidText}
-
-Identify 3 SEL lesson topics that would benefit this class based on recurring patterns you see across multiple observations. If you only see 1-2 notes, still suggest relevant topics based on what you observe.
-
-RULES:
-- Focus on whole-class dynamics and teachable moments, not individual incidents
-- Lessons must require only standard classroom supplies (paper, pencil, whiteboard — no special equipment)
-- Be specific: "Managing frustration when work feels hard" beats "Emotions"
-- One topic can celebrate something positive if you see it
-
-Return JSON:
-{"topics":[{"title":"Short lesson title (6 words max)","theme":"One SEL theme word (Empathy, Conflict, Focus, Belonging, Respect, Kindness, etc.)","rationale":"One sentence explaining why this fits the observations"}]}`;
-
-  const raw = await callGroq(prompt, true, undefined, 'suggest_sel_topics');
-  try {
-    const parsed = JSON.parse(raw);
-    const topics = Array.isArray(parsed.topics) ? parsed.topics : Array.isArray(parsed) ? parsed : [];
-    return topics.slice(0, 3) as SELTopic[];
-  } catch {
-    return [];
-  }
-}
-
-export async function quickParentNote(notes: Note[], teacherTitle: string, teacherLastName: string, studentName: string, shoutouts: Shoutout[] = [], studentPronouns?: string | null): Promise<{ note: string; pronounInfo: PronounInfo }> {
-  const firstName = studentName.split(' ')[0];
-  const pronounInfo = getStudentPronounInfo(firstName, studentPronouns);
-  const pronounInstruction = buildPronounInstruction(pronounInfo);
-  const notesText = notes.map(n => {
-    const tagStr = n.tags?.length ? `[${n.tags.join(', ')}]` : '';
-    return [n.content, tagStr].filter(Boolean).join(' ');
-  }).join('\n- ');
-  const shoutoutsText = shoutouts.length > 0
-    ? '\n\nPositive shoutouts for this student:\n- ' +
-      shoutouts.map(s => `${s.category ? `[${s.category}] ` : ''}${s.content}`).join('\n- ')
-    : '';
-  const signOff = teacherLastName.trim()
-    ? `${teacherTitle} ${teacherLastName}`
-    : 'Your Child\'s Teacher';
-
-  const prompt = `You are a teacher writing a short, direct parent note about a student named ${firstName}.
-
-Observations:
-- ${notesText}${shoutoutsText}
-
-RULES:
-- Write 1–3 sentences starting with "Dear Family,"
-- State only the facts from the observations — no Glow/Grow/Goal, no goals, no framework
-- Be warm but direct
-- IMPORTANT: ${pronounInstruction}
-- If the overall tone of the observations is POSITIVE (no concerns at all): end with exactly this line on a new line: "I am very proud and thought you would be too! — ${signOff}"
-- If the overall tone is NEGATIVE or CONCERNING (no positives): end with exactly this line on a new line: "I wanted to make sure you were informed. Please don't hesitate to reach out if you'd like to talk. — ${signOff}"
-- If the tone is MIXED (both positives and concerns present): end with exactly this line on a new line: "There's been some good and some things we're still working on — just wanted to keep you in the loop. — ${signOff}"
-- IMPORTANT: If any other student's name appears in the observations (any name that is NOT "${firstName}"), replace it with "another student" in the note — EXCEPT names preceded by a title like Mr., Mrs., Miss, Ms., Dr., Coach, etc., which are teachers or staff and should be kept as-is
-- Do NOT include any labels like "Positive:" or "Note:" — just output the message directly
-- Do NOT add any extra commentary, headers, or explanation`;
-
-  const note = stripEmDashes(await callGroq(prompt, false, undefined, 'quick_parent_note'));
-  return { note, pronounInfo };
-}
-
-export async function suggestGoals(studentName: string, notes: Note[]): Promise<Array<{ category: GoalCategory; goal_text: string }>> {
-  if (notes.length === 0) return [];
-
-  const firstName = studentName.split(' ')[0];
-  const noteSummary = notes
-    .slice(0, 20)
-    .map(n => `- ${n.content}`)
-    .join('\n');
-
-  const prompt = `You are helping a 3rd grade teacher set SMART goals for a student named ${firstName}.
-
-Here are the teacher's recent observation notes about this student:
-${noteSummary}
-
-Based on these notes, suggest exactly 3 goals for this student. Each goal should:
-- Start with "I can..." (student-facing language)
-- Be specific and achievable within 2–4 weeks
-- Be appropriate for a 3rd grader
-- Avoid "failure" language — keep it positive and growth-focused
-
-Use these categories:
-- "academic": reading, math, writing, or subject-specific skills
-- "social-emotional": self-regulation, peer interactions, emotional awareness
-- "executive-functioning": organization, transitions, task completion, focus
-- "other": personal interest or a goal that doesn't fit above
-
-Return JSON only:
-{"goals":[{"category":"academic","goal_text":"I can..."},{"category":"social-emotional","goal_text":"I can..."},{"category":"executive-functioning","goal_text":"I can..."}]}`;
-
-  const raw = await callGroq(prompt, true, undefined, 'suggest_goals');
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed.goals)) return [];
-    return parsed.goals.filter((g: any) =>
-      g.category && g.goal_text &&
-      ['academic', 'social-emotional', 'executive-functioning', 'other'].includes(g.category)
-    );
-  } catch {
-    return [];
-  }
-}
-
-export async function generateSELLesson(topic: SELTopic): Promise<SELLesson | null> {
-  const prompt = `Generate a 15-minute SEL micro-lesson for an elementary/middle school classroom.
-
-Topic: "${topic.title}"
-Theme: ${topic.theme}
-
-STRICT REQUIREMENTS:
-- Total time: exactly 15 minutes (3-minute opener + 10-minute activity + 2-minute exit ticket)
-- Materials: standard classroom supplies ONLY (paper, pencil, whiteboard, sticky notes — no special equipment)
-- Language appropriate for K-8 students
-- Easy for one teacher to run with zero prep
-- Practical and immediately usable
-
-Return JSON:
-{"materials":["item1","item2"],"opener":"Detailed 3-minute warm-up or discussion starter","activity":"Step-by-step 10-minute main activity","exitTicket":"2-minute reflection or exit ticket description"}`;
-
-  const raw = await callGroq(prompt, true, undefined, 'generate_sel_lesson');
-  try {
-    const parsed = JSON.parse(raw);
-    const { materials, opener, activity, exitTicket } = parsed;
-    if (!opener || !activity || !exitTicket) return null;
-    return { materials: Array.isArray(materials) ? materials : [], opener, activity, exitTicket };
-  } catch {
-    return null;
-  }
-}
-
-export async function parseBirthdays(text: string, studentNames: string[] = []): Promise<Array<{ studentName: string; matchedName: string | null; birthMonth: number; birthDay: number }>> {
-  const rosterSection = studentNames.length > 0
-    ? `\nStudent roster — try to match each name to one of these (handle nicknames, first names only, last initials, etc.):\n${studentNames.join('\n')}`
-    : '';
-
-  const prompt = `Parse this list of student birthdays. The text may be messy — names and dates in any format.${rosterSection}
-
-"${text}"
-
-Return a JSON object with a "birthdays" array. Each entry must have:
-- studentName: string (the name as written in the input)
-- matchedName: string or null (the best matching full name from the roster above, or null if no confident match)
-- birthMonth: integer 1–12
-- birthDay: integer 1–31
-
-Use fuzzy matching: "Mike" → "Michael Chen", "Sam J." → "Samantha Johnson", "Emma" → "Emma Davis".
-Only include entries where you are confident about the date.
-Example: {"birthdays":[{"studentName":"Mike","matchedName":"Michael Chen","birthMonth":3,"birthDay":14}]}`;
-
-  const raw = await callGroq(prompt, true, undefined, 'parse_birthdays');
-  try {
-    const parsed = JSON.parse(raw || '{}');
-    const arr = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.birthdays) ? parsed.birthdays : []);
-    return arr.filter((b: any) =>
-      typeof b.studentName === 'string' &&
-      Number.isInteger(b.birthMonth) && b.birthMonth >= 1 && b.birthMonth <= 12 &&
-      Number.isInteger(b.birthDay) && b.birthDay >= 1 && b.birthDay <= 31
-    );
-  } catch {
-    return [];
-  }
+  const result = await safeGenerateContent({ prompt });
+  return (result || '').trim();
 }

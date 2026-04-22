@@ -1,8 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
-  ClipboardList, Copy, Download, X, Plus, GripVertical, Palette
+  ClipboardList, Copy, Download, X, Plus, CheckCircle2, GripVertical, Palette
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
@@ -49,41 +49,6 @@ export default function TaskDrawer({
   const [activeColorMenuId, setActiveColorMenuId] = useState<string | null>(null);
   const [taskUndoToast, setTaskUndoToast] = useState<{ label: string; onUndo: () => void } | null>(null);
   const taskUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [localOrder, setLocalOrder] = useState<string[]>(() => tasks.map(t => t.id));
-  const [hiddenTaskIds, setHiddenTaskIds] = useState<Set<string>>(new Set());
-
-  // Keep localOrder in sync when tasks are added/removed externally
-  useEffect(() => {
-    setLocalOrder(prev => {
-      const existingIds = new Set(prev);
-      const newIds = tasks.filter(t => !existingIds.has(t.id)).map(t => t.id);
-      const filtered = prev.filter(id => tasks.some(t => t.id === id));
-      return [...newIds, ...filtered];
-    });
-  }, [tasks]);
-
-  const orderedTasks = (localOrder.length > 0 ? localOrder : tasks.map(t => t.id))
-    .map(id => tasks.find(t => t.id === id))
-    .filter((t): t is Task => !!t && !hiddenTaskIds.has(t.id));
-
-  const hideWithUndo = (id: string, label: string) => {
-    setHiddenTaskIds(prev => new Set([...prev, id]));
-    if (taskUndoTimerRef.current) clearTimeout(taskUndoTimerRef.current);
-    const timer = setTimeout(() => {
-      deleteTask(id);
-      setTaskUndoToast(null);
-      setHiddenTaskIds(prev => { const s = new Set(prev); s.delete(id); return s; });
-    }, 5000);
-    taskUndoTimerRef.current = timer;
-    setTaskUndoToast({
-      label,
-      onUndo: () => {
-        clearTimeout(timer);
-        setTaskUndoToast(null);
-        setHiddenTaskIds(prev => { const s = new Set(prev); s.delete(id); return s; });
-      },
-    });
-  };
 
   const handleAddTask = async () => {
     if (!newTaskText.trim()) return;
@@ -100,8 +65,18 @@ export default function TaskDrawer({
     setActiveColorMenuId(null);
   };
 
-  const handleToggleTask = (id: string) => {
-    hideWithUndo(id, 'Task completed! ✓');
+  const handleToggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      await updateTask(id, { completed: !task.completed });
+    }
+  };
+
+  const handleClearCompleted = async () => {
+    const completedTasks = tasks.filter(t => t.completed).map(t => t.id);
+    for (const taskId of completedTasks) {
+      await deleteTask(taskId);
+    }
   };
 
   const handleStartEditingTask = (task: Task) => {
@@ -141,12 +116,13 @@ export default function TaskDrawer({
     doc.save('tasks.pdf');
   };
 
-  const handleOnDragEnd = (result: any) => {
+  const handleOnDragEnd = async (result: any) => {
     if (!result.destination) return;
-    const newOrder = orderedTasks.map(t => t.id);
-    const [moved] = newOrder.splice(result.source.index, 1);
-    newOrder.splice(result.destination.index, 0, moved);
-    setLocalOrder(newOrder);
+    const items = Array.from(tasks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    // Note: This reorders in state, but Supabase doesn't support custom ordering yet
+    // This will reset on refresh. Consider adding an "order" field to tasks table if needed.
   };
 
   return (
@@ -172,7 +148,7 @@ export default function TaskDrawer({
                   <div className="p-2 bg-sage/10 rounded-xl">
                     <ClipboardList className="w-5 h-5 text-sage" />
                   </div>
-                  <h2 className="text-2xl font-black text-sage" style={{ WebkitTextStroke: '0.6px rgba(0,0,0,0.35)' }}>Daily Tasks</h2>
+                  <h2 className="text-lg font-bold text-sage-dark">Daily Tasks</h2>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={handleCopyTasks} title="Copy to clipboard" className="p-2 text-slate-400 hover:text-sage rounded-full transition-colors">
@@ -205,7 +181,7 @@ export default function TaskDrawer({
               </div>
 
               <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-                {orderedTasks.length === 0 ? (
+                {tasks.length === 0 ? (
                   <div className="text-center py-10 opacity-50">
                     <p className="text-xs font-medium text-slate-400">All caught up!</p>
                   </div>
@@ -214,16 +190,16 @@ export default function TaskDrawer({
                     <Droppable droppableId="tasks-list">
                       {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                          {orderedTasks.map((task, index) => (
+                          {tasks.map((task, index) => (
                             <Draggable key={task.id} {...({ draggableId: task.id, index } as any)}>
                               {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   className={cn(
-                                    "group flex items-start gap-3 p-4 rounded-[32px] border-2 transition-all relative hover:shadow-md",
-                                    TASK_COLORS[task.color || 'default'].bg,
-                                    TASK_COLORS[task.color || 'default'].border,
+                                    "group flex items-start gap-3 p-4 rounded-[32px] border-2 transition-all relative",
+                                    task.completed ? "bg-slate-50/50 border-slate-100 shadow-none hover:shadow-none" : (TASK_COLORS[task.color || 'default'].bg + " " + TASK_COLORS[task.color || 'default'].border),
+                                    !task.completed && "hover:shadow-md",
                                     snapshot.isDragging && "shadow-xl border-sage/40 ring-2 ring-sage/10 scale-[1.02] z-[100] cursor-grabbing"
                                   )}
                                 >
@@ -235,11 +211,16 @@ export default function TaskDrawer({
                                     <div className="flex flex-col items-center gap-2 mt-0.5 shrink-0">
                                       <button
                                         onClick={() => handleToggleTask(task.id)}
-                                        className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all bg-white border-slate-200 hover:border-sage"
+                                        className={cn(
+                                          "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                          task.completed ? "bg-sage border-sage text-white" : "bg-white border-slate-200"
+                                        )}
                                       >
+                                        {task.completed && <CheckCircle2 className="w-3.5 h-3.5" />}
                                       </button>
 
-                                      <div className="relative">
+                                      {!task.completed && (
+                                        <div className="relative">
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -276,9 +257,10 @@ export default function TaskDrawer({
                                             </div>
                                           )}
                                         </div>
+                                      )}
                                     </div>
 
-                                    <div className="flex-1 min-w-0" onClick={() => handleStartEditingTask(task)}>
+                                    <div className="flex-1 min-w-0" onClick={() => !task.completed && handleStartEditingTask(task)}>
                                       {editingTaskId === task.id ? (
                                         <textarea
                                           autoFocus
@@ -295,11 +277,14 @@ export default function TaskDrawer({
                                         />
                                       ) : (
                                         <div className="flex flex-col gap-1">
-                                          <p className="text-sm font-bold cursor-pointer transition-all break-words leading-relaxed text-slate-800">
+                                          <p className={cn(
+                                            "text-xs font-medium cursor-pointer transition-all break-words leading-relaxed",
+                                            task.completed ? "text-slate-400 line-through" : "text-slate-900"
+                                          )}>
                                             {task.text}
                                           </p>
                                           {!task.completed && (
-                                            <span className="text-[11px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">Click to edit</span>
+                                            <span className="text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">Click to edit</span>
                                           )}
                                         </div>
                                       )}
@@ -307,7 +292,15 @@ export default function TaskDrawer({
                                   </div>
 
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); hideWithUndo(task.id, 'Task deleted'); }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const snapshot = { ...task };
+                                      if (taskUndoTimerRef.current) clearTimeout(taskUndoTimerRef.current);
+                                      setTaskUndoToast({ label: 'Task deleted', onUndo: () => {} });
+                                      const timer = setTimeout(() => { deleteTask(snapshot.id); setTaskUndoToast(null); }, 5000);
+                                      taskUndoTimerRef.current = timer;
+                                      setTaskUndoToast({ label: 'Task deleted', onUndo: () => { clearTimeout(timer); setTaskUndoToast(null); } });
+                                    }}
                                     className="mt-0.5 p-1 text-slate-300 hover:text-terracotta transition-colors"
                                   >
                                     <X className="w-4 h-4" />
@@ -324,27 +317,35 @@ export default function TaskDrawer({
                 )}
               </div>
 
-              <AnimatePresence>
-                {taskUndoToast && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className="mt-4 flex items-center justify-between bg-slate-800 text-white px-4 py-3 rounded-2xl"
-                  >
-                    <span className="text-xs font-medium">{taskUndoToast.label}</span>
-                    <button
-                      onClick={() => { taskUndoToast.onUndo(); setTaskUndoToast(null); }}
-                      className="text-teal-400 font-bold text-xs hover:text-teal-300 transition-colors ml-4"
-                    >
-                      Undo
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
+              {tasks.some(t => t.completed) && (
+                <button
+                  onClick={handleClearCompleted}
+                  className="mt-6 w-full py-3 text-[11px] font-bold text-slate-400 hover:text-terracotta transition-colors border border-dashed border-slate-200 rounded-xl"
+                >
+                  Clear Completed
+                </button>
+              )}
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {taskUndoToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-full flex items-center gap-4 shadow-xl z-50"
+          >
+            <span className="text-sm font-medium">{taskUndoToast.label}</span>
+            <button
+              onClick={() => { taskUndoToast.onUndo(); setTaskUndoToast(null); }}
+              className="text-teal-400 font-bold text-sm hover:text-teal-300 transition-colors"
+            >
+              Undo
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </>
