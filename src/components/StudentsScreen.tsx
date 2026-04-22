@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Mail, LayoutGrid, Map } from 'lucide-react';
 import { toast } from 'sonner';
@@ -307,7 +307,7 @@ export default function StudentsScreen({
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [attendanceDate, setAttendanceDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
-  const toggleAttendanceStudent = useCallback((id: string) => {
+  const toggleAttendanceStudent = (id: string) => {
     setAttendanceSelections(prev => {
       const current = prev[id];
       if (!current) return { ...prev, [id]: 'absent' };
@@ -316,7 +316,7 @@ export default function StudentsScreen({
       delete next[id];
       return next;
     });
-  }, []);
+  };
 
   const cancelAttendanceMode = () => {
     setAttendanceMode(false);
@@ -370,7 +370,7 @@ export default function StudentsScreen({
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didPin = useRef(false);
 
-  const startPress = useCallback((id: string) => {
+  const startPress = (id: string) => {
     didPin.current = false;
     setPressingId(id);
     pressTimer.current = setTimeout(() => {
@@ -381,12 +381,12 @@ export default function StudentsScreen({
       const student = students.find(s => s.id === id);
       if (student) toast(willBePinned ? `📌 ${getDisplayFirst(student, aliasMode)} pinned to top` : `${getDisplayFirst(student, aliasMode)} unpinned`);
     }, 2000);
-  }, [pinnedIds, students, aliasMode]);
+  };
 
-  const cancelPress = useCallback(() => {
+  const cancelPress = () => {
     if (pressTimer.current) clearTimeout(pressTimer.current);
     setPressingId(null);
-  }, []);
+  };
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiQuery, setAiQuery] = useState('');
@@ -522,17 +522,13 @@ export default function StudentsScreen({
     'bg-cyan-100 text-cyan-600 border-cyan-200'
   ];
 
-  const avatarColorByName = useMemo(() => {
-    const map: Record<string, string> = {};
-    students.forEach(s => {
-      let hash = 0;
-      for (let i = 0; i < s.name.length; i++) {
-        hash = s.name.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      map[s.name] = avatarColors[Math.abs(hash) % avatarColors.length];
-    });
-    return map;
-  }, [students]);
+  const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return avatarColors[Math.abs(hash) % avatarColors.length];
+  };
 
   // Per-student last-note lookup for status rings
   const lastNoteByStudent = useMemo(() => {
@@ -541,16 +537,6 @@ export default function StudentsScreen({
       if (!n.student_name) return;
       const d = new Date(n.created_at);
       if (!map[n.student_name] || d > map[n.student_name]) map[n.student_name] = d;
-    });
-    return map;
-  }, [notes]);
-
-  // Per-student note count for grid display
-  const noteCountByStudent = useMemo(() => {
-    const map: Record<string, number> = {};
-    notes.forEach(n => {
-      if (!n.student_name) return;
-      map[n.student_name] = (map[n.student_name] ?? 0) + 1;
     });
     return map;
   }, [notes]);
@@ -679,61 +665,39 @@ export default function StudentsScreen({
     }
   };
 
-  const searchLower = useMemo(() => searchQuery.toLowerCase(), [searchQuery]);
-
-  const filteredStudents = useMemo(() => students.filter(s => {
+  const filteredStudents = students.filter(s => {
     const section = s.class_period || s.class_id;
     const matchesFilter = filter === 'All' || section === filter;
-    const matchesSearch = s.name.toLowerCase().includes(searchLower);
+    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
-  }), [students, filter, searchLower]);
+  });
 
-  const weekMs = 7 * 86400000;
+  // Group students by section
+  const groupedStudents = filteredStudents.reduce((acc, student) => {
+    const section = student.class_period || student.class_id || 'Unassigned';
+    if (!acc[section]) acc[section] = [];
+    acc[section].push(student);
+    return acc;
+  }, {} as Record<string, Student[]>);
 
-  const thisWeekNotesBySection = useMemo(() => {
-    const now = Date.now();
-    const result: Record<string, number> = {};
-    // Build name→section lookup first
-    const nameToSection: Record<string, string> = {};
-    students.forEach(s => {
-      const section = s.class_period || s.class_id || 'Unassigned';
-      nameToSection[s.name] = section;
-    });
-    notes.forEach(n => {
-      if (!n.student_name) return;
-      if (now - new Date(n.created_at).getTime() >= weekMs) return;
-      const section = nameToSection[n.student_name];
-      if (!section) return;
-      result[section] = (result[section] ?? 0) + 1;
-    });
-    return result;
-  }, [students, notes]);
+  const sections = Object.keys(groupedStudents).sort();
 
-  const { groupedStudents, sections } = useMemo(() => {
-    const sortKey = (name: string) => {
-      const parts = name.trim().split(/\s+/);
-      return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : parts[0].toLowerCase();
-    };
-    const pinnedOrder = [...pinnedIds];
-    const grouped = filteredStudents.reduce((acc, student) => {
-      const section = student.class_period || student.class_id || 'Unassigned';
-      if (!acc[section]) acc[section] = [];
-      acc[section].push(student);
-      return acc;
-    }, {} as Record<string, Student[]>);
-    const secs = Object.keys(grouped).sort();
-    secs.forEach(section => {
-      grouped[section].sort((a, b) => {
-        const aPinned = pinnedIds.has(a.id);
-        const bPinned = pinnedIds.has(b.id);
-        if (aPinned && bPinned) return pinnedOrder.indexOf(a.id) - pinnedOrder.indexOf(b.id);
-        if (aPinned) return -1;
-        if (bPinned) return 1;
-        return sortKey(a.name).localeCompare(sortKey(b.name));
-      });
+  // Sort students within each section: pinned first (by pin order), then alphabetical by last name
+  const sortKey = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : parts[0].toLowerCase();
+  };
+  const pinnedOrder = [...pinnedIds]; // preserve insertion order
+  sections.forEach(section => {
+    groupedStudents[section].sort((a, b) => {
+      const aPinned = pinnedIds.has(a.id);
+      const bPinned = pinnedIds.has(b.id);
+      if (aPinned && bPinned) return pinnedOrder.indexOf(a.id) - pinnedOrder.indexOf(b.id);
+      if (aPinned) return -1;
+      if (bPinned) return 1;
+      return sortKey(a.name).localeCompare(sortKey(b.name));
     });
-    return { groupedStudents: grouped, sections: secs };
-  }, [filteredStudents, pinnedIds]);
+  });
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
@@ -969,7 +933,11 @@ export default function StudentsScreen({
       <div className="space-y-8">
         {sections.map((section, sIdx) => {
           const palette = CLASS_PALETTE[sIdx % CLASS_PALETTE.length];
-          const thisWeekNotes = thisWeekNotesBySection[section] ?? 0;
+          const sectionNotes = notes.filter(n => {
+            const st = groupedStudents[section].find(s => s.name === n.student_name);
+            return !!st;
+          });
+          const thisWeekNotes = sectionNotes.filter(n => Date.now() - new Date(n.created_at).getTime() < 7 * 86400000).length;
           return (
             <div key={section} className="space-y-3">
               {/* Colorful section header */}
@@ -994,7 +962,7 @@ export default function StudentsScreen({
               <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 gap-2">
                 {groupedStudents[section].map(s => {
                   const status = getStudentStatus(s.name);
-                  const noteCount = noteCountByStudent[s.name] ?? 0;
+                  const noteCount = notes.filter(n => n.student_name === s.name).length;
                   const isPinned = pinnedIds.has(s.id);
                   const isPressing = pressingId === s.id;
                   const attendanceSel = attendanceSelections[s.id];
@@ -1053,7 +1021,7 @@ export default function StudentsScreen({
                       {s.photo_url ? (
                         <img src={s.photo_url} alt={s.name} className={cn('w-10 h-10 rounded-full object-cover', !attendanceMode && statusRing[status])} />
                       ) : (
-                        <div className={cn('w-10 h-10 rounded-full flex items-center justify-center border text-lg', avatarColorByName[s.name], !attendanceMode && statusRing[status])} style={{ fontFamily: "'Boogaloo', cursive" }}>
+                        <div className={cn('w-10 h-10 rounded-full flex items-center justify-center border text-lg', getAvatarColor(s.name), !attendanceMode && statusRing[status])} style={{ fontFamily: "'Boogaloo', cursive" }}>
                           {aliasMode ? getDisplayName(s, true).substring(0, 2).toUpperCase() : s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                       )}

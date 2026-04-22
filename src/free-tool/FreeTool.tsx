@@ -197,7 +197,7 @@ export default function FreeTool() {
   }
 
   function reset() {
-    setResult(''); setName(''); setSelected(new Set()); setExtra(''); setRefineInstructions(''); setError(''); setTone('casual'); setLength('medium');
+    setResult(''); setName(''); setSelected(new Set()); setExtra(''); setRefineInstructions(''); setError(''); setTone('casual');
   }
 
   return (
