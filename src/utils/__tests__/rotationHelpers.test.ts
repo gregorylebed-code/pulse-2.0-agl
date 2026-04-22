@@ -150,6 +150,68 @@ describe('getRotationForDate — rolling mode', () => {
   });
 });
 
+// ─── todayOverride ────────────────────────────────────────────────────────────
+
+describe('getRotationForDate — todayOverride', () => {
+  // Build today's key the same way the source does.
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  it('override fires for today in letter-day mode', () => {
+    // Skip on weekends — override only fires on weekdays.
+    if (today.getDay() === 0 || today.getDay() === 6) return;
+    const config: SpecialsConfig = {
+      ...BASE_CONFIG,
+      mode: 'letter-day',
+      rotationMapping: { [todayKey]: 'A' },
+      todayOverride: { date: todayKey, letter: 'C' },
+    };
+    const result = getRotationForDate(today, config);
+    expect(result).toEqual({ letter: 'C', special: 'Music' });
+  });
+
+  it('override fires for today in rolling mode', () => {
+    if (today.getDay() === 0 || today.getDay() === 6) return;
+    const config: SpecialsConfig = {
+      ...BASE_CONFIG,
+      mode: 'rolling',
+      rollingStartDate: todayKey,
+      todayOverride: { date: todayKey, letter: 'B' },
+    };
+    const result = getRotationForDate(today, config);
+    expect(result).toEqual({ letter: 'B', special: 'PE' });
+  });
+
+  it('override does NOT fire for a past date', () => {
+    const pastDate = localDate(2024, 9, 9); // fixed weekday in the past
+    const config: SpecialsConfig = {
+      ...BASE_CONFIG,
+      mode: 'letter-day',
+      rotationMapping: { '2024-09-09': 'A' },
+      todayOverride: { date: '2024-09-09', letter: 'C' },
+    };
+    // Override only fires when dateKey === todayKey, which won't match a past date today.
+    const result = getRotationForDate(pastDate, config);
+    // Either the override didn't fire (returns A from mapping) or null — not C.
+    expect(result?.letter).not.toBe('C');
+  });
+
+  it('override does NOT fire in day-of-week mode', () => {
+    if (today.getDay() === 0 || today.getDay() === 6) return;
+    const dowKey = String(today.getDay());
+    const config: SpecialsConfig = {
+      ...BASE_CONFIG,
+      mode: 'day-of-week',
+      dayOfWeekSpecials: { [dowKey]: 'Art' },
+      todayOverride: { date: todayKey, letter: 'C' },
+    };
+    const result = getRotationForDate(today, config);
+    // Should return the day-of-week result, not the override letter C
+    expect(result?.special).toBe('Art');
+  });
+});
+
 // ─── getForecast ──────────────────────────────────────────────────────────────
 
 describe('getForecast', () => {
