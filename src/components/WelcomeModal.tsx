@@ -114,7 +114,7 @@ export default function WelcomeModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 pb-28 sm:pb-4"
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 pb-6 sm:pb-4 overflow-y-auto"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}
         >
           <motion.div
@@ -123,7 +123,7 @@ export default function WelcomeModal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="w-full max-w-md bg-white rounded-[32px] overflow-hidden shadow-2xl"
+            className="w-full max-w-md bg-white rounded-[32px] overflow-hidden shadow-2xl my-auto"
           >
             {screen === 'main' ? (
               <>
