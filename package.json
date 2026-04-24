@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
+    "test": "vitest run",
     "lint": "tsc --noEmit",
     "remotion:studio": "remotion studio src/remotion/index.tsx",
     "remotion:render": "remotion render src/remotion/index.tsx ShortHandPromo out/ShortHandPromo.mp4"
@@ -50,6 +51,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^4.1.5"
   }
 }

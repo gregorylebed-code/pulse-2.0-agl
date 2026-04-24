@@ -72,7 +72,17 @@
       "Bash(cp \"c:/projects/pulse 2.0/public/Shorthand Logo White.png\" \"c:/projects/shorthand-video/public/logo.png\")",
       "Bash(cp \"c:/projects/pulse 2.0/public/Google class import.jpg\" \"c:/projects/shorthand-video/public/google-import.jpg\")",
       "Bash(cp \"c:/projects/pulse 2.0/public/settings screen.jpg\" \"c:/projects/shorthand-video/public/settings.jpg\")",
-      "Bash(cp \"c:/projects/pulse 2.0/public/batch import screen.jpg\" \"c:/projects/shorthand-video/public/batch-import.jpg\")"
+      "Bash(cp \"c:/projects/pulse 2.0/public/batch import screen.jpg\" \"c:/projects/shorthand-video/public/batch-import.jpg\")",
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "WebSearch(*)",
+      "WebFetch(*)",
+      "Bash(powershell:*)",
+      "Bash(powershell *)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
     ],
     "additionalDirectories": [
       "c:\\projects\\pulse 2.0 website",
