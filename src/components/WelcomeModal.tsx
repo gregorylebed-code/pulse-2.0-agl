@@ -114,7 +114,7 @@ export default function WelcomeModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 pb-6 sm:pb-4 overflow-y-auto"
+          className="fixed inset-0 z-[200] overflow-y-auto flex justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}
         >
           <motion.div
