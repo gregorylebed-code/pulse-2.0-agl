@@ -1085,26 +1085,25 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         )}
 
         {/* ── Quick Tags ───────────────────────────────────────────────────────── */}
-        {quickTags.length > 0 && (
+        {quickTags.filter((t: string) => !favoriteTags.includes(t)).length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2">
             <span className="w-full text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Frequently Used</span>
-            {quickTags.map(tag => {
+            {quickTags.filter((t: string) => !favoriteTags.includes(t)).map((tag: string) => {
               const isSelected = selectedTags.includes(tag);
               const indicator = indicators.find(i => i.label === tag);
               const type = indicator?.type || 'neutral';
               const colors = {
-                positive: isSelected ? 'bg-sage border-sage text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-sage/40',
-                growth: isSelected ? 'bg-terracotta border-terracotta text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-terracotta/40',
-                neutral: isSelected ? 'bg-slate-500 border-slate-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                positive: isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100',
+                growth: isSelected ? 'bg-rose-500 border-rose-500 text-white' : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100',
+                neutral: isSelected ? 'bg-amber-400 border-amber-400 text-white' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100',
               };
-              
               return (
                 <button
                   key={tag}
                   onClick={() => toggleTag(tag)}
                   className={cn(
                     "px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all flex items-center gap-1.5",
-                    colors[type]
+                    colors[type as keyof typeof colors] ?? colors.neutral
                   )}
                 >
                   {type === 'positive' && <Smile className="w-3 h-3" />}
@@ -1137,9 +1136,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 const indicator = indicators.find((i: any) => i.label === tag);
                 const type: string = indicator?.type || 'neutral';
                 const colors: Record<string, string> = {
-                  positive: isSelected ? 'bg-sage border-sage text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-sage/40',
-                  growth: isSelected ? 'bg-terracotta border-terracotta text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-terracotta/40',
-                  neutral: isSelected ? 'bg-slate-500 border-slate-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300',
+                  positive: isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100',
+                  growth: isSelected ? 'bg-rose-500 border-rose-500 text-white' : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100',
+                  neutral: isSelected ? 'bg-amber-400 border-amber-400 text-white' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100',
                 };
                 return (
                   <button
