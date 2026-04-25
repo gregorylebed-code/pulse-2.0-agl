@@ -1570,9 +1570,11 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            className="w-full max-w-lg bg-white rounded-t-[32px] px-6 pt-5 pb-10 max-h-[80vh] overflow-y-auto"
+            className="w-full max-w-lg bg-white rounded-t-[32px] flex flex-col"
+            style={{ maxHeight: '85vh' }}
           >
-            <div className="flex items-center justify-between mb-4">
+            {/* Sticky header */}
+            <div className="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
               <div>
                 <h3 className="text-base font-black text-slate-800">Edit Favorites</h3>
                 <p className="text-[11px] text-slate-400 font-medium mt-0.5">Tap to add/remove · max 6</p>
@@ -1581,41 +1583,44 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                 <X className="w-5 h-5" />
               </button>
             </div>
-            {([
-              { key: 'positive' as const, label: 'Positive', items: indicators.filter((b: any) => b.type === 'positive') },
-              { key: 'neutral' as const, label: 'Neutral', items: indicators.filter((b: any) => b.type === 'neutral') },
-              { key: 'growth' as const, label: 'Growth Areas', items: indicators.filter((b: any) => b.type === 'growth') },
-            ] as const).map(cat => (
-              <div key={cat.key} className="mb-4">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{cat.label}</p>
-                <div className="flex flex-wrap gap-2">
-                  {cat.items.map((b: any) => {
-                    const isFav = favoriteTags.includes(b.label);
-                    const atMax = !isFav && favoriteTags.length >= 6;
-                    const typeColors: Record<string, string> = {
-                      positive: isFav ? 'bg-sage border-sage text-white' : 'bg-emerald-50 border-emerald-200 text-emerald-700',
-                      neutral: isFav ? 'bg-slate-500 border-slate-500 text-white' : 'bg-amber-50 border-amber-200 text-amber-700',
-                      growth: isFav ? 'bg-terracotta border-terracotta text-white' : 'bg-rose-50 border-rose-200 text-rose-700',
-                    };
-                    return (
-                      <button
-                        key={b.label}
-                        type="button"
-                        onClick={() => !atMax && toggleFavorite(b.label)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-xl text-[12px] font-bold border-2 transition-all flex items-center gap-1",
-                          typeColors[cat.key],
-                          atMax && 'opacity-40 cursor-not-allowed'
-                        )}
-                      >
-                        <span className="text-sm leading-none">{b.icon}</span> {b.label}
-                        {isFav && <X className="w-3 h-3 ml-0.5" />}
-                      </button>
-                    );
-                  })}
+            {/* Scrollable tag list */}
+            <div className="overflow-y-auto flex-1 px-6 pb-10">
+              {([
+                { key: 'positive' as const, label: 'Positive', items: indicators.filter((b: any) => b.type === 'positive') },
+                { key: 'neutral' as const, label: 'Neutral', items: indicators.filter((b: any) => b.type === 'neutral') },
+                { key: 'growth' as const, label: 'Growth Areas', items: indicators.filter((b: any) => b.type === 'growth') },
+              ] as const).map(cat => (
+                <div key={cat.key} className="mb-4">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{cat.label}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {cat.items.map((b: any) => {
+                      const isFav = favoriteTags.includes(b.label);
+                      const atMax = !isFav && favoriteTags.length >= 6;
+                      const typeColors: Record<string, string> = {
+                        positive: isFav ? 'bg-sage border-sage text-white' : 'bg-emerald-50 border-emerald-200 text-emerald-700',
+                        neutral: isFav ? 'bg-slate-500 border-slate-500 text-white' : 'bg-amber-50 border-amber-200 text-amber-700',
+                        growth: isFav ? 'bg-terracotta border-terracotta text-white' : 'bg-rose-50 border-rose-200 text-rose-700',
+                      };
+                      return (
+                        <button
+                          key={b.label}
+                          type="button"
+                          onClick={() => !atMax && toggleFavorite(b.label)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-xl text-[12px] font-bold border-2 transition-all flex items-center gap-1",
+                            typeColors[cat.key],
+                            atMax && 'opacity-40 cursor-not-allowed'
+                          )}
+                        >
+                          <span className="text-sm leading-none">{b.icon}</span> {b.label}
+                          {isFav && <X className="w-3 h-3 ml-0.5" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </motion.div>
         </div>,
         document.body
