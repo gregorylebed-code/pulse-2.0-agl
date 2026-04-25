@@ -74,9 +74,9 @@ const DEFAULT_INDICATORS: Indicator[] = [
   { label: 'Emotional Regulation', type: 'growth', icon_name: 'Frown' },
   { label: 'Peer Conflict', type: 'growth', icon_name: 'Frown' },
   { label: 'Social Difficulty', type: 'growth', icon_name: 'Frown' },
-  { label: 'Unprepared/Incomplete', type: 'growth', icon_name: 'Frown' },
+  { label: 'Unprepared', type: 'growth', icon_name: 'Frown' },
   { label: 'Redirected', type: 'growth', icon_name: 'Frown' },
-  { label: 'Technology Misuse', type: 'growth', icon_name: 'Frown' },
+  { label: 'Tech Misuse', type: 'growth', icon_name: 'Frown' },
 ];
 
 const DEFAULT_SPECIALS: Record<string, string> = {
