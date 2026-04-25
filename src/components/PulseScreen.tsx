@@ -268,6 +268,19 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
       .map(entry => entry[0]);
   }, [notes, selectedStudent]);
 
+  const [favoriteTags, setFavoriteTags] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('shorthand_favorite_tags') || '[]'); } catch { return []; }
+  });
+  const [showFavoritesEditor, setShowFavoritesEditor] = useState(false);
+
+  const toggleFavorite = (label: string) => {
+    setFavoriteTags((prev: string[]) => {
+      const next = prev.includes(label) ? prev.filter((t: string) => t !== label) : prev.length < 6 ? [...prev, label] : prev;
+      localStorage.setItem('shorthand_favorite_tags', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const [editContent, setEditContent] = useState('');
   const [editStudentName, setEditStudentName] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
@@ -1103,6 +1116,52 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </div>
         )}
 
+        {/* ── Favorite Tags ── */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Favorites</span>
+            <button
+              type="button"
+              onClick={() => setShowFavoritesEditor(true)}
+              className="text-[10px] font-bold text-slate-400 hover:text-sage transition-colors"
+            >
+              Edit favorites
+            </button>
+          </div>
+          {favoriteTags.length === 0 ? (
+            <p className="text-[11px] text-slate-400 italic px-1">Tap "Edit favorites" to pin your most-used tags here</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {favoriteTags.map(tag => {
+                const isSelected = selectedTags.includes(tag);
+                const indicator = indicators.find((i: any) => i.label === tag);
+                const type: string = indicator?.type || 'neutral';
+                const colors: Record<string, string> = {
+                  positive: isSelected ? 'bg-sage border-sage text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-sage/40',
+                  growth: isSelected ? 'bg-terracotta border-terracotta text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-terracotta/40',
+                  neutral: isSelected ? 'bg-slate-500 border-slate-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300',
+                };
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all flex items-center gap-1.5",
+                      colors[type] ?? colors.neutral
+                    )}
+                  >
+                    {type === 'positive' && <Smile className="w-3 h-3" />}
+                    {type === 'growth' && <Frown className="w-3 h-3" />}
+                    {indicator?.icon && <span className="text-sm leading-none">{indicator.icon}</span>}
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* ── Indicators — accordion by category ── */}
         <div className="space-y-1.5">
           <p className="text-[11px] text-slate-400 font-medium px-1">Tap a behavior label to tag this note — the AI uses these to write parent reports</p>
@@ -1501,6 +1560,66 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Favorites Editor Modal ── */}
+      {showFavoritesEditor && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50" onClick={() => setShowFavoritesEditor(false)}>
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white rounded-t-[32px] px-6 pt-5 pb-10 max-h-[80vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-800">Edit Favorites</h3>
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">Tap to add/remove · max 6</p>
+              </div>
+              <button onClick={() => setShowFavoritesEditor(false)} className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {([
+              { key: 'positive' as const, label: 'Positive', items: indicators.filter((b: any) => b.type === 'positive') },
+              { key: 'neutral' as const, label: 'Neutral', items: indicators.filter((b: any) => b.type === 'neutral') },
+              { key: 'growth' as const, label: 'Growth Areas', items: indicators.filter((b: any) => b.type === 'growth') },
+            ] as const).map(cat => (
+              <div key={cat.key} className="mb-4">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{cat.label}</p>
+                <div className="flex flex-wrap gap-2">
+                  {cat.items.map((b: any) => {
+                    const isFav = favoriteTags.includes(b.label);
+                    const atMax = !isFav && favoriteTags.length >= 6;
+                    const typeColors: Record<string, string> = {
+                      positive: isFav ? 'bg-sage border-sage text-white' : 'bg-emerald-50 border-emerald-200 text-emerald-700',
+                      neutral: isFav ? 'bg-slate-500 border-slate-500 text-white' : 'bg-amber-50 border-amber-200 text-amber-700',
+                      growth: isFav ? 'bg-terracotta border-terracotta text-white' : 'bg-rose-50 border-rose-200 text-rose-700',
+                    };
+                    return (
+                      <button
+                        key={b.label}
+                        type="button"
+                        onClick={() => !atMax && toggleFavorite(b.label)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-[12px] font-bold border-2 transition-all flex items-center gap-1",
+                          typeColors[cat.key],
+                          atMax && 'opacity-40 cursor-not-allowed'
+                        )}
+                      >
+                        <span className="text-sm leading-none">{b.icon}</span> {b.label}
+                        {isFav && <X className="w-3 h-3 ml-0.5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>,
+        document.body
+      )}
     </motion.div>
   );
 }
