@@ -248,25 +248,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
     return count;
   }, [notes]);
 
-  const quickTags = useMemo(() => {
-    const counts: Record<string, number> = {};
-    // If a student is selected, show their top tags; otherwise show global top tags
-    const sourceNotes = selectedStudent
-      ? notes.filter(n => n.student_name === selectedStudent)
-      : notes.filter(n => n.student_id).slice(0, 80);
-    sourceNotes.forEach(n => {
-      n.tags?.forEach(t => {
-        // Skip calendar event tags and ParentSquare/Email/etc
-        if (!t.startsWith('[') && !['ParentSquare', 'Email', 'Phone', 'Meeting'].includes(t)) {
-          counts[t] = (counts[t] || 0) + 1;
-        }
-      });
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(entry => entry[0]);
-  }, [notes, selectedStudent]);
+
 
   const [favoriteTags, setFavoriteTags] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('shorthand_favorite_tags') || '[]'); } catch { return []; }
@@ -1084,37 +1066,6 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           </>
         )}
 
-        {/* ── Quick Tags ───────────────────────────────────────────────────────── */}
-        {quickTags.filter((t: string) => !favoriteTags.includes(t)).length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-2">
-            <span className="w-full text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Frequently Used</span>
-            {quickTags.filter((t: string) => !favoriteTags.includes(t)).map((tag: string) => {
-              const isSelected = selectedTags.includes(tag);
-              const indicator = indicators.find(i => i.label === tag);
-              const type = indicator?.type || 'neutral';
-              const colors = {
-                positive: isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100',
-                growth: isSelected ? 'bg-rose-500 border-rose-500 text-white' : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100',
-                neutral: isSelected ? 'bg-amber-400 border-amber-400 text-white' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100',
-              };
-              return (
-                <button
-                  key={tag}
-                  onClick={() => toggleTag(tag)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all flex items-center gap-1.5",
-                    colors[type as keyof typeof colors] ?? colors.neutral
-                  )}
-                >
-                  {type === 'positive' && <Smile className="w-3 h-3" />}
-                  {type === 'growth' && <Frown className="w-3 h-3" />}
-                  {tag}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         {/* ── Favorite Tags ── */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-1">
@@ -1146,13 +1097,13 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
                     type="button"
                     onClick={() => toggleTag(tag)}
                     className={cn(
-                      "px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all flex items-center gap-1.5",
+                      "px-2 py-0.5 rounded-full border text-[10px] font-bold transition-all flex items-center gap-1",
                       colors[type] ?? colors.neutral
                     )}
                   >
-                    {type === 'positive' && <Smile className="w-3 h-3" />}
-                    {type === 'growth' && <Frown className="w-3 h-3" />}
-                    {indicator?.icon && <span className="text-sm leading-none">{indicator.icon}</span>}
+                    {type === 'positive' && <Smile className="w-2.5 h-2.5" />}
+                    {type === 'growth' && <Frown className="w-2.5 h-2.5" />}
+                    {indicator?.icon && <span className="text-xs leading-none">{indicator.icon}</span>}
                     {tag}
                   </button>
                 );
