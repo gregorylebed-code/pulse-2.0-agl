@@ -34,6 +34,7 @@ interface PulseScreenProps {
   onboardingComplete?: boolean;
   onGoToSettings?: () => void;
   onSwitchToRealClass?: () => void;
+  showDemoBanner?: boolean;
 }
 
 // ─── Today at a Glance ───────────────────────────────────────────────────────
@@ -190,7 +191,7 @@ function SparkleCanvas({ x, y, onDone }: { x: number; y: number; onDone: () => v
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings, onSwitchToRealClass }: PulseScreenProps) {
+function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings, onSwitchToRealClass, showDemoBanner }: PulseScreenProps) {
   const { aliasMode } = useAliasMode();
   const [onboardingBannerDismissed, setOnboardingBannerDismissed] = useState(() =>
     localStorage.getItem('cp_onboarding_banner_dismissed') === 'true'
@@ -1283,7 +1284,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
       <TodayAtAGlance notes={notes} indicators={indicators} />
 
-      <div className="space-y-4 pb-20">
+      <div className={`space-y-4 ${showDemoBanner ? 'pb-56' : 'pb-20'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-[15px] font-black text-blue-600 ml-1">Recent Activity</h2>
           <AnimatePresence>
