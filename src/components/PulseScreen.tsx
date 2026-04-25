@@ -1115,7 +1115,6 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
 
         {/* ── Indicators — accordion by category ── */}
         <div className="space-y-1.5">
-          <p className="text-[11px] text-slate-400 font-medium px-1">Tap a behavior label to tag this note — the AI uses these to write parent reports</p>
           {([
             { key: 'positive' as const, label: 'Positive', color: 'emerald', items: indicators.filter(b => b.type === 'positive'), selectedCount: indicators.filter(b => b.type === 'positive' && selectedTags.includes(b.label)).length },
             { key: 'neutral' as const, label: 'Neutral', color: 'amber', items: indicators.filter(b => b.type === 'neutral'), selectedCount: indicators.filter(b => b.type === 'neutral' && selectedTags.includes(b.label)).length },
@@ -1211,10 +1210,16 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           <textarea
             ref={noteInputRef}
             value={noteContent}
-            onChange={(e) => setNoteContent(e.target.value)}
+            rows={1}
+            onChange={(e) => {
+              setNoteContent(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
             onFocus={() => setTimeout(() => noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
             placeholder={noteMode === 'class' ? "Add a note about the class... (optional)" : placeholders[currentPlaceholderIndex]}
-            className="w-full min-h-[140px] p-5 pb-16 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
+            className="w-full p-5 pb-16 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-sage/5 focus:border-sage transition-all text-sm shadow-inner resize-none leading-relaxed font-medium"
+            style={{ minHeight: '3.5rem', overflowY: 'hidden' }}
           />
           <div className="absolute left-2 right-2 bottom-2 flex items-center justify-between px-2 bg-gradient-to-t from-slate-50 to-transparent pt-4 pb-1 rounded-b-xl pointer-events-none">
             <span className="text-[10px] font-bold text-slate-400 opacity-80 flex items-center gap-1.5 translate-y-[2px] pointer-events-auto">
