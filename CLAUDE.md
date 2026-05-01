@@ -1,14 +1,27 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Classroom Pulse 2.0 — Claude Instructions
 
 ## What this app is
 A React/TypeScript PWA for teachers to track student behavior and mood in real time. Built for personal classroom use, now being shared with other teachers. The user is a teacher, not a developer — write clear, working code without expecting them to debug or fill in gaps.
+
+## Commands
+```bash
+npm run dev        # dev server on port 3000
+npm run build      # production build
+npm run lint       # TypeScript type-check (no emit)
+npm run test       # run all tests (vitest)
+```
+Run a single test file: `npx vitest run src/utils/__tests__/roster.test.ts`
 
 ## Stack
 - React 19 + TypeScript + Vite (ESM only)
 - Supabase (auth + Postgres with RLS)
 - Tailwind CSS v4
 - framer-motion, lucide-react, sonner (toasts), jsPDF, papaparse
-- AI: Groq Llama (primary) → Cerebras (fallback), via `src/lib/gemini.ts` (file name is legacy)
+- AI: Groq Llama (primary) → Together AI (fallback), via `src/lib/gemini.ts` (file name is legacy — do not rename)
 
 ## Deployment
 - Vercel, auto-deploys from `main` branch on GitHub
@@ -18,6 +31,23 @@ A React/TypeScript PWA for teachers to track student behavior and mood in real t
 **Never use Tailwind `dark:` variants.** The app toggles `.dark` on `<html>` via JavaScript. Tailwind v4 `dark:` variants respond to OS `prefers-color-scheme`, not the class — this causes dark styles to leak into light mode.
 
 For any dark mode styling, add rules to `src/index.css` under the `/* ===== DARK MODE =====*/` section using `.dark .class-name { }` selectors.
+
+## Code architecture
+
+### Data flow
+All Supabase reads/writes go through `src/hooks/useClassroomData.ts` — the single source of truth for every data entity (students, notes, goals, accommodations, attendance, etc.). `App.tsx` calls this hook, destructures everything, and passes it down as props.
+
+### Feature modes
+`src/lib/mode.ts` exports `isFullMode` — set `VITE_MODE=full` in Vercel env vars to unlock advanced features. Default (unset) is the simplified public version.
+
+### Screens / routing
+No router library — `App.tsx` manages a `tab` state (`'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings'`) and a `settingsView` ref. `AnimatePresence` + `tabVariants` handles slide transitions between tabs.
+
+### Offline support
+`src/lib/offlineQueue.ts` queues notes when offline; `src/hooks/useOfflineSync.ts` flushes the queue on reconnect.
+
+### AI calls
+All AI calls go through `src/lib/gemini.ts` (legacy name). `callGroq()` is primary; falls back to Together AI on failure. Token usage is logged to the `token_usage` Supabase table.
 
 ## Key architecture notes
 - Settings `view` state is lifted into `App.tsx` (not local to SettingsScreen) so the Android back button can reset it
@@ -36,14 +66,25 @@ For any dark mode styling, add rules to `src/index.css` under the `/* ===== DARK
 - Don't use Tailwind `dark:` variants (see above)
 
 ## ShortHand URL rule — critical
-- **Never use `getshorthand.app`** in video scripts, captions, or copy — it's abandoned and blocked by school filters.
-- **Before May 1–2, 2026:** All video scripts/captions say "link in bio" (not any URL) so only the bio needs updating when the domain switches.
-- **After May 1–2, 2026:** Switch to `getshorthandapp.com` everywhere.
+- **Never use `getshorthand.app`** — abandoned and blocked by school filters.
+- **Use `getshorthandapp.com`** for the marketing website in all copy, video scripts, and captions.
+- **Use `app.getshorthandapp.com`** for the app itself.
+- Domain switch completed 2026-05-01 — all code updated.
 
 ## Obsidian Brain — auto-update rule
 When the user shares any status update about content (videos recorded, videos mixed, days posted, tasks completed), automatically update the relevant Obsidian Brain files without being asked:
 - `C:\Users\doubl\GOOGLE DRIVE\My Drive\Google AI Studio\ShortHand\Brain\GSD.md` — update active tasks and project status
 - `C:\Users\doubl\GOOGLE DRIVE\My Drive\Google AI Studio\ShortHand\Brain\ShortHand Content Calendar.md` — mark days as ✅ POSTED or ✅ MIXED as appropriate
+
+## "Save memory" — deep save rule
+When the user says "save memory", do a thorough save — not just surface preferences. Actively look for and save:
+- Procedural workflows (step-by-step processes we developed together)
+- Checklists and repeatable sequences
+- Keyword/SEO strategies and decisions
+- Anything that would save time or prevent mistakes in a future conversation
+- Save to both the memory files (`~/.claude/projects/.../memory/`) AND to the Obsidian Brain folder (`C:\Users\doubl\GOOGLE DRIVE\My Drive\Google AI Studio\ShortHand\Brain\`) if the content is ShortHand/business-related
+
+The goal: a future version of me should be able to pick up exactly where we left off, with full procedural context — not just "G likes X tone."
 
 ## Context management
 - If a task is large or multi-part (e.g. redesign a whole page, build a new feature end-to-end), suggest upfront whether it's better handled in a fresh conversation or split into sub-agents — don't wait until the conversation is already long.
@@ -77,3 +118,7 @@ When the user shares any status update about content (videos recorded, videos mi
 - Transform tasks into verifiable goals before starting.
 - For multi-step tasks, state a brief plan with a verify step for each.
 - Strong success criteria let you loop independently — weak criteria ("make it work") require constant clarification.
+
+## Three Brain Workflow
+- If the user mentions **"Review"**: use the **OpenAI Codex CLI** (`codex`) to get a second opinion or analysis.
+- If the user mentions **"Visuals"**: use the **Gemini CLI** (`gemini`) for image files and visual assets. Note: Gemini CLI cannot watch YouTube videos — for video analysis, direct the user to paste the URL into **claude.ai** (the web app) instead.
