@@ -205,7 +205,7 @@ export default function FreeTool() {
 
       {/* Back to website bar */}
       <div style={{ background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '10px 20px' }}>
-        <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500 }}>
+        <a href="https://getshorthandapp.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500 }}>
           <span style={{ fontSize: 16 }}>←</span> Back to ShortHand
         </a>
       </div>
@@ -213,7 +213,7 @@ export default function FreeTool() {
       {/* Hero header */}
       <div style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0891b2 100%)', padding: '48px 24px 40px' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
-          <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 24, textDecoration: 'none' }}>
+          <a href="https://getshorthandapp.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 24, textDecoration: 'none' }}>
             <img src="/icon-192.png" alt="ShortHand" style={{ width: 36, height: 36, borderRadius: 10 }} />
             <span style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.01em' }}>ShortHand</span>
           </a>
@@ -408,14 +408,14 @@ export default function FreeTool() {
             {/* Transition CTA */}
             <div style={{ marginTop: 16, padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <p style={{ fontSize: 12.5, color: '#64748b', margin: 0, lineHeight: 1.4 }}>Want to generate these automatically throughout the year based on your daily notes?</p>
-              <a href="https://shorthand-website.vercel.app" style={{ flexShrink: 0, fontSize: 12.5, fontWeight: 700, color: '#0d9488', textDecoration: 'none', whiteSpace: 'nowrap' }}>Check out ShortHand →</a>
+              <a href="https://getshorthandapp.com" style={{ flexShrink: 0, fontSize: 12.5, fontWeight: 700, color: '#0d9488', textDecoration: 'none', whiteSpace: 'nowrap' }}>Check out ShortHand →</a>
             </div>
           </div>
         )}
 
         <div style={{ textAlign: 'center', marginTop: 32 }}>
           <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>Built by a teacher, for teachers.</p>
-          <a href="https://shorthand-website.vercel.app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', fontWeight: 600, fontSize: 13, padding: '10px 20px', borderRadius: 10, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>
+          <a href="https://getshorthandapp.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', fontWeight: 600, fontSize: 13, padding: '10px 20px', borderRadius: 10, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>
             Visit ShortHand →
           </a>
         </div>

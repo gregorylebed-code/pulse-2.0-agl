@@ -962,7 +962,7 @@ export default function SettingsScreen({
               <img src="/icon-192.png" alt="ShortHand" className="w-12 h-12 rounded-2xl shadow-sm" />
               <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">ShortHand v2.0.0</p>
               <a
-                href="https://www.getshorthand.app"
+                href="https://getshorthandapp.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[11px] font-bold text-sage/60 hover:text-sage transition-colors"
