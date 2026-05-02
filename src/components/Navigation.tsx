@@ -2,7 +2,7 @@ import React from 'react';
 import { Activity, Users, Settings, BarChart2, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../utils/cn';
-import { isFullMode } from '../lib/mode';
+import { useFullMode } from '../context/FullModeContext';
 
 interface NavigationProps {
   activeTab: 'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings';
@@ -39,6 +39,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
 }
 
 export default function Navigation({ activeTab, setActiveTab }: NavigationProps) {
+  const isFullMode = useFullMode();
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 no-print flex items-center justify-around px-2"

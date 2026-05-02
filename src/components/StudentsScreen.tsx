@@ -8,7 +8,7 @@ import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
 import { askAboutStudents } from '../utils/aiAssistant';
 import StudentDetailView from './StudentDetailView';
 import { cn } from '../utils/cn';
-import { isFullMode } from '../lib/mode';
+import { useFullMode } from '../context/FullModeContext';
 import { useAliasMode } from '../context/AliasModeContext';
 import { getDisplayName, getDisplayFirst } from '../utils/getDisplayName';
 import SeatingChart from './SeatingChart';
@@ -292,6 +292,7 @@ export default function StudentsScreen({
   saveSeatingChart,
 }: StudentsScreenProps) {
   const { aliasMode } = useAliasMode();
+  const isFullMode = useFullMode();
   const [filter, setFilter] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'seating'>('grid');
 

@@ -4,7 +4,7 @@ import { useAliasMode } from '../context/AliasModeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { getForecast, SpecialsConfig } from '../utils/rotationHelpers';
-import { isFullMode } from '../lib/mode';
+import { useFullMode } from '../context/FullModeContext';
 
 interface Task { id: string; text: string; completed: boolean; color?: string; }
 
@@ -52,6 +52,7 @@ export default function Header({
   const { aliasMode, toggleAliasMode } = useAliasMode();
   const letters = Array.from({ length: specialsConfig.rollingLetterCount || 5 }, (_, i) => String.fromCharCode(65 + i));
   const canOverride = specialsConfig.mode === 'letter-day' || specialsConfig.mode === 'rolling';
+  const isFullMode = useFullMode();
   const hasOverride = !!specialsConfig.todayOverride;
   const pendingTasks = tasks.filter(t => !t.completed).length;
 

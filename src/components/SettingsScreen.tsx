@@ -23,7 +23,7 @@ import { supabase } from '../lib/supabase';
 import ImportScreen from './ImportScreen';
 import StatsCard from './StatsCard';
 import { cn } from '../utils/cn';
-import { isFullMode } from '../lib/mode';
+import { useFullMode } from '../context/FullModeContext';
 
 
 const DEFAULT_BEHAVIOR_BUTTONS = [
@@ -220,6 +220,7 @@ export default function SettingsScreen({
   forceOpenGettingStarted,
 }: SettingsScreenProps) {
   const { canInstallAndroid, showIosInstructions, triggerInstall } = useInstallPrompt();
+  const isFullMode = useFullMode();
   const [gettingStartedOpen, setGettingStartedOpen] = useState(onboardingComplete === false);
 
   useEffect(() => {

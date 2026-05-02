@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { cn } from '../utils/cn';
 import { useAliasMode } from '../context/AliasModeContext';
 import { getDisplayName, getDisplayFirst } from '../utils/getDisplayName';
-import { isFullMode } from '../lib/mode';
+import { useFullMode } from '../context/FullModeContext';
 
 
 interface PulseScreenProps {
@@ -193,6 +193,7 @@ function SparkleCanvas({ x, y, onDone }: { x: number; y: number; onDone: () => v
 
 function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings, onSwitchToRealClass, showDemoBanner }: PulseScreenProps) {
   const { aliasMode } = useAliasMode();
+  const isFullMode = useFullMode();
   const [onboardingBannerDismissed, setOnboardingBannerDismissed] = useState(() =>
     localStorage.getItem('cp_onboarding_banner_dismissed') === 'true'
   );

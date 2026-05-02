@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Users, PenLine, Calendar, ChevronRight, Sparkles, Zap, FlaskConical, X } from 'lucide-react';
-import { isFullMode } from '../lib/mode';
+import { useFullMode } from '../context/FullModeContext';
 
 const DEMO_STUDENTS = [
   'Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet',
@@ -59,6 +59,7 @@ export default function WelcomeModal({
   onAddStudents,
 }: WelcomeModalProps) {
   const [screen, setScreen] = useState<Screen>('main');
+  const isFullMode = useFullMode();
   const [nicknames, setNicknames] = useState<string[]>(Array(5).fill(''));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');

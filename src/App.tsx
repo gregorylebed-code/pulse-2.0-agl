@@ -20,7 +20,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import InstallBanner from './components/InstallBanner';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { cn } from './utils/cn';
-import { isFullMode } from './lib/mode';
+import { FullModeProvider, useFullMode } from './context/FullModeContext';
 import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
 import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notifications';
 import { trackEvent } from './lib/analytics';
@@ -68,6 +68,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     onboardingComplete, markOnboardingComplete,
     loading,
   } = useClassroomData(userId);
+
+  const isFullMode = useFullMode();
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
     (localStorage.getItem('cp_theme') as 'light' | 'dark') || 'light'
@@ -854,8 +856,10 @@ export default function App() {
 
   if (!user) return <AuthScreen />;
   return (
-    <AliasModeProvider>
-      <AuthenticatedApp userId={user.id} userEmail={user.email ?? ''} />
-    </AliasModeProvider>
+    <FullModeProvider userId={user.id}>
+      <AliasModeProvider>
+        <AuthenticatedApp userId={user.id} userEmail={user.email ?? ''} />
+      </AliasModeProvider>
+    </FullModeProvider>
   );
 }

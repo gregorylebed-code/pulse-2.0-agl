@@ -19,7 +19,7 @@ import ParentCommunicationLog from './ParentCommunicationLog';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
 import { categorizeNote, cleanNoteContent, refineReport, refineQuickNote, parseVoiceLog, quickParentNote, suggestGoals, ReportData, PronounInfo } from '../lib/gemini';
-import { isFullMode } from '../lib/mode';
+import { useFullMode } from '../context/FullModeContext';
 import { cn } from '../utils/cn';
 
 
@@ -685,6 +685,7 @@ export default function StudentDetailView({
 }: StudentDetailViewProps) {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, []);
 
+  const isFullMode = useFullMode();
   const [reportLength, setReportLength] = useState<'Quick Note' | 'Standard' | 'Detailed'>('Standard');
   const [timeRange, setTimeRange] = useState('5 Days');
   const [customStartDate, setCustomStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0]);
