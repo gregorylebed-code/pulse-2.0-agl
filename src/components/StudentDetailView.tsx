@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { trackEvent } from '../lib/analytics';
 import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1090,6 +1091,7 @@ export default function StudentDetailView({
     }
     const body = encodeURIComponent(bodyText);
 
+    trackEvent('parent_email_sent');
     window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
   };
 

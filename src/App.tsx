@@ -783,6 +783,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           if (activeTab === 'students') setSelectedStudentId(null);
           if (activeTab === 'settings') setSettingsView('main');
           setActiveTab(tab);
+          trackEvent('tab_switched', { tab });
         }
       }} />
 

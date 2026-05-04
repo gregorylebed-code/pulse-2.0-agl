@@ -1,5 +1,6 @@
 import { Note, Shoutout, SELTopic, SELLesson, GoalCategory } from "../types";
 import { supabase } from "./supabase";
+import { trackEvent } from "./analytics";
 import { getStudentPronounInfo, buildPronounInstruction, PronounInfo } from "./pronounUtils";
 export type { PronounInfo };
 
@@ -78,6 +79,7 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
 
   const data = await response.json();
   if (data.usage) logTokenUsage(callType, data.usage);
+  trackEvent('ai_used', { call_type: callType });
   return data.choices[0].message.content as string;
 }
 

@@ -6,6 +6,7 @@ import { Abbreviation } from '../utils/expandAbbreviations';
 import { SpecialsMode } from '../utils/rotationHelpers';
 import { NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '../utils/notifications';
 import { enqueueNote } from '../lib/offlineQueue';
+import { trackEvent } from '../lib/analytics';
 
 interface Task {
   id: string;
@@ -421,6 +422,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         return { ...prev, notes: [noteWithName, ...prev.notes] };
       });
       await incrementStat('notes_created');
+      trackEvent('note_logged', { indicator: (note as any).indicator_id ?? null });
       return data;
     } catch (error) {
       // If offline, queue the note for later sync and return null gracefully
@@ -476,6 +478,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         .single();
       if (error) throw error;
       setState(prev => ({ ...prev, students: [...prev.students, data] }));
+      trackEvent('student_added');
       return data;
     } catch (error) {
       console.error('Error adding student:', error);
