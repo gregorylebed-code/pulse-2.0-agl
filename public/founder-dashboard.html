@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShortHand — Founder Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f13;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    header span {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* GSC table */
+    .gsc-table { width: 100%; border-collapse: collapse; }
+    .gsc-table th {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #334155;
+      padding: 0 0 0.5rem 0;
+      text-align: left;
+    }
+    .gsc-table th:not(:first-child) { text-align: right; }
+    .gsc-table td {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      padding: 0.4rem 0;
+      border-top: 1px solid #1e1e2e;
+    }
+    .gsc-table td:not(:first-child) { text-align: right; }
+    .gsc-page-name {
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+      display: block;
+    }
+    .pos-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+    .pos-top { background: #16a34a22; color: #4ade80; border: 1px solid #4ade8033; }
+    .pos-mid { background: #ca8a0422; color: #fbbf24; border: 1px solid #fbbf2433; }
+    .pos-far { background: #1e1e2e; color: #475569; border: 1px solid #27272a; }
+    .spotlight-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      background: #1a1a24;
+      margin-bottom: 0.5rem;
+    }
+    .spotlight-name {
+      font-size: 0.76rem;
+      color: #cbd5e1;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .spotlight-meta {
+      font-size: 0.68rem;
+      color: #475569;
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .spotlight-meta strong { color: #fbbf24; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #16a34a22;
+      color: #4ade80;
+      border: 1px solid #4ade8033;
+      border-radius: 999px;
+      padding: 2px 10px;
+      margin-left: auto;
+    }
+
+    .badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: #16161d;
+      border: 1px solid #1e1e2e;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .card-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #475569;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .card-sub {
+      font-size: 0.75rem;
+      color: #475569;
+      margin-top: 0.35rem;
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 1rem;
+    }
+
+    /* Cumulative views chart */
+    .sparkline-wrap {
+      width: 100%;
+      height: 80px;
+      margin-top: 0.75rem;
+    }
+
+    svg.sparkline {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* Signup chart */
+    .chart-wrap {
+      width: 100%;
+      height: 140px;
+      margin-top: 0.75rem;
+      position: relative;
+    }
+
+    svg.bar-chart {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Top videos */
+    .video-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .video-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      background: #1a1a24;
+      transition: background 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .video-row:hover { background: #20202e; }
+
+    .video-rank {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #334155;
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .video-title {
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .video-stats {
+      display: flex;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .stat-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .stat-pill.views { color: #7c86ff; }
+    .stat-pill.likes { color: #f97316; }
+
+    /* Activity dots */
+    .activity-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 0.75rem;
+    }
+
+    .activity-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    /* KPI row inside card */
+    .kpi-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .kpi-item { display: flex; flex-direction: column; gap: 2px; }
+    .kpi-val { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+    .kpi-lbl { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.07em; }
+
+    .divider {
+      width: 1px;
+      background: #1e1e2e;
+      align-self: stretch;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.68rem;
+      color: #334155;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>ShortHand — Founder Dashboard</h1>
+    <span>Classroom Pulse 3.0 + YouTube</span>
+  </div>
+  <div class="badge">Live data</div>
+</header>
+
+<!-- Stat cards row -->
+<div class="grid-4">
+  <div class="card">
+    <div class="card-label">Total Users</div>
+    <div class="card-value">40</div>
+    <div class="card-sub">Classroom Pulse 3.0</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Notes Written</div>
+    <div class="card-value">480</div>
+    <div class="card-sub">across 305 students</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Parent Comms</div>
+    <div class="card-value">50</div>
+    <div class="card-sub">logged by teachers</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Shoutouts</div>
+    <div class="card-value">17</div>
+    <div class="card-sub">positive moments captured</div>
+  </div>
+</div>
+
+<!-- Signup chart + YouTube KPIs -->
+<div class="grid-3">
+  <div class="card">
+    <div class="card-title">User Signups Over Time</div>
+    <div class="chart-wrap">
+      <svg class="bar-chart" id="signupChart"></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">YouTube Channel</div>
+    <div class="kpi-row">
+      <div class="kpi-item">
+        <div class="kpi-val">20.6k</div>
+        <div class="kpi-lbl">Total Views</div>
+      </div>
+      <div class="divider"></div>
+      <div class="kpi-item">
+        <div class="kpi-val">66</div>
+        <div class="kpi-lbl">Videos</div>
+      </div>
+      <div class="divider"></div>
+      <div class="kpi-item">
+        <div class="kpi-val">20</div>
+        <div class="kpi-lbl">Subscribers</div>
+      </div>
+    </div>
+    <div class="sparkline-wrap">
+      <svg class="sparkline" id="viewsSparkline"></svg>
+    </div>
+    <div class="card-sub" style="margin-top:0.5rem">Cumulative views — all 66 videos by publish date</div>
+  </div>
+</div>
+
+<!-- Top videos + notes activity -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Top Videos by Views</div>
+    <div class="video-list" id="videoList"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Notes Activity — Last 14 Days</div>
+    <div class="chart-wrap" style="height:120px">
+      <svg class="bar-chart" id="notesChart"></svg>
+    </div>
+    <div class="card-sub" style="margin-top:0.75rem">480 total notes &nbsp;·&nbsp; 305 students tracked</div>
+  </div>
+</div>
+
+<!-- GSC Section -->
+<div style="margin-bottom:0.75rem">
+  <div class="card-title" style="font-size:0.8rem;color:#475569;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1rem">Google Search Console — Apr 1 to May 4, 2026</div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Top Pages by Impressions</div>
+    <table class="gsc-table">
+      <thead>
+        <tr>
+          <th>Page</th>
+          <th>Impr.</th>
+          <th>Clicks</th>
+          <th>Position</th>
+        </tr>
+      </thead>
+      <tbody id="gscPageTable"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Near Page 1 — Opportunity Pages</div>
+    <div style="font-size:0.7rem;color:#475569;margin-bottom:0.75rem">Positions 5–20 with impressions. A few backlinks or internal links could push these over.</div>
+    <div id="gscSpotlight"></div>
+  </div>
+</div>
+
+<footer>Last refreshed: May 4, 2026 &nbsp;·&nbsp; Data from Supabase + YouTube Data API + Google Search Console</footer>
+
+<script>
+  // ── DATA ──────────────────────────────────────────────────────────────────
+  const signupData = [
+    { day: "Mar 19", n: 1 }, { day: "Mar 20", n: 1 }, { day: "Mar 21", n: 1 },
+    { day: "Mar 23", n: 1 }, { day: "Mar 24", n: 1 }, { day: "Mar 26", n: 2 },
+    { day: "Mar 28", n: 1 }, { day: "Apr 3",  n: 3 }, { day: "Apr 4",  n: 1 },
+    { day: "Apr 6",  n: 1 }, { day: "Apr 8",  n: 7 }, { day: "Apr 9",  n: 1 },
+    { day: "Apr 14", n: 1 }, { day: "Apr 17", n: 5 }, { day: "Apr 19", n: 2 },
+    { day: "Apr 21", n: 1 }, { day: "Apr 24", n: 3 }, { day: "Apr 25", n: 3 },
+    { day: "Apr 27", n: 2 }, { day: "Apr 29", n: 1 }, { day: "May 2",  n: 1 },
+  ];
+
+  const notesData = [
+    { day: "Apr 15", n: 10 }, { day: "Apr 16", n: 9 }, { day: "Apr 17", n: 4 },
+    { day: "Apr 19", n: 1  }, { day: "Apr 20", n: 8 }, { day: "Apr 21", n: 7 },
+    { day: "Apr 22", n: 2  }, { day: "Apr 23", n: 2 }, { day: "Apr 24", n: 4 },
+    { day: "Apr 25", n: 2  }, { day: "Apr 26", n: 1 }, { day: "Apr 27", n: 1 },
+    { day: "Apr 28", n: 9  }, { day: "Apr 30", n: 4 },
+  ];
+
+  const topVideos = [
+    { id: "sZqVTtRLuI0", title: "Old man knows best. Paperwork stinks!", views: 1629, likes: 16 },
+    { id: "cJ-PlHk0diw", title: "ShortHand App Android Install",          views: 1190, likes: 10 },
+    { id: "25GSzqy4Thw", title: "sloth lemonade pencil dog",              views: 1286, likes: 22 },
+    { id: "EzHU4yvQErI", title: "How I save 5 hours on teacher paperwork", views: 1149, likes: 10 },
+    { id: "UViCk50_Hfc", title: "Stop wasting time on documentation",     views: 1040, likes: 13 },
+    { id: "jpY4BhdRoOA", title: "Strong ShortHand. The app writes emails.", views: 1073, likes: 6 },
+    { id: "UGOyL20_3h4", title: "Hotdogs tunnel td",                      views: 938,  likes: 14 },
+    { id: "cIul5qY3XoY", title: "watermelon pencil",                      views: 924,  likes: 18 },
+    { id: "ek7cOWcNbrw", title: "Hotdogs - ShortHand App",                views: 898,  likes: 12 },
+    { id: "4ZtVzcjjMvQ", title: "100 dance rizz",                         views: 758,  likes: 9  },
+  ];
+
+  const gscPages = [
+    { name: "how-to-write-behavior-emails-to-parents",       impressions: 47, clicks: 0, position: 20.3 },
+    { name: "best-behavior-tracking-apps-for-teachers-2026", impressions: 43, clicks: 0, position: 8.4  },
+    { name: "install",                                        impressions: 21, clicks: 0, position: 10.8 },
+    { name: "best-classdojo-alternatives-2026",              impressions: 17, clicks: 0, position: 7.0  },
+    { name: "best-behavior-management-apps-2026",            impressions: 15, clicks: 0, position: 5.3  },
+    { name: "classdojo-alternative",                         impressions: 27, clicks: 0, position: 35.7 },
+    { name: "why-teachers-switching-classdojo",              impressions: 27, clicks: 0, position: 3.5  },
+    { name: "report-card-comments-for-behavior",             impressions: 30, clicks: 1, position: 55.5 },
+    { name: "sample-emails-to-parents-about-behavior",       impressions: 24, clicks: 1, position: 9.8  },
+    { name: "homepage",                                      impressions: 30, clicks: 4, position: 9.3  },
+  ].sort((a, b) => b.impressions - a.impressions);
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  function makeBars(svgId, data, keyN, keyLabel, color, labelEvery = 1) {
+    const svg = document.getElementById(svgId);
+    const W = svg.clientWidth || 600;
+    const H = svg.clientHeight || 140;
+    const pad = { top: 8, right: 4, bottom: 28, left: 4 };
+    const innerW = W - pad.left - pad.right;
+    const innerH = H - pad.top - pad.bottom;
+    const max = Math.max(...data.map(d => d[keyN]));
+    const gap = 3;
+    const barW = (innerW - gap * (data.length - 1)) / data.length;
+
+    let html = '';
+    data.forEach((d, i) => {
+      const barH = (d[keyN] / max) * innerH;
+      const x = pad.left + i * (barW + gap);
+      const y = pad.top + (innerH - barH);
+      // bar
+      html += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${color}" opacity="0.85"/>`;
+      // value label on tall bars
+      if (d[keyN] >= 3) {
+        html += `<text x="${(x + barW / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}" text-anchor="middle" font-size="9" fill="#94a3b8">${d[keyN]}</text>`;
+      }
+      // x-axis label
+      if (i % labelEvery === 0) {
+        html += `<text x="${(x + barW / 2).toFixed(1)}" y="${(H - 6).toFixed(1)}" text-anchor="middle" font-size="8" fill="#475569">${d[keyLabel]}</text>`;
+      }
+    });
+
+    svg.innerHTML = html;
+  }
+
+  // Cumulative views sorted by publish date (all 66 videos)
+  const cumulativeViews = [
+    { label: "Mar 27", cumulative: 1927 },
+    { label: "Mar 28", cumulative: 2851 },
+    { label: "Mar 29", cumulative: 3790 },
+    { label: "Mar 30", cumulative: 4108 },
+    { label: "Mar 31", cumulative: 4224 },
+    { label: "Apr 1",  cumulative: 4300 },
+    { label: "Apr 2",  cumulative: 4564 },
+    { label: "Apr 3",  cumulative: 4732 },
+    { label: "Apr 4",  cumulative: 4909 },
+    { label: "Apr 5",  cumulative: 5071 },
+    { label: "Apr 6",  cumulative: 5467 },
+    { label: "Apr 7",  cumulative: 7096 },
+    { label: "Apr 8",  cumulative: 7996 },
+    { label: "Apr 9",  cumulative: 8602 },
+    { label: "Apr 10", cumulative: 10592 },
+    { label: "Apr 11", cumulative: 12034 },
+    { label: "Apr 12", cumulative: 13904 },
+    { label: "Apr 13", cumulative: 14842 },
+    { label: "Apr 14", cumulative: 15882 },
+    { label: "Apr 16", cumulative: 16191 },
+    { label: "Apr 17", cumulative: 16435 },
+    { label: "Apr 19", cumulative: 16882 },
+    { label: "Apr 22", cumulative: 16983 },
+    { label: "Apr 23", cumulative: 17529 },
+    { label: "Apr 24", cumulative: 17779 },
+    { label: "Apr 25", cumulative: 17828 },
+    { label: "Apr 26", cumulative: 18268 },
+    { label: "Apr 27", cumulative: 18712 },
+    { label: "Apr 29", cumulative: 18867 },
+    { label: "Apr 30", cumulative: 18987 },
+    { label: "May 2",  cumulative: 20335 },
+    { label: "May 3",  cumulative: 20480 },
+    { label: "May 4",  cumulative: 20567 },
+  ];
+
+  function makeCumulativeChart(svgId, data, color) {
+    const svg = document.getElementById(svgId);
+    const W = svg.clientWidth || 300;
+    const H = 80;
+    const pad = { top: 6, right: 6, bottom: 22, left: 6 };
+    const innerW = W - pad.left - pad.right;
+    const innerH = H - pad.top - pad.bottom;
+    const max = data[data.length - 1].cumulative;
+
+    const pts = data.map((d, i) => {
+      const x = pad.left + (i / (data.length - 1)) * innerW;
+      const y = pad.top + innerH - (d.cumulative / max) * innerH;
+      return { x, y, label: d.label, val: d.cumulative };
+    });
+
+    const linePts = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const area = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} ` +
+      pts.slice(1).map(p => `L ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') +
+      ` L ${pts[pts.length-1].x.toFixed(1)},${(pad.top + innerH).toFixed(1)} L ${pad.left},${(pad.top + innerH).toFixed(1)} Z`;
+
+    // x-axis labels — show first, ~25%, ~50%, ~75%, last
+    const n = pts.length;
+    const labelIdxs = [0, Math.floor(n/4), Math.floor(n/2), Math.floor(3*n/4), n-1];
+    const labels = labelIdxs.map(i => {
+      const p = pts[i];
+      return `<text x="${p.x.toFixed(1)}" y="${(H - 4).toFixed(1)}" text-anchor="middle" font-size="8" fill="#475569">${p.label}</text>`;
+    }).join('');
+
+    // end label showing total
+    const last = pts[pts.length - 1];
+    const totalVal = data[data.length-1].cumulative;
+    const totalLabel = `<text x="${last.x.toFixed(1)}" y="${(last.y - 6).toFixed(1)}" text-anchor="end" font-size="9" font-weight="700" fill="${color}">${(totalVal/1000).toFixed(1)}k</text>`;
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${area}" fill="url(#cg)"/>
+      <polyline points="${linePts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="3" fill="${color}"/>
+      ${labels}
+      ${totalLabel}
+    `;
+  }
+
+  function posBadge(pos) {
+    if (pos <= 5)  return `<span class="pos-badge pos-top">#${pos.toFixed(1)}</span>`;
+    if (pos <= 15) return `<span class="pos-badge pos-mid">#${pos.toFixed(1)}</span>`;
+    return `<span class="pos-badge pos-far">#${pos.toFixed(1)}</span>`;
+  }
+
+  function buildGSC() {
+    const tbody = document.getElementById('gscPageTable');
+    tbody.innerHTML = gscPages.slice(0, 8).map(p => `
+      <tr>
+        <td><span class="gsc-page-name">${p.name}</span></td>
+        <td>${p.impressions}</td>
+        <td>${p.clicks}</td>
+        <td>${posBadge(p.position)}</td>
+      </tr>
+    `).join('');
+
+    const spotlight = document.getElementById('gscSpotlight');
+    const opportunities = gscPages
+      .filter(p => p.position >= 5 && p.position <= 20 && p.impressions >= 5)
+      .sort((a, b) => a.position - b.position);
+    spotlight.innerHTML = opportunities.map(p => `
+      <div class="spotlight-row">
+        <span class="spotlight-name">${p.name}</span>
+        <span class="spotlight-meta">
+          <strong>#${p.position.toFixed(1)}</strong><br/>
+          ${p.impressions} impr.
+        </span>
+      </div>
+    `).join('');
+  }
+
+  function buildVideoList() {
+    const list = document.getElementById('videoList');
+    list.innerHTML = topVideos.map((v, i) => `
+      <a class="video-row" href="https://youtube.com/watch?v=${v.id}" target="_blank" rel="noopener">
+        <span class="video-rank">${i + 1}</span>
+        <span class="video-title">${v.title}</span>
+        <span class="video-stats">
+          <span class="stat-pill views">▶ ${v.views.toLocaleString()}</span>
+          <span class="stat-pill likes">♥ ${v.likes}</span>
+        </span>
+      </a>
+    `).join('');
+  }
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  window.addEventListener('load', () => {
+    makeBars('signupChart', signupData, 'n', 'day', '#7c86ff', 3);
+    makeBars('notesChart',  notesData,  'n', 'day', '#34d399', 2);
+    makeCumulativeChart('viewsSparkline', cumulativeViews, '#f97316');
+    buildVideoList();
+    buildGSC();
+  });
+
+  // re-render on resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      makeBars('signupChart', signupData, 'n', 'day', '#7c86ff', 3);
+      makeBars('notesChart',  notesData,  'n', 'day', '#34d399', 2);
+      makeCumulativeChart('viewsSparkline', cumulativeViews, '#f97316');
+    }, 100);
+  });
+</script>
+</body>
+</html>
