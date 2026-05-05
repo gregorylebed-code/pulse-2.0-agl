@@ -380,6 +380,30 @@
   </div>
 </div>
 
+<!-- Demo funnel — live from Supabase -->
+<div class="grid-4" id="demoStatsRow" style="margin-bottom:1.5rem">
+  <div class="card">
+    <div class="card-label">Demo Started</div>
+    <div class="card-value" id="statDemoStarted">—</div>
+    <div class="card-sub">unique sessions</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Nudge Shown</div>
+    <div class="card-value" id="statNudgeShown">—</div>
+    <div class="card-sub">times prompted to sign up</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Nudge → CTA</div>
+    <div class="card-value" id="statNudgeCTA">—</div>
+    <div class="card-sub">clicked "sign up" from nudge</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Nudge Dismissed</div>
+    <div class="card-value" id="statNudgeDismissed">—</div>
+    <div class="card-sub">closed without acting</div>
+  </div>
+</div>
+
 <!-- Signup chart + YouTube KPIs -->
 <div class="grid-3">
   <div class="card">
@@ -550,7 +574,26 @@
     }).join('')
   }
 
-  window.addEventListener('load', loadHistory)
+  async function loadDemoStats() {
+    const events = ['demo_started', 'demo_nudge_shown', 'demo_nudge_cta_clicked', 'demo_nudge_dismissed']
+    const { data, error } = await supabase
+      .from('analytics_events')
+      .select('event_name')
+      .in('event_name', events)
+
+    if (error || !data) return
+
+    const counts = {}
+    events.forEach(e => counts[e] = 0)
+    data.forEach(row => { if (counts[row.event_name] !== undefined) counts[row.event_name]++ })
+
+    document.getElementById('statDemoStarted').textContent    = counts['demo_started']
+    document.getElementById('statNudgeShown').textContent     = counts['demo_nudge_shown']
+    document.getElementById('statNudgeCTA').textContent       = counts['demo_nudge_cta_clicked']
+    document.getElementById('statNudgeDismissed').textContent = counts['demo_nudge_dismissed']
+  }
+
+  window.addEventListener('load', () => { loadHistory(); loadDemoStats(); })
 
   // ── DATA ──────────────────────────────────────────────────────────────────
   const signupData = [

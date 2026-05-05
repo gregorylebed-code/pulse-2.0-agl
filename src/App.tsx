@@ -836,7 +836,7 @@ export default function App() {
     const timeout = setTimeout(() => setSigningInAnon(false), 8000);
     signInAnonymously().then(({ error: e }) => {
       if (e) { console.error('Anonymous sign-in failed', e); setSigningInAnon(false); clearTimeout(timeout); }
-      else { localStorage.setItem('cp_seed_demo', 'true'); }
+      else { localStorage.setItem('cp_seed_demo', 'true'); trackEvent('demo_started'); }
     });
     return () => clearTimeout(timeout);
   }, [isDemo, loading, user]); // eslint-disable-line react-hooks/exhaustive-deps
