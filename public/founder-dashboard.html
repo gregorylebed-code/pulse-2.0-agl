@@ -438,6 +438,48 @@
   </div>
 </div>
 
+<!-- Social stats -->
+<div class="grid-2" style="margin-bottom:1.5rem">
+  <div class="card">
+    <div class="card-title">Instagram</div>
+    <div class="kpi-row" style="margin-bottom:1rem">
+      <div class="kpi-item">
+        <div class="kpi-val" id="igPostsDisplay">—</div>
+        <div class="kpi-lbl">Posts</div>
+      </div>
+      <div class="divider"></div>
+      <div class="kpi-item">
+        <div class="kpi-val" id="igFollowersDisplay">—</div>
+        <div class="kpi-lbl">Followers</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <input id="igPosts" type="number" placeholder="Posts" style="width:80px;background:#1a1a24;border:1px solid #1e1e2e;border-radius:8px;padding:4px 8px;color:#e2e8f0;font-size:0.75rem"/>
+      <input id="igFollowers" type="number" placeholder="Followers" style="width:90px;background:#1a1a24;border:1px solid #1e1e2e;border-radius:8px;padding:4px 8px;color:#e2e8f0;font-size:0.75rem"/>
+      <button onclick="saveSocial()" class="snapshot-btn" style="margin-left:auto">Save</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">TikTok</div>
+    <div class="kpi-row" style="margin-bottom:1rem">
+      <div class="kpi-item">
+        <div class="kpi-val" id="ttFollowersDisplay">—</div>
+        <div class="kpi-lbl">Followers</div>
+      </div>
+      <div class="divider"></div>
+      <div class="kpi-item">
+        <div class="kpi-val" id="ttLikesDisplay">—</div>
+        <div class="kpi-lbl">Likes</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <input id="ttFollowers" type="number" placeholder="Followers" style="width:90px;background:#1a1a24;border:1px solid #1e1e2e;border-radius:8px;padding:4px 8px;color:#e2e8f0;font-size:0.75rem"/>
+      <input id="ttLikes" type="number" placeholder="Likes" style="width:90px;background:#1a1a24;border:1px solid #1e1e2e;border-radius:8px;padding:4px 8px;color:#e2e8f0;font-size:0.75rem"/>
+      <button onclick="saveSocial()" class="snapshot-btn" style="margin-left:auto">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Top videos + notes activity -->
 <div class="grid-2">
   <div class="card">
@@ -593,7 +635,37 @@
     document.getElementById('statNudgeDismissed').textContent = counts['demo_nudge_dismissed']
   }
 
-  window.addEventListener('load', () => { loadHistory(); loadDemoStats(); })
+  function displaySocial(row) {
+    if (!row) return
+    document.getElementById('igPostsDisplay').textContent    = row.ig_posts      != null ? row.ig_posts.toLocaleString()     : '—'
+    document.getElementById('igFollowersDisplay').textContent = row.ig_followers  != null ? row.ig_followers.toLocaleString()  : '—'
+    document.getElementById('ttFollowersDisplay').textContent = row.tt_followers  != null ? row.tt_followers.toLocaleString()  : '—'
+    document.getElementById('ttLikesDisplay').textContent    = row.tt_likes       != null ? row.tt_likes.toLocaleString()      : '—'
+    if (row.ig_posts)     document.getElementById('igPosts').value     = row.ig_posts
+    if (row.ig_followers) document.getElementById('igFollowers').value = row.ig_followers
+    if (row.tt_followers) document.getElementById('ttFollowers').value = row.tt_followers
+    if (row.tt_likes)     document.getElementById('ttLikes').value     = row.tt_likes
+  }
+
+  async function loadSocial() {
+    const { data } = await supabase.from('social_stats').select('*').order('updated_at', { ascending: false }).limit(1)
+    if (data && data.length > 0) displaySocial(data[0])
+  }
+
+  window.saveSocial = async function() {
+    const row = {
+      ig_posts:     parseInt(document.getElementById('igPosts').value)     || null,
+      ig_followers: parseInt(document.getElementById('igFollowers').value) || null,
+      tt_followers: parseInt(document.getElementById('ttFollowers').value) || null,
+      tt_likes:     parseInt(document.getElementById('ttLikes').value)     || null,
+      updated_at:   new Date().toISOString(),
+    }
+    const { error } = await supabase.from('social_stats').insert(row)
+    if (error) { alert('Error saving: ' + error.message); return }
+    displaySocial(row)
+  }
+
+  window.addEventListener('load', () => { loadHistory(); loadDemoStats(); loadSocial(); })
 
   // ── DATA ──────────────────────────────────────────────────────────────────
   const signupData = [
