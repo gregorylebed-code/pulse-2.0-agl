@@ -19,6 +19,8 @@ interface ParentCommunicationLogProps {
   onUpdate: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
+  deleteTask?: (id: string) => Promise<void>;
+  tasks?: { id: string; text: string }[];
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -79,12 +81,16 @@ interface TimelineEntryProps {
   comm: ParentCommunication;
   onDelete: (id: string) => void | Promise<void>;
   onUpdate: (id: string, updates: Partial<Omit<ParentCommunication, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => void | Promise<void>;
+  deleteTask?: (id: string) => Promise<void>;
+  tasks?: { id: string; text: string }[];
 }
 
 const TimelineEntry: React.FC<TimelineEntryProps> = ({
   comm,
   onDelete,
   onUpdate,
+  deleteTask,
+  tasks,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -248,7 +254,16 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
                     {comm.follow_up_done && ' · Done'}
                     {!comm.follow_up_done && (
                       <button
-                        onClick={() => onUpdate(comm.id, { follow_up_done: true })}
+                        onClick={() => {
+                          onUpdate(comm.id, { follow_up_done: true });
+                          if (deleteTask && tasks) {
+                            const prefix = comm.subject
+                              ? `Follow up: ${comm.subject} (${comm.student_name.split(' ')[0]})`
+                              : `Follow up with ${comm.student_name.split(' ')[0]}'s parent`;
+                            const match = tasks.find(t => t.text === prefix);
+                            if (match) deleteTask(match.id);
+                          }
+                        }}
                         className="ml-auto flex items-center gap-1 font-black hover:opacity-70"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" /> Mark done
@@ -631,6 +646,8 @@ export default function ParentCommunicationLog({
   onUpdate,
   onDelete,
   addTask,
+  deleteTask,
+  tasks,
 }: ParentCommunicationLogProps) {
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState<string | null>(null);
@@ -656,20 +673,12 @@ export default function ParentCommunicationLog({
     const result = await onAdd(data);
     if (result) {
       setShowForm(false);
-      if (data.is_urgent && addTask) {
+      if (data.follow_up_date && addTask) {
         const taskText = data.subject
           ? `Follow up: ${data.subject} (${student.name.split(' ')[0]})`
-          : `Urgent parent comm — ${student.name.split(' ')[0]}`;
-        toast('⚠ Urgent logged — add to task list?', {
-          duration: 8000,
-          action: {
-            label: 'Add task',
-            onClick: () => {
-              addTask({ text: taskText, completed: false, color: 'urgent' });
-              toast.success('Added to task list');
-            },
-          },
-        });
+          : `Follow up with ${student.name.split(' ')[0]}'s parent`;
+        await addTask({ text: taskText, completed: false, color: 'orange' });
+        toast.success('Communication logged · Follow-up added to task list');
       } else {
         toast.success('Communication logged');
       }
@@ -814,6 +823,8 @@ export default function ParentCommunicationLog({
                 comm={comm}
                 onDelete={handleDelete}
                 onUpdate={onUpdate}
+                deleteTask={deleteTask}
+                tasks={tasks}
               />
             ))}
           </AnimatePresence>

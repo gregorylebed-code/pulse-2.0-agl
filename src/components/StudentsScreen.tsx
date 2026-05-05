@@ -52,6 +52,8 @@ interface StudentsScreenProps {
   teacherLastName: string;
   shoutouts: Shoutout[];
   addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
+  deleteTask?: (id: string) => Promise<void>;
+  tasks?: { id: string; text: string }[];
   seatingChart: Record<string, { x: number; y: number }>;
   saveSeatingChart: (chart: Record<string, { x: number; y: number }>) => Promise<void>;
 }
@@ -288,6 +290,8 @@ export default function StudentsScreen({
   teacherLastName,
   shoutouts,
   addTask,
+  deleteTask,
+  tasks,
   seatingChart,
   saveSeatingChart,
 }: StudentsScreenProps) {
@@ -612,6 +616,8 @@ export default function StudentsScreen({
         teacherLastName={teacherLastName}
         shoutouts={shoutouts.filter(s => s.student_id === selectedStudent.id)}
         addTask={addTask}
+        deleteTask={deleteTask}
+        tasks={tasks}
         attendanceRecords={attendanceRecords.filter(r => r.student_id === selectedStudent.id)}
         deleteAttendanceRecord={deleteAttendanceRecord}
       />

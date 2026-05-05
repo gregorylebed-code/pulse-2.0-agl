@@ -635,6 +635,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 teacherLastName={teacherLastName}
                 shoutouts={shoutouts}
                 addTask={addTask}
+                deleteTask={deleteTask}
+                tasks={tasks}
                 seatingChart={seatingChart}
                 saveSeatingChart={saveSeatingChart}
               />

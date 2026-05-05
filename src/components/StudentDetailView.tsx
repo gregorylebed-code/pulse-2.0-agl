@@ -99,6 +99,8 @@ interface StudentDetailViewProps {
   teacherLastName: string;
   shoutouts: Shoutout[];
   addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
+  deleteTask?: (id: string) => Promise<void>;
+  tasks?: { id: string; text: string }[];
   attendanceRecords: AttendanceRecord[];
   deleteAttendanceRecord: (id: string) => Promise<void>;
 }
@@ -681,6 +683,8 @@ export default function StudentDetailView({
   teacherLastName,
   shoutouts,
   addTask,
+  deleteTask,
+  tasks,
   attendanceRecords,
   deleteAttendanceRecord,
 }: StudentDetailViewProps) {
@@ -2126,6 +2130,8 @@ export default function StudentDetailView({
           onUpdate={updateParentCommunication}
           onDelete={deleteParentCommunication}
           addTask={addTask}
+          deleteTask={deleteTask}
+          tasks={tasks}
         />
       </div>
 
