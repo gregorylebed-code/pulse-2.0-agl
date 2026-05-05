@@ -305,6 +305,44 @@
       .grid-2 { grid-template-columns: 1fr; }
       .grid-3 { grid-template-columns: 1fr; }
     }
+
+    .snapshot-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #16a34a22;
+      color: #4ade80;
+      border: 1px solid #4ade8033;
+      border-radius: 999px;
+      padding: 4px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .snapshot-btn:hover { background: #16a34a44; }
+    .snapshot-btn:disabled { opacity: 0.5; cursor: default; }
+
+    .history-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
+    .history-table th {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #64748b;
+      padding: 0 0 0.5rem 0;
+      text-align: right;
+    }
+    .history-table th:first-child { text-align: left; }
+    .history-table td {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      padding: 0.4rem 0;
+      border-top: 1px solid #1e1e2e;
+      text-align: right;
+    }
+    .history-table td:first-child { text-align: left; color: #64748b; }
+    .history-table td.hi { color: #e2e8f0; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -314,6 +352,7 @@
     <h1>ShortHand — Founder Dashboard</h1>
     <span>Classroom Pulse 3.0 + YouTube</span>
   </div>
+  <button class="snapshot-btn" id="snapshotBtn" onclick="saveSnapshot()">📸 Save Snapshot</button>
   <div class="badge">Live data</div>
 </header>
 
@@ -418,9 +457,101 @@
   </div>
 </div>
 
+<!-- Snapshot History -->
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="card-title">Snapshot History</div>
+  <div id="historyStatus" style="font-size:0.75rem;color:#475569">Loading...</div>
+  <table class="history-table" id="historyTable" style="display:none">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Users</th>
+        <th>Notes</th>
+        <th>Parent Comms</th>
+        <th>Shoutouts</th>
+        <th>YT Views</th>
+        <th>Subscribers</th>
+      </tr>
+    </thead>
+    <tbody id="historyBody"></tbody>
+  </table>
+</div>
+
 <footer>Last refreshed: May 4, 2026 &nbsp;·&nbsp; Data from Supabase + YouTube Data API + Google Search Console</footer>
 
-<script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+  const supabase = createClient(
+    'https://muywwvbmpjotcffocyjb.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11eXd3dmJtcGpvdGNmZm9jeWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODI5MTgsImV4cCI6MjA4OTM1ODkxOH0.bOwEf0IzihkkAlz3fQJRWvRpbo5RHXmkwJ5U0_4uONM'
+  )
+
+  // ── SNAPSHOT ──────────────────────────────────────────────────────────────
+  window.saveSnapshot = async function() {
+    const btn = document.getElementById('snapshotBtn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const { error } = await supabase.from('founder_snapshots').insert({
+      users:          29,
+      notes:          480,
+      parent_comms:   50,
+      shoutouts:      17,
+      yt_views:       20567,
+      yt_subscribers: 20,
+      yt_videos:      66,
+    })
+
+    if (error) {
+      alert('Error saving snapshot: ' + error.message)
+      btn.disabled = false
+      btn.textContent = '📸 Save Snapshot'
+    } else {
+      btn.textContent = '✓ Saved'
+      setTimeout(() => {
+        btn.disabled = false
+        btn.textContent = '📸 Save Snapshot'
+      }, 2000)
+      loadHistory()
+    }
+  }
+
+  async function loadHistory() {
+    const { data, error } = await supabase
+      .from('founder_snapshots')
+      .select('*')
+      .order('captured_at', { ascending: false })
+      .limit(20)
+
+    const status = document.getElementById('historyStatus')
+    const table  = document.getElementById('historyTable')
+    const tbody  = document.getElementById('historyBody')
+
+    if (error) { status.textContent = 'Could not load history.'; return }
+    if (!data || data.length === 0) { status.textContent = 'No snapshots yet — click Save Snapshot to record today\'s numbers.'; return }
+
+    status.style.display = 'none'
+    table.style.display  = 'table'
+
+    tbody.innerHTML = data.map(row => {
+      const d = new Date(row.captured_at)
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      return `<tr>
+        <td>${label}</td>
+        <td class="hi">${row.users ?? '—'}</td>
+        <td>${row.notes ?? '—'}</td>
+        <td>${row.parent_comms ?? '—'}</td>
+        <td>${row.shoutouts ?? '—'}</td>
+        <td>${row.yt_views != null ? row.yt_views.toLocaleString() : '—'}</td>
+        <td>${row.yt_subscribers ?? '—'}</td>
+      </tr>`
+    }).join('')
+  }
+
+  window.addEventListener('load', loadHistory)
+
   // ── DATA ──────────────────────────────────────────────────────────────────
   const signupData = [
     { day: "Mar 19", n: 1 }, { day: "Mar 20", n: 1 }, { day: "Mar 21", n: 1 },
