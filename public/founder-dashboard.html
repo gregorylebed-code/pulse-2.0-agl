@@ -442,7 +442,7 @@
 <div class="grid-2" style="margin-bottom:1.5rem">
   <div class="card">
     <div class="card-title">Instagram</div>
-    <div class="kpi-row" style="margin-bottom:1rem">
+    <div class="kpi-row" style="margin-bottom:0.75rem">
       <div class="kpi-item">
         <div class="kpi-val" id="igPostsDisplay">—</div>
         <div class="kpi-lbl">Posts</div>
@@ -453,6 +453,8 @@
         <div class="kpi-lbl">Followers</div>
       </div>
     </div>
+    <div class="sparkline-wrap"><svg class="sparkline" id="igSparkline"></svg></div>
+    <div class="card-sub" id="igChartLabel" style="margin-top:0.35rem;margin-bottom:0.75rem"></div>
     <div style="display:flex;gap:0.5rem;align-items:center">
       <input id="igPosts" type="number" placeholder="Posts" style="width:80px;background:#1a1a24;border:1px solid #1e1e2e;border-radius:8px;padding:4px 8px;color:#e2e8f0;font-size:0.75rem"/>
       <input id="igFollowers" type="number" placeholder="Followers" style="width:90px;background:#1a1a24;border:1px solid #1e1e2e;border-radius:8px;padding:4px 8px;color:#e2e8f0;font-size:0.75rem"/>
@@ -461,7 +463,7 @@
   </div>
   <div class="card">
     <div class="card-title">TikTok</div>
-    <div class="kpi-row" style="margin-bottom:1rem">
+    <div class="kpi-row" style="margin-bottom:0.75rem">
       <div class="kpi-item">
         <div class="kpi-val" id="ttFollowersDisplay">—</div>
         <div class="kpi-lbl">Followers</div>
@@ -472,6 +474,8 @@
         <div class="kpi-lbl">Likes</div>
       </div>
     </div>
+    <div class="sparkline-wrap"><svg class="sparkline" id="ttSparkline"></svg></div>
+    <div class="card-sub" id="ttChartLabel" style="margin-top:0.35rem;margin-bottom:0.75rem"></div>
     <div style="display:flex;gap:0.5rem;align-items:center">
       <input id="ttFollowers" type="number" placeholder="Followers" style="width:90px;background:#1a1a24;border:1px solid #1e1e2e;border-radius:8px;padding:4px 8px;color:#e2e8f0;font-size:0.75rem"/>
       <input id="ttLikes" type="number" placeholder="Likes" style="width:90px;background:#1a1a24;border:1px solid #1e1e2e;border-radius:8px;padding:4px 8px;color:#e2e8f0;font-size:0.75rem"/>
@@ -647,9 +651,31 @@
     if (row.tt_likes)     document.getElementById('ttLikes').value     = row.tt_likes
   }
 
+  function makeSocialChart(svgId, data, valueKey, color, labelEl, labelText) {
+    const pts = data.filter(d => d[valueKey] != null)
+    if (pts.length < 2) {
+      document.getElementById(svgId).innerHTML = ''
+      document.getElementById(labelEl).textContent = pts.length < 2 ? 'Save at least 2 entries to see a chart' : ''
+      return
+    }
+    const formatted = pts.map(d => ({
+      label: new Date(d.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      cumulative: d[valueKey]
+    }))
+    makeCumulativeChart(svgId, formatted, color)
+    document.getElementById(labelEl).textContent = labelText
+  }
+
+  function drawSocialCharts(data) {
+    makeSocialChart('igSparkline', data, 'ig_followers', '#e1306c', 'igChartLabel', 'IG followers over time')
+    makeSocialChart('ttSparkline', data, 'tt_followers', '#69c9d0', 'ttChartLabel', 'TikTok followers over time')
+  }
+
   async function loadSocial() {
-    const { data } = await supabase.from('social_stats').select('*').order('updated_at', { ascending: false }).limit(1)
-    if (data && data.length > 0) displaySocial(data[0])
+    const { data } = await supabase.from('social_stats').select('*').order('updated_at', { ascending: true })
+    if (!data || data.length === 0) return
+    displaySocial(data[data.length - 1])
+    drawSocialCharts(data)
   }
 
   window.saveSocial = async function() {
@@ -663,6 +689,7 @@
     const { error } = await supabase.from('social_stats').insert(row)
     if (error) { alert('Error saving: ' + error.message); return }
     displaySocial(row)
+    await loadSocial()
   }
 
   window.addEventListener('load', () => { loadHistory(); loadDemoStats(); loadSocial(); })
