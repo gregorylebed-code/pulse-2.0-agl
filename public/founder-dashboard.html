@@ -360,8 +360,8 @@
 <div class="grid-4">
   <div class="card">
     <div class="card-label">Total Users</div>
-    <div class="card-value">29</div>
-    <div class="card-sub">real teachers (excl. test accounts)</div>
+    <div class="card-value" id="statRealUsers">—</div>
+    <div class="card-sub">real teachers (excl. test &amp; anon)</div>
   </div>
   <div class="card">
     <div class="card-label">Notes Written</div>
@@ -564,7 +564,7 @@
     btn.textContent = 'Saving...'
 
     const { error } = await supabase.from('founder_snapshots').insert({
-      users:          29,
+      users:          parseInt(document.getElementById('statRealUsers').textContent) || null,
       notes:          480,
       parent_comms:   50,
       shoutouts:      17,
@@ -622,9 +622,10 @@
 
   async function loadDemoStats() {
     const events = ['demo_nudge_shown', 'demo_nudge_cta_clicked', 'demo_nudge_dismissed']
-    const [eventsRes, anonRes] = await Promise.all([
+    const [eventsRes, anonRes, teacherRes] = await Promise.all([
       supabase.from('analytics_events').select('event_name').in('event_name', events),
-      supabase.rpc('get_anon_user_count')
+      supabase.rpc('get_anon_user_count'),
+      supabase.rpc('get_real_teacher_count')
     ])
 
     if (!eventsRes.error && eventsRes.data) {
@@ -638,6 +639,9 @@
 
     if (!anonRes.error && anonRes.data != null) {
       document.getElementById('statDemoStarted').textContent = anonRes.data
+    }
+    if (!teacherRes.error && teacherRes.data != null) {
+      document.getElementById('statRealUsers').textContent = teacherRes.data
     }
   }
 
