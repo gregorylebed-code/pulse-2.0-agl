@@ -536,6 +536,7 @@
       <tr>
         <th>Date</th>
         <th>Users</th>
+        <th>Demo Started</th>
         <th>Notes</th>
         <th>Parent Comms</th>
         <th>Shoutouts</th>
@@ -565,6 +566,7 @@
 
     const { error } = await supabase.from('founder_snapshots').insert({
       users:          parseInt(document.getElementById('statRealUsers').textContent) || null,
+      demo_started:   parseInt(document.getElementById('statDemoStarted').textContent) || null,
       notes:          480,
       parent_comms:   50,
       shoutouts:      17,
@@ -611,6 +613,7 @@
       return `<tr>
         <td>${label}</td>
         <td class="hi">${row.users ?? '—'}</td>
+        <td>${row.demo_started ?? '—'}</td>
         <td>${row.notes ?? '—'}</td>
         <td>${row.parent_comms ?? '—'}</td>
         <td>${row.shoutouts ?? '—'}</td>
