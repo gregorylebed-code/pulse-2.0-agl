@@ -10,7 +10,7 @@ interface ImportScreenProps {
   onImportComplete: () => void;
   classes: string[];
   students: Student[];
-  addStudent: (s: Omit<Student, 'id'>) => Promise<Student | null>;
+  addStudent: (s: Omit<Student, 'id' | 'created_at' | 'user_id'>) => Promise<Student | null>;
   updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
   userId: string;
 }
@@ -128,7 +128,8 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
           parent_emails: s.email ? [{ value: s.email, label: 'Email' }] : [],
           parent_phones: [],
           photo_url: s.photoUrl ?? null,
-        } as Omit<Student, 'id' | 'created_at' | 'user_id'>);
+          class_id: null,
+        });
         added++;
       }
       const msg = skipped > 0
@@ -315,7 +316,8 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
           parent_guardian_names: Array.isArray(s.parent_guardian_names) ? s.parent_guardian_names.map(extractString) : [],
           parent_emails: Array.isArray(s.parent_emails) ? s.parent_emails : [],
           parent_phones: Array.isArray(s.parent_phones) ? s.parent_phones : [],
-        } as Omit<Student, 'id' | 'created_at' | 'user_id'>);
+          class_id: null,
+        });
         addedCount++;
       }
 

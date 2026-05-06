@@ -25,6 +25,9 @@ function makeNote(overrides: Partial<Note> & { student_name: string; content: st
     is_parent_communication: false,
     parent_communication_type: null,
     is_pinned: false,
+    deadline: null,
+    is_checklist: false,
+    checklist_data: [],
     ...overrides,
   };
 }

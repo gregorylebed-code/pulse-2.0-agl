@@ -12,6 +12,9 @@ interface State {
 }
 
 export default class ErrorBoundary extends React.Component<Props, State> {
+  declare state: State;
+  declare props: Props;
+  declare setState: React.Component<Props, State>["setState"];
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
