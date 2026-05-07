@@ -722,6 +722,7 @@ export default function StudentsScreen({
       if (aPinned && bPinned) return pinnedOrder.indexOf(a.id) - pinnedOrder.indexOf(b.id);
       if (aPinned) return -1;
       if (bPinned) return 1;
+      if (studioShuffleOrder) return studioShuffleOrder.indexOf(a.id) - studioShuffleOrder.indexOf(b.id);
       return sortKey(a.name).localeCompare(sortKey(b.name));
     });
   });

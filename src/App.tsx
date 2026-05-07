@@ -88,8 +88,17 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   useEffect(() => {
     const el = document.documentElement;
-    el.classList.remove('studio-amber', 'studio-rose', 'studio-violet', 'studio-cyan');
-    if (studioTheme !== 'default') el.classList.add(`studio-${studioTheme}`);
+    const palettes: Record<string, [string, string, string]> = {
+      default: ['#34d399', '#a7f3d0', '#10b981'],
+      amber:   ['#f59e0b', '#fde68a', '#d97706'],
+      rose:    ['#f43f5e', '#fecdd3', '#e11d48'],
+      violet:  ['#8b5cf6', '#ddd6fe', '#7c3aed'],
+      cyan:    ['#06b6d4', '#a5f3fc', '#0891b2'],
+    };
+    const [main, light, dark] = palettes[studioTheme] ?? palettes.default;
+    el.style.setProperty('--color-sage', main);
+    el.style.setProperty('--color-sage-light', light);
+    el.style.setProperty('--color-sage-dark', dark);
   }, [studioTheme]);
 
   // Heartbeat — update last_seen whenever the app loads

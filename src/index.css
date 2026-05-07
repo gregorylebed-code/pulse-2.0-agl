@@ -78,28 +78,6 @@
   border-radius: 1rem;
 }
 
-/* ===== STUDIO MODE ACCENT THEMES ===== */
-html.studio-amber {
-  --color-sage: #f59e0b;
-  --color-sage-light: #fde68a;
-  --color-sage-dark: #d97706;
-}
-html.studio-rose {
-  --color-sage: #f43f5e;
-  --color-sage-light: #fecdd3;
-  --color-sage-dark: #e11d48;
-}
-html.studio-violet {
-  --color-sage: #8b5cf6;
-  --color-sage-light: #ddd6fe;
-  --color-sage-dark: #7c3aed;
-}
-html.studio-cyan {
-  --color-sage: #06b6d4;
-  --color-sage-light: #a5f3fc;
-  --color-sage-dark: #0891b2;
-}
-
 /* ===== DARK MODE ===== */
 html.dark {
   color-scheme: dark;
