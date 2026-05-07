@@ -593,12 +593,12 @@
       notesRes, studentsRes, parentCommsRes, shoutoutsRes,
       signupsRes, notesActivityRes, eventsRes, anonRes, teacherRes, socialRes
     ] = await Promise.all([
-      supabase.from('notes').select('id', { count: 'exact', head: true }),
-      supabase.from('students').select('id', { count: 'exact', head: true }),
-      supabase.from('parent_communications').select('id', { count: 'exact', head: true }),
-      supabase.from('shoutouts').select('id', { count: 'exact', head: true }),
-      supabase.from('user_presence').select('email, last_seen').order('last_seen', { ascending: true }),
-      supabase.from('notes').select('created_at').gte('created_at', new Date(Date.now() - 14*24*60*60*1000).toISOString()),
+      supabase.rpc('get_notes_count'),
+      supabase.rpc('get_students_count'),
+      supabase.rpc('get_parent_comms_count'),
+      supabase.rpc('get_shoutouts_count'),
+      supabase.rpc('get_signup_dates'),
+      supabase.rpc('get_notes_last_14_days'),
       supabase.from('analytics_events').select('event_name').in('event_name', events),
       supabase.rpc('get_anon_user_count'),
       supabase.rpc('get_real_teacher_count'),
@@ -635,10 +635,10 @@
     if (eventsRes.data) eventsRes.data.forEach(r => { if (eventCounts[r.event_name] !== undefined) eventCounts[r.event_name]++ })
 
     return {
-      notes:        notesRes.count ?? 0,
-      students:     studentsRes.count ?? 0,
-      parentComms:  parentCommsRes.count ?? 0,
-      shoutouts:    shoutoutsRes.count ?? 0,
+      notes:        notesRes.data ?? 0,
+      students:     studentsRes.data ?? 0,
+      parentComms:  parentCommsRes.data ?? 0,
+      shoutouts:    shoutoutsRes.data ?? 0,
       realUsers:    teacherRes.data ?? '—',
       demoStarted:  anonRes.data ?? '—',
       nudgeShown:   eventCounts['demo_nudge_shown'],
