@@ -485,10 +485,16 @@
   </div>
 </div>
 
-<!-- Top videos -->
-<div class="card" style="margin-bottom:1.5rem">
-  <div class="card-title">Top Videos by Views</div>
-  <div class="video-list" id="videoList"></div>
+<!-- Top videos + GSC top pages -->
+<div class="grid-2" style="margin-bottom:1.5rem">
+  <div class="card">
+    <div class="card-title">Top Videos by Views</div>
+    <div class="video-list" id="videoList"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Top Pages by Impressions</div>
+    <div id="videoGscList"></div>
+  </div>
 </div>
 
 <!-- Notes activity -->
@@ -1046,6 +1052,22 @@
     `).join('');
   }
 
+  function buildVideoGsc() {
+    const list = document.getElementById('videoGscList');
+    list.innerHTML = gscPages.map(p => {
+      const posColor = p.position <= 5 ? '#34d399' : p.position <= 10 ? '#f59e0b' : '#94a3b8'
+      return `
+      <div class="video-row" style="cursor:default">
+        <span class="video-title" style="font-size:0.75rem">${p.name}</span>
+        <span class="video-stats">
+          <span class="stat-pill views">👁 ${p.impressions}</span>
+          <span class="stat-pill likes">↗ ${p.clicks}</span>
+          <span class="stat-pill" style="color:${posColor};background:${posColor}18">#${p.position.toFixed(1)}</span>
+        </span>
+      </div>`
+    }).join('')
+  }
+
   function buildVideoList() {
     const list = document.getElementById('videoList');
     list.innerHTML = topVideos.map((v, i) => `
@@ -1066,6 +1088,7 @@
     makeBars('notesChart',  notesData,  'n', 'day', '#34d399', 2);
     makeCumulativeChart('viewsSparkline', cumulativeViews, '#f97316');
     buildVideoList();
+    buildVideoGsc();
     buildGSC();
   });
 
