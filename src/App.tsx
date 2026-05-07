@@ -848,7 +848,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       <StudioPanel
         open={studioOpen}
         onClose={() => setStudioOpen(false)}
-        onShuffle={() => setStudioShuffle(s => s + 1)}
+        onShuffle={() => { setSelectedStudentId(null); setStudioShuffle(s => s + 1); }}
         theme={studioTheme}
         onThemeChange={setStudioTheme}
         bgTheme={studioBg}

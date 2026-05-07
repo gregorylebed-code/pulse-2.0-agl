@@ -408,6 +408,18 @@ export default function StudentsScreen({
   const [birthdayPreview, setBirthdayPreview] = useState<Array<{ studentName: string; birthMonth: number; birthDay: number; matchedId: string | null; manualId?: string }> | null>(null);
   const [birthdaySaving, setBirthdaySaving] = useState(false);
 
+  // Must be above the selectedStudent early return — hooks can't follow a conditional return
+  const studioShuffleOrder = useMemo(() => {
+    if (!studioShuffle) return null;
+    const ids = students.map(s => s.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    return ids;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studioShuffle]);
+
   const selectedStudent = students.find(s => s.id === selectedStudentId);
   const studentNotes = notes.filter(n => n.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const studentReports = reports.filter(r => r.student_name === selectedStudent?.name).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -676,28 +688,12 @@ export default function StudentsScreen({
     }
   };
 
-  const studioShuffleOrder = useMemo(() => {
-    if (!studioShuffle) return null;
-    const ids = students.map(s => s.id);
-    for (let i = ids.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ids[i], ids[j]] = [ids[j], ids[i]];
-    }
-    return ids;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studioShuffle]);
-
-  const filteredStudents = students
-    .filter(s => {
-      const section = s.class_period || s.class_id;
-      const matchesFilter = filter === 'All' || section === filter;
-      const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesFilter && matchesSearch;
-    })
-    .sort((a, b) => {
-      if (!studioShuffleOrder) return 0;
-      return studioShuffleOrder.indexOf(a.id) - studioShuffleOrder.indexOf(b.id);
-    });
+  const filteredStudents = students.filter(s => {
+    const section = s.class_period || s.class_id;
+    const matchesFilter = filter === 'All' || section === filter;
+    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
   // Group students by section
   const groupedStudents = filteredStudents.reduce((acc, student) => {
@@ -722,7 +718,11 @@ export default function StudentsScreen({
       if (aPinned && bPinned) return pinnedOrder.indexOf(a.id) - pinnedOrder.indexOf(b.id);
       if (aPinned) return -1;
       if (bPinned) return 1;
-      if (studioShuffleOrder) return studioShuffleOrder.indexOf(a.id) - studioShuffleOrder.indexOf(b.id);
+      if (studioShuffleOrder) {
+        const ai = studioShuffleOrder.indexOf(a.id);
+        const bi = studioShuffleOrder.indexOf(b.id);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      }
       return sortKey(a.name).localeCompare(sortKey(b.name));
     });
   });
