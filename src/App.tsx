@@ -27,6 +27,7 @@ import { trackEvent } from './lib/analytics';
 import WelcomeModal from './components/WelcomeModal';
 import Confetti, { ConfettiHandle } from './components/Confetti';
 import CarouselMaker from './components/social-lab/CarouselMaker';
+import StudioPanel, { AccentTheme } from './components/StudioPanel';
 
 import type { Note } from './types';
 import { Sparkles, BarChart2 } from 'lucide-react';
@@ -79,6 +80,17 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('cp_theme', theme);
   }, [theme]);
+
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [studioTheme, setStudioTheme] = useState<AccentTheme>('default');
+  const [studioShuffle, setStudioShuffle] = useState(0);
+  const [studioClassLabel, setStudioClassLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    const el = document.documentElement;
+    el.classList.remove('studio-amber', 'studio-rose', 'studio-violet', 'studio-cyan');
+    if (studioTheme !== 'default') el.classList.add(`studio-${studioTheme}`);
+  }, [studioTheme]);
 
   // Heartbeat — update last_seen whenever the app loads
   useEffect(() => {
@@ -453,6 +465,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         onSetTodayOverride={(letter) => saveTodayOverride(letter ? { date: todayKey, letter } : null)}
         tasks={tasks}
         setShowTasks={setShowTasks}
+        onOpenStudio={() => setStudioOpen(true)}
       />
 
       <AnimatePresence>
@@ -639,6 +652,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 tasks={tasks}
                 seatingChart={seatingChart}
                 saveSeatingChart={saveSeatingChart}
+                studioShuffle={studioShuffle}
+                studioClassLabel={studioClassLabel}
               />
               </ErrorBoundary>
             </motion.div>
@@ -806,6 +821,16 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       />
 
       <Confetti ref={confettiRef} />
+
+      <StudioPanel
+        open={studioOpen}
+        onClose={() => setStudioOpen(false)}
+        onShuffle={() => setStudioShuffle(s => s + 1)}
+        theme={studioTheme}
+        onThemeChange={setStudioTheme}
+        classLabel={studioClassLabel}
+        onClassLabel={setStudioClassLabel}
+      />
 
       {isUsingBackup && (
         <motion.div

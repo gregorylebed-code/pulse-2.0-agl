@@ -56,6 +56,8 @@ interface StudentsScreenProps {
   tasks?: { id: string; text: string }[];
   seatingChart: Record<string, { x: number; y: number }>;
   saveSeatingChart: (chart: Record<string, { x: number; y: number }>) => Promise<void>;
+  studioShuffle?: number;
+  studioClassLabel?: string | null;
 }
 
 // ─── Attendance Banner ────────────────────────────────────────────────────────
@@ -294,6 +296,8 @@ export default function StudentsScreen({
   tasks,
   seatingChart,
   saveSeatingChart,
+  studioShuffle,
+  studioClassLabel,
 }: StudentsScreenProps) {
   const { aliasMode } = useAliasMode();
   const isFullMode = useFullMode();
@@ -672,12 +676,28 @@ export default function StudentsScreen({
     }
   };
 
-  const filteredStudents = students.filter(s => {
-    const section = s.class_period || s.class_id;
-    const matchesFilter = filter === 'All' || section === filter;
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const studioShuffleOrder = useMemo(() => {
+    if (!studioShuffle) return null;
+    const ids = students.map(s => s.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    return ids;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studioShuffle]);
+
+  const filteredStudents = students
+    .filter(s => {
+      const section = s.class_period || s.class_id;
+      const matchesFilter = filter === 'All' || section === filter;
+      const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesFilter && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (!studioShuffleOrder) return 0;
+      return studioShuffleOrder.indexOf(a.id) - studioShuffleOrder.indexOf(b.id);
+    });
 
   // Group students by section
   const groupedStudents = filteredStudents.reduce((acc, student) => {
@@ -953,7 +973,7 @@ export default function StudentsScreen({
                   {section === 'Unassigned' ? '?' : section[0]}
                 </div>
                 <span className={cn('font-black text-sm flex-1', palette.text)}>
-                  {section === 'Unassigned' ? 'Unassigned' : `Period ${section}`}
+                  {studioClassLabel ?? (section === 'Unassigned' ? 'Unassigned' : `Period ${section}`)}
                 </span>
                 <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-lg', palette.badge)}>
                   {groupedStudents[section].length} students

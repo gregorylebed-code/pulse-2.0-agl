@@ -22,6 +22,7 @@ interface HeaderProps {
   onSetTodayOverride: (letter: string | null) => void;
   tasks: Task[];
   setShowTasks: (v: boolean) => void;
+  onOpenStudio?: () => void;
 }
 
 const getGreeting = (name: string) => {
@@ -46,9 +47,23 @@ export default function Header({
   onSetTodayOverride,
   tasks,
   setShowTasks,
+  onOpenStudio,
 }: HeaderProps) {
   const forecast = getForecast(specialsConfig);
   const [showOverridePicker, setShowOverridePicker] = useState(false);
+  const logoTapCount = React.useRef(0);
+  const logoTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleLogoTap = () => {
+    logoTapCount.current += 1;
+    if (logoTapTimer.current) clearTimeout(logoTapTimer.current);
+    if (logoTapCount.current >= 5) {
+      logoTapCount.current = 0;
+      onOpenStudio?.();
+    } else {
+      logoTapTimer.current = setTimeout(() => { logoTapCount.current = 0; }, 1200);
+    }
+  };
   const { aliasMode, toggleAliasMode } = useAliasMode();
   const letters = Array.from({ length: specialsConfig.rollingLetterCount || 5 }, (_, i) => String.fromCharCode(65 + i));
   const canOverride = specialsConfig.mode === 'letter-day' || specialsConfig.mode === 'rolling';
@@ -98,7 +113,10 @@ export default function Header({
           )}
         </div>
 
-        <span className="self-center text-[16px] font-bold tracking-wide mx-2 flex-shrink-0 flex">
+        <span
+          onClick={handleLogoTap}
+          className="self-center text-[16px] font-bold tracking-wide mx-2 flex-shrink-0 flex cursor-default select-none"
+        >
           {['S','h','o','r','t','H','a','n','d'].map((letter, i) => {
             const colors = ['#e2725b','#34d399','#f59e0b','#60a5fa','#a78bfa','#e2725b','#34d399','#f59e0b','#60a5fa'];
             return (
