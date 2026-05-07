@@ -673,8 +673,10 @@
     document.getElementById('notesChartSub').textContent = `${d.notes.toLocaleString()} total notes · ${d.students.toLocaleString()} students tracked`
 
     // Charts
-    if (d.signupData.length > 0) makeBars('signupChart', d.signupData, 'n', 'day', '#7c86ff', 3)
-    if (d.notesData.length > 0)  makeBars('notesChart',  d.notesData,  'n', 'day', '#34d399', 2)
+    requestAnimationFrame(() => {
+      if (d.signupData.length > 0) makeBars('signupChart', d.signupData, 'n', 'day', '#7c86ff', 3)
+      if (d.notesData.length > 0)  makeBars('notesChart',  d.notesData,  'n', 'day', '#34d399', 2)
+    })
 
     // Social
     if (d.social.length > 0) {
