@@ -418,24 +418,24 @@
     <div class="card-title">YouTube Channel</div>
     <div class="kpi-row">
       <div class="kpi-item">
-        <div class="kpi-val">20.6k</div>
+        <div class="kpi-val" id="ytViews">—</div>
         <div class="kpi-lbl">Total Views</div>
       </div>
       <div class="divider"></div>
       <div class="kpi-item">
-        <div class="kpi-val">66</div>
+        <div class="kpi-val" id="ytVideos">—</div>
         <div class="kpi-lbl">Videos</div>
       </div>
       <div class="divider"></div>
       <div class="kpi-item">
-        <div class="kpi-val">20</div>
+        <div class="kpi-val" id="ytSubs">—</div>
         <div class="kpi-lbl">Subscribers</div>
       </div>
     </div>
     <div class="sparkline-wrap">
       <svg class="sparkline" id="viewsSparkline"></svg>
     </div>
-    <div class="card-sub" style="margin-top:0.5rem">Cumulative views — all 66 videos by publish date</div>
+    <div class="card-sub" style="margin-top:0.5rem" id="ytCardSub">Loading YouTube stats...</div>
   </div>
 </div>
 
@@ -699,15 +699,19 @@
     const social = cache?.social ?? []
     const latestSocial = social.length > 0 ? social[social.length - 1] : {}
 
+    const ytViews = parseInt(document.getElementById('ytViews').textContent.replace(/,/g, '')) || null
+    const ytSubs  = parseInt(document.getElementById('ytSubs').textContent.replace(/,/g, ''))  || null
+    const ytVids  = parseInt(document.getElementById('ytVideos').textContent.replace(/,/g, '')) || null
+
     const { error } = await supabase.from('founder_snapshots').insert({
       users:          parseInt(document.getElementById('statRealUsers').textContent) || null,
       demo_started:   parseInt(document.getElementById('statDemoStarted').textContent) || null,
       notes:          cache?.notes ?? null,
       parent_comms:   cache?.parentComms ?? null,
       shoutouts:      cache?.shoutouts ?? null,
-      yt_views:       20567,
-      yt_subscribers: 20,
-      yt_videos:      66,
+      yt_views:       ytViews,
+      yt_subscribers: ytSubs,
+      yt_videos:      ytVids,
       ig_followers:   latestSocial.ig_followers ?? null,
       tt_followers:   latestSocial.tt_followers ?? null,
     })
@@ -814,9 +818,26 @@
     drawSocialCharts(data)
   }
 
+  // ── YOUTUBE LIVE STATS ────────────────────────────────────────────────────
+  async function fetchYouTubeStats() {
+    try {
+      const res = await fetch('/api/youtube-stats')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      document.getElementById('ytViews').textContent  = data.totalViews.toLocaleString()
+      document.getElementById('ytSubs').textContent   = data.subscribers.toLocaleString()
+      document.getElementById('ytVideos').textContent = data.videoCount.toLocaleString()
+      document.getElementById('ytCardSub').textContent = 'Live from YouTube Data API'
+    } catch (e) {
+      document.getElementById('ytCardSub').textContent = 'Could not load YouTube stats'
+      console.error('[youtube-stats]', e)
+    }
+  }
+
   // ── BOOT ──────────────────────────────────────────────────────────────────
   window.addEventListener('load', async () => {
     loadHistory()
+    fetchYouTubeStats()
 
     const cached = getCache()
     if (cached) {
