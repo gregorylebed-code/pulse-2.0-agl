@@ -353,6 +353,7 @@
     <span>Classroom Pulse 3.0 + YouTube</span>
   </div>
   <button class="snapshot-btn" id="snapshotBtn" onclick="saveSnapshot()">📸 Save Snapshot</button>
+  <button class="snapshot-btn" onclick="forceRefresh()" style="background:#1e1e2e;color:#94a3b8;border-color:#27272a">↺ Force Refresh</button>
   <div class="badge">Live data</div>
 </header>
 
@@ -363,19 +364,19 @@
     <div class="card-value" id="statRealUsers">—</div>
     <div class="card-sub">real teachers (excl. test &amp; anon)</div>
   </div>
-  <div class="card">
+  <div class="card" id="notesCard">
     <div class="card-label">Notes Written</div>
-    <div class="card-value">480</div>
-    <div class="card-sub">across 305 students</div>
+    <div class="card-value">—</div>
+    <div class="card-sub">across — students</div>
   </div>
-  <div class="card">
+  <div class="card" id="parentCommsCard">
     <div class="card-label">Parent Comms</div>
-    <div class="card-value">50</div>
+    <div class="card-value">—</div>
     <div class="card-sub">logged by teachers</div>
   </div>
-  <div class="card">
+  <div class="card" id="shoutoutsCard">
     <div class="card-label">Shoutouts</div>
-    <div class="card-value">17</div>
+    <div class="card-value">—</div>
     <div class="card-sub">positive moments captured</div>
   </div>
 </div>
@@ -496,7 +497,7 @@
     <div class="chart-wrap" style="height:120px">
       <svg class="bar-chart" id="notesChart"></svg>
     </div>
-    <div class="card-sub" style="margin-top:0.75rem">480 total notes &nbsp;·&nbsp; 305 students tracked</div>
+    <div class="card-sub" id="notesChartSub" style="margin-top:0.75rem">— total notes · — students tracked</div>
   </div>
 </div>
 
@@ -542,13 +543,15 @@
         <th>Shoutouts</th>
         <th>YT Views</th>
         <th>Subscribers</th>
+        <th>IG Followers</th>
+        <th>TT Followers</th>
       </tr>
     </thead>
     <tbody id="historyBody"></tbody>
   </table>
 </div>
 
-<footer>Last refreshed: May 4, 2026 &nbsp;·&nbsp; Data from Supabase + YouTube Data API + Google Search Console</footer>
+<footer id="footerRefresh">Loading...</footer>
 
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -558,21 +561,155 @@
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11eXd3dmJtcGpvdGNmZm9jeWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODI5MTgsImV4cCI6MjA4OTM1ODkxOH0.bOwEf0IzihkkAlz3fQJRWvRpbo5RHXmkwJ5U0_4uONM'
   )
 
+  const CACHE_KEY = 'founder_dashboard_cache'
+  const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
+
+  function getCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY)
+      if (!raw) return null
+      const { ts, data } = JSON.parse(raw)
+      if (Date.now() - ts > CACHE_TTL) return null
+      return data
+    } catch { return null }
+  }
+
+  function setCache(data) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })) } catch {}
+  }
+
+  // ── LIVE SUPABASE FETCH ───────────────────────────────────────────────────
+  async function fetchAllData() {
+    const TEST_EMAILS = [
+      'gregorylebed@gmail.com','gregorylebed+1@gmail.com','gregorylebed+2@gmail.com',
+      'gregorylebed+3@gmail.com','gregorylebed+4@gmail.com','gregorylebed+5@gmail.com',
+      'gregorylebed+test@gmail.com','test@getshorthandapp.com','info@getshorthandapp.com',
+      'demo@getshorthandapp.com','admin@getshorthandapp.com'
+    ]
+
+    const events = ['demo_nudge_shown', 'demo_nudge_cta_clicked', 'demo_nudge_dismissed']
+
+    const [
+      notesRes, studentsRes, parentCommsRes, shoutoutsRes,
+      signupsRes, notesActivityRes, eventsRes, anonRes, teacherRes, socialRes
+    ] = await Promise.all([
+      supabase.from('notes').select('id', { count: 'exact', head: true }),
+      supabase.from('students').select('id', { count: 'exact', head: true }),
+      supabase.from('parent_communications').select('id', { count: 'exact', head: true }),
+      supabase.from('shoutouts').select('id', { count: 'exact', head: true }),
+      supabase.from('user_presence').select('email, last_seen').order('last_seen', { ascending: true }),
+      supabase.from('notes').select('created_at').gte('created_at', new Date(Date.now() - 14*24*60*60*1000).toISOString()),
+      supabase.from('analytics_events').select('event_name').in('event_name', events),
+      supabase.rpc('get_anon_user_count'),
+      supabase.rpc('get_real_teacher_count'),
+      supabase.from('social_stats').select('*').order('updated_at', { ascending: true }),
+    ])
+
+    // Signup chart: group user_presence by day, exclude test emails
+    const signupMap = {}
+    if (signupsRes.data) {
+      signupsRes.data
+        .filter(r => !TEST_EMAILS.includes(r.email))
+        .forEach(r => {
+          const d = new Date(r.last_seen)
+          const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          signupMap[label] = (signupMap[label] || 0) + 1
+        })
+    }
+    const signupData = Object.entries(signupMap).map(([day, n]) => ({ day, n }))
+
+    // Notes activity last 14 days grouped by day
+    const notesMap = {}
+    if (notesActivityRes.data) {
+      notesActivityRes.data.forEach(r => {
+        const d = new Date(r.created_at)
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        notesMap[label] = (notesMap[label] || 0) + 1
+      })
+    }
+    const notesData = Object.entries(notesMap).map(([day, n]) => ({ day, n }))
+
+    // Event counts
+    const eventCounts = {}
+    events.forEach(e => eventCounts[e] = 0)
+    if (eventsRes.data) eventsRes.data.forEach(r => { if (eventCounts[r.event_name] !== undefined) eventCounts[r.event_name]++ })
+
+    return {
+      notes:        notesRes.count ?? 0,
+      students:     studentsRes.count ?? 0,
+      parentComms:  parentCommsRes.count ?? 0,
+      shoutouts:    shoutoutsRes.count ?? 0,
+      realUsers:    teacherRes.data ?? '—',
+      demoStarted:  anonRes.data ?? '—',
+      nudgeShown:   eventCounts['demo_nudge_shown'],
+      nudgeCTA:     eventCounts['demo_nudge_cta_clicked'],
+      nudgeDismiss: eventCounts['demo_nudge_dismissed'],
+      signupData,
+      notesData,
+      social:       socialRes.data ?? [],
+      fetchedAt:    new Date().toISOString(),
+    }
+  }
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  function renderData(d) {
+    document.getElementById('statRealUsers').textContent    = d.realUsers
+    document.getElementById('statDemoStarted').textContent  = d.demoStarted
+    document.getElementById('statNudgeShown').textContent   = d.nudgeShown
+    document.getElementById('statNudgeCTA').textContent     = d.nudgeCTA
+    document.getElementById('statNudgeDismissed').textContent = d.nudgeDismiss
+
+    // Notes card
+    document.querySelector('#notesCard .card-value').textContent = d.notes.toLocaleString()
+    document.querySelector('#notesCard .card-sub').textContent   = `across ${d.students.toLocaleString()} students`
+
+    // Parent comms card
+    document.querySelector('#parentCommsCard .card-value').textContent = d.parentComms.toLocaleString()
+
+    // Shoutouts card
+    document.querySelector('#shoutoutsCard .card-value').textContent = d.shoutouts.toLocaleString()
+
+    // Notes activity chart sub-label
+    document.getElementById('notesChartSub').textContent = `${d.notes.toLocaleString()} total notes · ${d.students.toLocaleString()} students tracked`
+
+    // Charts
+    if (d.signupData.length > 0) makeBars('signupChart', d.signupData, 'n', 'day', '#7c86ff', 3)
+    if (d.notesData.length > 0)  makeBars('notesChart',  d.notesData,  'n', 'day', '#34d399', 2)
+
+    // Social
+    if (d.social.length > 0) {
+      displaySocial(d.social[d.social.length - 1])
+      drawSocialCharts(d.social)
+    }
+
+    // Footer
+    const fetched = new Date(d.fetchedAt)
+    const nextFetch = new Date(fetched.getTime() + CACHE_TTL)
+    document.getElementById('footerRefresh').innerHTML =
+      `Last refreshed: ${fetched.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ${fetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} &nbsp;·&nbsp; Next refresh: ${nextFetch.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${nextFetch.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} &nbsp;·&nbsp; Data from Supabase + YouTube Data API + Google Search Console`
+  }
+
   // ── SNAPSHOT ──────────────────────────────────────────────────────────────
   window.saveSnapshot = async function() {
     const btn = document.getElementById('snapshotBtn')
     btn.disabled = true
     btn.textContent = 'Saving...'
 
+    const cache = getCache()
+    const social = cache?.social ?? []
+    const latestSocial = social.length > 0 ? social[social.length - 1] : {}
+
     const { error } = await supabase.from('founder_snapshots').insert({
       users:          parseInt(document.getElementById('statRealUsers').textContent) || null,
       demo_started:   parseInt(document.getElementById('statDemoStarted').textContent) || null,
-      notes:          480,
-      parent_comms:   50,
-      shoutouts:      17,
+      notes:          cache?.notes ?? null,
+      parent_comms:   cache?.parentComms ?? null,
+      shoutouts:      cache?.shoutouts ?? null,
       yt_views:       20567,
       yt_subscribers: 20,
       yt_videos:      66,
+      ig_followers:   latestSocial.ig_followers ?? null,
+      tt_followers:   latestSocial.tt_followers ?? null,
     })
 
     if (error) {
@@ -581,10 +718,7 @@
       btn.textContent = '📸 Save Snapshot'
     } else {
       btn.textContent = '✓ Saved'
-      setTimeout(() => {
-        btn.disabled = false
-        btn.textContent = '📸 Save Snapshot'
-      }, 2000)
+      setTimeout(() => { btn.disabled = false; btn.textContent = '📸 Save Snapshot' }, 2000)
       loadHistory()
     }
   }
@@ -601,7 +735,7 @@
     const tbody  = document.getElementById('historyBody')
 
     if (error) { status.textContent = 'Could not load history.'; return }
-    if (!data || data.length === 0) { status.textContent = 'No snapshots yet — click Save Snapshot to record today\'s numbers.'; return }
+    if (!data || data.length === 0) { status.textContent = 'No snapshots yet.'; return }
 
     status.style.display = 'none'
     table.style.display  = 'table'
@@ -619,41 +753,18 @@
         <td>${row.shoutouts ?? '—'}</td>
         <td>${row.yt_views != null ? row.yt_views.toLocaleString() : '—'}</td>
         <td>${row.yt_subscribers ?? '—'}</td>
+        <td>${row.ig_followers ?? '—'}</td>
+        <td>${row.tt_followers ?? '—'}</td>
       </tr>`
     }).join('')
   }
 
-  async function loadDemoStats() {
-    const events = ['demo_nudge_shown', 'demo_nudge_cta_clicked', 'demo_nudge_dismissed']
-    const [eventsRes, anonRes, teacherRes] = await Promise.all([
-      supabase.from('analytics_events').select('event_name').in('event_name', events),
-      supabase.rpc('get_anon_user_count'),
-      supabase.rpc('get_real_teacher_count')
-    ])
-
-    if (!eventsRes.error && eventsRes.data) {
-      const counts = {}
-      events.forEach(e => counts[e] = 0)
-      eventsRes.data.forEach(row => { if (counts[row.event_name] !== undefined) counts[row.event_name]++ })
-      document.getElementById('statNudgeShown').textContent     = counts['demo_nudge_shown']
-      document.getElementById('statNudgeCTA').textContent       = counts['demo_nudge_cta_clicked']
-      document.getElementById('statNudgeDismissed').textContent = counts['demo_nudge_dismissed']
-    }
-
-    if (!anonRes.error && anonRes.data != null) {
-      document.getElementById('statDemoStarted').textContent = anonRes.data
-    }
-    if (!teacherRes.error && teacherRes.data != null) {
-      document.getElementById('statRealUsers').textContent = teacherRes.data
-    }
-  }
-
   function displaySocial(row) {
     if (!row) return
-    document.getElementById('igPostsDisplay').textContent    = row.ig_posts      != null ? row.ig_posts.toLocaleString()     : '—'
-    document.getElementById('igFollowersDisplay').textContent = row.ig_followers  != null ? row.ig_followers.toLocaleString()  : '—'
-    document.getElementById('ttFollowersDisplay').textContent = row.tt_followers  != null ? row.tt_followers.toLocaleString()  : '—'
-    document.getElementById('ttLikesDisplay').textContent    = row.tt_likes       != null ? row.tt_likes.toLocaleString()      : '—'
+    document.getElementById('igPostsDisplay').textContent     = row.ig_posts     != null ? row.ig_posts.toLocaleString()    : '—'
+    document.getElementById('igFollowersDisplay').textContent = row.ig_followers != null ? row.ig_followers.toLocaleString() : '—'
+    document.getElementById('ttFollowersDisplay').textContent = row.tt_followers != null ? row.tt_followers.toLocaleString() : '—'
+    document.getElementById('ttLikesDisplay').textContent     = row.tt_likes     != null ? row.tt_likes.toLocaleString()     : '—'
     if (row.ig_posts)     document.getElementById('igPosts').value     = row.ig_posts
     if (row.ig_followers) document.getElementById('igFollowers').value = row.ig_followers
     if (row.tt_followers) document.getElementById('ttFollowers').value = row.tt_followers
@@ -664,7 +775,7 @@
     const pts = data.filter(d => d[valueKey] != null)
     if (pts.length < 2) {
       document.getElementById(svgId).innerHTML = ''
-      document.getElementById(labelEl).textContent = pts.length < 2 ? 'Save at least 2 entries to see a chart' : ''
+      document.getElementById(labelEl).textContent = 'Save at least 2 entries to see a chart'
       return
     }
     const formatted = pts.map(d => ({
@@ -680,13 +791,6 @@
     makeSocialChart('ttSparkline', data, 'tt_followers', '#69c9d0', 'ttChartLabel', 'TikTok followers over time')
   }
 
-  async function loadSocial() {
-    const { data } = await supabase.from('social_stats').select('*').order('updated_at', { ascending: true })
-    if (!data || data.length === 0) return
-    displaySocial(data[data.length - 1])
-    drawSocialCharts(data)
-  }
-
   window.saveSocial = async function() {
     const row = {
       ig_posts:     parseInt(document.getElementById('igPosts').value)     || null,
@@ -697,30 +801,53 @@
     }
     const { error } = await supabase.from('social_stats').insert(row)
     if (error) { alert('Error saving: ' + error.message); return }
+    // Bust cache so social reflects new data on next full load
+    localStorage.removeItem(CACHE_KEY)
     displaySocial(row)
     await loadSocial()
   }
 
-  window.addEventListener('load', () => { loadHistory(); loadDemoStats(); loadSocial(); })
+  async function loadSocial() {
+    const { data } = await supabase.from('social_stats').select('*').order('updated_at', { ascending: true })
+    if (!data || data.length === 0) return
+    displaySocial(data[data.length - 1])
+    drawSocialCharts(data)
+  }
+
+  // ── BOOT ──────────────────────────────────────────────────────────────────
+  window.addEventListener('load', async () => {
+    loadHistory()
+
+    const cached = getCache()
+    if (cached) {
+      renderData(cached)
+    } else {
+      document.getElementById('footerRefresh').textContent = 'Fetching live data...'
+      try {
+        const fresh = await fetchAllData()
+        setCache(fresh)
+        renderData(fresh)
+      } catch (e) {
+        document.getElementById('footerRefresh').textContent = 'Error loading data — check console'
+        console.error(e)
+      }
+    }
+  })
+
+  window.forceRefresh = async function() {
+    localStorage.removeItem(CACHE_KEY)
+    document.getElementById('footerRefresh').textContent = 'Fetching live data...'
+    const fresh = await fetchAllData()
+    setCache(fresh)
+    renderData(fresh)
+    loadHistory()
+  }
 
   // ── DATA ──────────────────────────────────────────────────────────────────
-  const signupData = [
-    { day: "Mar 19", n: 1 }, { day: "Mar 20", n: 1 }, { day: "Mar 21", n: 1 },
-    { day: "Mar 23", n: 1 }, { day: "Mar 24", n: 1 }, { day: "Mar 26", n: 2 },
-    { day: "Mar 28", n: 1 }, { day: "Apr 3",  n: 3 }, { day: "Apr 4",  n: 1 },
-    { day: "Apr 6",  n: 1 }, { day: "Apr 8",  n: 7 }, { day: "Apr 9",  n: 1 },
-    { day: "Apr 14", n: 1 }, { day: "Apr 17", n: 5 }, { day: "Apr 19", n: 2 },
-    { day: "Apr 21", n: 1 }, { day: "Apr 24", n: 3 }, { day: "Apr 25", n: 3 },
-    { day: "Apr 27", n: 2 }, { day: "Apr 29", n: 1 }, { day: "May 2",  n: 1 },
-  ];
-
-  const notesData = [
-    { day: "Apr 15", n: 10 }, { day: "Apr 16", n: 9 }, { day: "Apr 17", n: 4 },
-    { day: "Apr 19", n: 1  }, { day: "Apr 20", n: 8 }, { day: "Apr 21", n: 7 },
-    { day: "Apr 22", n: 2  }, { day: "Apr 23", n: 2 }, { day: "Apr 24", n: 4 },
-    { day: "Apr 25", n: 2  }, { day: "Apr 26", n: 1 }, { day: "Apr 27", n: 1 },
-    { day: "Apr 28", n: 9  }, { day: "Apr 30", n: 4 },
-  ];
+  // signupData and notesData are now built dynamically from Supabase above.
+  // Keeping these as empty fallbacks in case cache is cold and charts render before fetch completes.
+  let signupData = []
+  let notesData  = []
 
   const topVideos = [
     { id: "sZqVTtRLuI0", title: "Old man knows best. Paperwork stinks!", views: 1629, likes: 16 },
