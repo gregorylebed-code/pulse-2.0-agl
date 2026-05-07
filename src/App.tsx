@@ -27,7 +27,7 @@ import { trackEvent } from './lib/analytics';
 import WelcomeModal from './components/WelcomeModal';
 import Confetti, { ConfettiHandle } from './components/Confetti';
 import CarouselMaker from './components/social-lab/CarouselMaker';
-import StudioPanel, { AccentTheme } from './components/StudioPanel';
+import StudioPanel, { AccentTheme, BgTheme } from './components/StudioPanel';
 
 import type { Note } from './types';
 import { Sparkles, BarChart2 } from 'lucide-react';
@@ -83,6 +83,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioTheme, setStudioTheme] = useState<AccentTheme>('default');
+  const [studioBg, setStudioBg] = useState<BgTheme>('cream');
   const [studioShuffle, setStudioShuffle] = useState(0);
   const [studioClassLabel, setStudioClassLabel] = useState<string | null>(null);
 
@@ -100,6 +101,19 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     el.style.setProperty('--color-sage-light', light);
     el.style.setProperty('--color-sage-dark', dark);
   }, [studioTheme]);
+
+  useEffect(() => {
+    const bgs: Record<BgTheme, [string, string]> = {
+      cream:    ['#FFF9E5', 'rgba(255,249,229,1)'],
+      sky:      ['#e8f4fd', 'rgba(232,244,253,1)'],
+      lavender: ['#f0eeff', 'rgba(240,238,255,1)'],
+      slate:    ['#f0f4f8', 'rgba(240,244,248,1)'],
+      sage:     ['#e8faf3', 'rgba(232,250,243,1)'],
+    };
+    const [bg, nav] = bgs[studioBg];
+    document.documentElement.style.setProperty('--color-cream', bg);
+    document.documentElement.style.setProperty('--studio-nav-bg', nav);
+  }, [studioBg]);
 
   // Heartbeat — update last_seen whenever the app loads
   useEffect(() => {
@@ -837,6 +851,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         onShuffle={() => setStudioShuffle(s => s + 1)}
         theme={studioTheme}
         onThemeChange={setStudioTheme}
+        bgTheme={studioBg}
+        onBgThemeChange={setStudioBg}
         classLabel={studioClassLabel}
         onClassLabel={setStudioClassLabel}
       />

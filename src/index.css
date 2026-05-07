@@ -44,7 +44,7 @@
 }
 
 .nav-frosted {
-  background: rgba(255, 249, 229, 1);
+  background: var(--studio-nav-bg, rgba(255, 249, 229, 1));
   border-top: 1px solid rgba(255,255,255,0.6);
 }
 
