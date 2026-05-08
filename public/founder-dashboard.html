@@ -352,7 +352,7 @@
     <h1>ShortHand — Founder Dashboard</h1>
     <span>Classroom Pulse 3.0 + YouTube</span>
   </div>
-  <button class="snapshot-btn" id="snapshotBtn" onclick="saveSnapshot()">📸 Save Snapshot</button>
+  <button class="snapshot-btn" id="snapshotBtn" onclick="saveSnapshot()" disabled>📸 Save Snapshot</button>
   <button class="snapshot-btn" onclick="forceRefresh()" style="background:#1e1e2e;color:#cbd5e1;border-color:#27272a">↺ Force Refresh</button>
   <div class="badge">Live data</div>
 </header>
@@ -658,6 +658,7 @@
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   function renderData(d) {
+    document.getElementById('snapshotBtn').disabled = false
     document.getElementById('statRealUsers').textContent    = d.realUsers
     document.getElementById('statDemoStarted').textContent  = d.demoStarted
     document.getElementById('statNudgeShown').textContent   = d.nudgeShown
@@ -711,11 +712,11 @@
     const ytVids  = parseInt(document.getElementById('ytVideos').textContent.replace(/,/g, '')) || null
 
     const { error } = await supabase.from('founder_snapshots').insert({
-      users:          parseInt(document.getElementById('statRealUsers').textContent) || null,
-      demo_started:   parseInt(document.getElementById('statDemoStarted').textContent) || null,
-      notes:          cache?.notes ?? null,
+      users:          cache?.realUsers   != null ? parseInt(cache.realUsers)   || null : null,
+      demo_started:   cache?.demoStarted != null ? parseInt(cache.demoStarted) || null : null,
+      notes:          cache?.notes       ?? null,
       parent_comms:   cache?.parentComms ?? null,
-      shoutouts:      cache?.shoutouts ?? null,
+      shoutouts:      cache?.shoutouts   ?? null,
       yt_views:       ytViews,
       yt_subscribers: ytSubs,
       yt_videos:      ytVids,
@@ -843,6 +844,10 @@
 
   // ── BOOT ──────────────────────────────────────────────────────────────────
   window.addEventListener('load', async () => {
+    // Sign in anonymously so writes get the 'authenticated' role (anon key alone is read-only in this project)
+    const { data: session } = await supabase.auth.getSession()
+    if (!session?.session) await supabase.auth.signInAnonymously()
+
     loadHistory()
     fetchYouTubeStats()
 
