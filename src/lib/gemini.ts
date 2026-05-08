@@ -226,6 +226,7 @@ STRICT RULES — follow these exactly:
 - A student being on the wrong website is NOT a "disruption" unless the note explicitly says they disturbed other students.
 - A "technical issue" means a device or software malfunction — NOT student misuse or rule-breaking.
 - If a note is about rule-breaking or off-task behavior, use "Behavior" only — do not also add "Academic" or other tags unless they are clearly described.
+- CRITICAL: A student struggling with, confused by, or not understanding academic content is NOT "Off Task", "Distracted", or "Unprepared". Struggling with fractions, not getting a concept, or needing help is a learning observation — tag it as Academic (if available) or leave tags empty. Never apply behavior tags to academic struggle.
 - If no tag fits clearly, return an empty array [].
 - Prefer accuracy over brevity — if there are genuinely two distinct situations, use two tags.
 
@@ -235,6 +236,7 @@ EXAMPLES of direct matches (these are NOT inferences — apply the tag):
 - "called out repeatedly", "talking while teacher is talking" → Disruption
 - "refused to work", "put head down", "doing nothing" → Off Task (or closest available tag)
 - "cried", "upset", "seemed anxious" → tag the relevant emotional/social tag if available
+- "didn't understand fractions", "confused about the lesson", "struggling with reading" → Academic (if available), NOT Off Task or Unprepared
 
 Return a JSON object:
 - tags: array of strings (use exact tag names from the available list, or [] if none fit)
