@@ -219,6 +219,7 @@ Has image: ${hasImage}
 Available tags: ${indicatorList}
 
 STRICT RULES — follow these exactly:
+- Read the FULL meaning and context of the note before choosing any tag. Do not match tags based on individual words or phrases in isolation — understand what actually happened to this student.
 - Only apply a tag if the note DIRECTLY and CLEARLY describes that behavior or situation.
 - Do NOT infer intent, assume what might have happened, or add tags based on what could be implied.
 - If a note describes multiple distinct situations (e.g. did well in math AND was disruptive in science), apply a tag for EACH situation — including positive ones.
