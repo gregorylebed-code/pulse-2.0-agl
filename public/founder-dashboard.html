@@ -343,6 +343,9 @@
     }
     .history-table td:first-child { text-align: left; color: #cbd5e1; }
     .history-table td.hi { color: #e2e8f0; font-weight: 700; }
+    .snap-action-btn { background: none; border: none; cursor: pointer; font-size: 0.85rem; padding: 2px 4px; opacity: 0.5; transition: opacity 0.15s; }
+    .snap-action-btn:hover { opacity: 1; }
+    .snap-del-btn:hover { opacity: 1; filter: brightness(1.5); }
   </style>
 </head>
 <body>
@@ -550,6 +553,7 @@
         <th>Subscribers</th>
         <th>IG Followers</th>
         <th>TT Followers</th>
+        <th></th>
       </tr>
     </thead>
     <tbody id="historyBody"></tbody>
@@ -756,9 +760,12 @@
       const d = new Date(row.captured_at)
       const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      return `<tr>
+      return `<tr id="snap-row-${row.id}">
         <td>${label}</td>
-        <td class="hi">${row.users ?? '—'}</td>
+        <td class="hi" id="snap-users-${row.id}">
+          <span class="snap-val">${row.users ?? '—'}</span>
+          <input class="snap-edit-input" type="number" value="${row.users ?? ''}" style="display:none;width:60px;background:#1e1e2e;border:1px solid #334155;color:#e2e8f0;border-radius:4px;padding:2px 4px;font-size:0.85rem" />
+        </td>
         <td>${row.demo_started ?? '—'}</td>
         <td>${row.notes ?? '—'}</td>
         <td>${row.parent_comms ?? '—'}</td>
@@ -767,6 +774,12 @@
         <td>${row.yt_subscribers ?? '—'}</td>
         <td>${row.ig_followers ?? '—'}</td>
         <td>${row.tt_followers ?? '—'}</td>
+        <td style="white-space:nowrap">
+          <button onclick="editSnapUsers('${row.id}')" class="snap-action-btn" id="snap-edit-btn-${row.id}" title="Edit users">✏️</button>
+          <button onclick="saveSnapUsers('${row.id}')" class="snap-action-btn" id="snap-save-btn-${row.id}" style="display:none" title="Save">✓</button>
+          <button onclick="cancelSnapEdit('${row.id}', ${row.users ?? 'null'})" class="snap-action-btn" id="snap-cancel-btn-${row.id}" style="display:none" title="Cancel">✕</button>
+          <button onclick="deleteSnap('${row.id}')" class="snap-action-btn snap-del-btn" title="Delete">🗑</button>
+        </td>
       </tr>`
     }).join('')
   }
@@ -1107,6 +1120,40 @@
       makeCumulativeChart('viewsSparkline', cumulativeViews, '#f97316');
     }, 100);
   });
+
+  window.deleteSnap = async function(id) {
+    if (!confirm('Delete this snapshot?')) return
+    const { error } = await supabase.from('founder_snapshots').delete().eq('id', id)
+    if (error) { alert('Delete failed: ' + error.message); return }
+    document.getElementById('snap-row-' + id)?.remove()
+  }
+
+  window.editSnapUsers = function(id) {
+    document.querySelector(`#snap-users-${id} .snap-val`).style.display = 'none'
+    document.querySelector(`#snap-users-${id} .snap-edit-input`).style.display = 'inline'
+    document.getElementById('snap-edit-btn-' + id).style.display = 'none'
+    document.getElementById('snap-save-btn-' + id).style.display = 'inline'
+    document.getElementById('snap-cancel-btn-' + id).style.display = 'inline'
+  }
+
+  window.cancelSnapEdit = function(id, originalVal) {
+    document.querySelector(`#snap-users-${id} .snap-val`).style.display = 'inline'
+    document.querySelector(`#snap-users-${id} .snap-edit-input`).style.display = 'none'
+    document.getElementById('snap-edit-btn-' + id).style.display = 'inline'
+    document.getElementById('snap-save-btn-' + id).style.display = 'none'
+    document.getElementById('snap-cancel-btn-' + id).style.display = 'none'
+    document.querySelector(`#snap-users-${id} .snap-edit-input`).value = originalVal ?? ''
+  }
+
+  window.saveSnapUsers = async function(id) {
+    const input = document.querySelector(`#snap-users-${id} .snap-edit-input`)
+    const newVal = parseInt(input.value, 10)
+    if (isNaN(newVal)) { alert('Enter a valid number.'); return }
+    const { error } = await supabase.from('founder_snapshots').update({ users: newVal }).eq('id', id)
+    if (error) { alert('Save failed: ' + error.message); return }
+    document.querySelector(`#snap-users-${id} .snap-val`).textContent = newVal
+    window.cancelSnapEdit(id, newVal)
+  }
 </script>
 </body>
 </html>
