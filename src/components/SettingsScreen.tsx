@@ -406,7 +406,7 @@ export default function SettingsScreen({
     try {
       const result = await addStudent({
         name: newStudentName.trim(),
-        class_id: newStudentSection,
+        class_id: null,
         class_period: newStudentSection,
         user_id: userId,
         created_at: new Date().toISOString(),
