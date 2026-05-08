@@ -11,13 +11,17 @@
     "test": "vitest run",
     "lint": "tsc --noEmit",
     "remotion:studio": "remotion studio src/remotion/index.tsx",
-    "remotion:render": "remotion render src/remotion/index.tsx ShortHandPromo out/ShortHandPromo.mp4"
+    "remotion:render": "remotion render src/remotion/index.tsx ShortHandPromo out/ShortHandPromo.mp4",
+    "ai:content:analyze": "tsx scripts/brand-workflow.ts --mode=analyze",
+    "ai:content:draft": "tsx scripts/brand-workflow.ts --mode=draft",
+    "ai:content:feedback": "tsx scripts/brand-workflow.ts --mode=feedback"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@google/genai": "^1.44.0",
     "@hello-pangea/dnd": "^18.0.1",
     "@remotion/player": "^4.0.440",
+    "@sentry/react": "^10.52.0",
     "@supabase/supabase-js": "^2.99.2",
     "@tailwindcss/vite": "^4.1.14",
     "@upstash/ratelimit": "^2.0.8",
