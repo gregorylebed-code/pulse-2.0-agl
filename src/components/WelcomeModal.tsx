@@ -10,12 +10,14 @@ const DEMO_STUDENTS = [
 interface WelcomeModalProps {
   show: boolean;
   teacherName: string;
+  isDemo?: boolean;
   onGoToProfile: () => void;
   onGoToRoster: () => void;
   onGoToPulse: () => void;
   onGoToCalendar: () => void;
   onDismiss: () => void;
   onAddStudents: (names: string[]) => Promise<void>;
+  onSwitchFromDemo?: () => void;
 }
 
 type Screen = 'main' | 'quick-start';
@@ -51,12 +53,14 @@ const otherSteps = [
 export default function WelcomeModal({
   show,
   teacherName,
+  isDemo = false,
   onGoToProfile,
   onGoToRoster,
   onGoToPulse,
   onGoToCalendar,
   onDismiss,
   onAddStudents,
+  onSwitchFromDemo,
 }: WelcomeModalProps) {
   const [screen, setScreen] = useState<Screen>('main');
   const isFullMode = useFullMode();
@@ -106,6 +110,89 @@ export default function WelcomeModal({
     await onAddStudents(DEMO_STUDENTS);
     setSaving(false);
     onDismiss();
+  }
+
+  if (isDemo) {
+    return (
+      <AnimatePresence>
+        {show && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] overflow-y-auto flex justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+              className="w-full max-w-md bg-white rounded-[32px] overflow-hidden shadow-2xl my-auto"
+            >
+              <div className="bg-white px-8 pt-8 pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center">
+                    <FlaskConical className="w-5 h-5 text-violet-500" />
+                  </div>
+                  <span className="text-violet-400 text-xs font-bold uppercase tracking-widest">Demo Mode</span>
+                </div>
+                <h1 className="text-slate-800 font-black text-2xl leading-tight">
+                  Welcome! Here's your demo class. 👋
+                </h1>
+                <p className="text-slate-500 text-sm mt-2 leading-relaxed">
+                  8 fake students are loaded with notes. Tap around, try everything — nothing is saved to a real account.
+                </p>
+              </div>
+              <div className="px-6 py-5 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => { onGoToPulse(); onDismiss(); }}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-sage/30 bg-sage/5 hover:border-sage/60 hover:bg-sage/10 transition-all text-left group"
+                >
+                  <div className="w-10 h-10 rounded-xl border border-sage/30 bg-sage/10 flex items-center justify-center flex-shrink-0 text-sage">
+                    <PenLine className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-black text-slate-800">Add a note on a student</span>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">Tap a student, pick a tag, see the AI draft a parent message.</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onDismiss}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group"
+                >
+                  <div className="w-10 h-10 rounded-xl border border-blue-100 bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-500">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-black text-slate-800">Browse the student roster</span>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">See how behavior history is tracked per student.</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
+                </button>
+              </div>
+              <div className="px-6 pb-6 flex flex-col gap-2">
+                {onSwitchFromDemo && (
+                  <button
+                    type="button"
+                    onClick={onSwitchFromDemo}
+                    className="w-full py-4 bg-sage text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-sage/20"
+                  >
+                    Save my class for free →
+                  </button>
+                )}
+                <button type="button" onClick={onDismiss} className="text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors text-center">
+                  Just let me explore
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
   }
 
   return (

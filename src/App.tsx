@@ -828,13 +828,15 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       }} />
 
       <WelcomeModal
-        show={!welcomeHidden && !loading && students.length === 0 && notes.length === 0}
+        show={!welcomeHidden && !loading && (students.length === 0 && notes.length === 0 || isInDemoMode)}
         teacherName={teacherFirstName || userName}
+        isDemo={isInDemoMode}
         onGoToProfile={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('profile'); }}
         onGoToRoster={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('data-management'); }}
         onGoToPulse={() => { setWelcomeHidden(true); setActiveTab('pulse'); }}
         onGoToCalendar={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('calendar'); }}
         onDismiss={() => setWelcomeHidden(true)}
+        onSwitchFromDemo={handleSwitchFromDemo}
         onAddStudents={async (names: string[]) => {
           for (const name of names) {
             await addStudent({ name, class_id: null });
