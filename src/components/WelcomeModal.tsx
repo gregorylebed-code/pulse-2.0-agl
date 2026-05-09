@@ -17,6 +17,7 @@ interface WelcomeModalProps {
   onGoToCalendar: () => void;
   onDismiss: () => void;
   onAddStudents: (names: string[]) => Promise<void>;
+  onGoToStudents?: () => void;
   onSwitchFromDemo?: () => void;
 }
 
@@ -60,6 +61,7 @@ export default function WelcomeModal({
   onGoToCalendar,
   onDismiss,
   onAddStudents,
+  onGoToStudents,
   onSwitchFromDemo,
 }: WelcomeModalProps) {
   const [screen, setScreen] = useState<Screen>('main');
@@ -161,7 +163,7 @@ export default function WelcomeModal({
                 </button>
                 <button
                   type="button"
-                  onClick={onGoToRoster}
+                  onClick={onGoToStudents ?? onDismiss}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group"
                 >
                   <div className="w-10 h-10 rounded-xl border border-blue-100 bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-500">

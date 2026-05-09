@@ -836,6 +836,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         onGoToPulse={() => { setWelcomeHidden(true); setActiveTab('pulse'); }}
         onGoToCalendar={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('calendar'); }}
         onDismiss={() => setWelcomeHidden(true)}
+        onGoToStudents={() => { setWelcomeHidden(true); setActiveTab('students'); }}
         onSwitchFromDemo={handleSwitchFromDemo}
         onAddStudents={async (names: string[]) => {
           for (const name of names) {
