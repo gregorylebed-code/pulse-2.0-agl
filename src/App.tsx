@@ -137,6 +137,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const [isUsingBackup, setIsUsingBackup] = useState(false);
   const [showRotationForecast, setShowRotationForecast] = useState(false);
   const [welcomeHidden, setWelcomeHidden] = useState(false);
+  const [demoSeeding, setDemoSeeding] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
   const [showDemoNudge, setShowDemoNudge] = useState(false);
   const [demoNudgeDismissed, setDemoNudgeDismissed] = useState(false);
@@ -175,6 +176,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     if (params.get('demo') !== 'true' && !fromSeed) return;
     localStorage.removeItem('cp_seed_demo');
     (async () => {
+      setDemoSeeding(true);
       // Add demo students and collect their IDs
       const added: { name: string; id: string }[] = [];
       for (const name of DEMO_NAMES) {
@@ -355,6 +357,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         await addShoutout({ student_id: rocketId, student_name: 'Rocket', content: 'Went out of their way to include a new student at lunch. Just a genuinely kind kid.', category: 'Kindness' });
       }
 
+      setDemoSeeding(false);
       markOnboardingComplete();
       window.history.replaceState({}, '', window.location.pathname);
     })();
@@ -938,7 +941,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       }} />
 
       <WelcomeModal
-        show={!welcomeHidden && !loading && (students.length === 0 && notes.length === 0 || isInDemoMode)}
+        show={!welcomeHidden && !loading && !demoSeeding && (students.length === 0 && notes.length === 0 || isInDemoMode)}
         teacherName={teacherFirstName || userName}
         isDemo={isInDemoMode}
         onGoToProfile={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('profile'); }}
