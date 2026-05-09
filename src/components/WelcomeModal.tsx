@@ -147,7 +147,7 @@ export default function WelcomeModal({
               <div className="px-6 py-5 space-y-3">
                 <button
                   type="button"
-                  onClick={() => { onGoToPulse(); onDismiss(); }}
+                  onClick={onGoToPulse}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-sage/30 bg-sage/5 hover:border-sage/60 hover:bg-sage/10 transition-all text-left group"
                 >
                   <div className="w-10 h-10 rounded-xl border border-sage/30 bg-sage/10 flex items-center justify-center flex-shrink-0 text-sage">
@@ -161,7 +161,7 @@ export default function WelcomeModal({
                 </button>
                 <button
                   type="button"
-                  onClick={onDismiss}
+                  onClick={onGoToRoster}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group"
                 >
                   <div className="w-10 h-10 rounded-xl border border-blue-100 bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-500">
