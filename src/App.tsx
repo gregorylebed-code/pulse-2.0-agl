@@ -137,6 +137,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const [isUsingBackup, setIsUsingBackup] = useState(false);
   const [showRotationForecast, setShowRotationForecast] = useState(false);
   const [welcomeHidden, setWelcomeHidden] = useState(false);
+  const [demoModalLatched, setDemoModalLatched] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
   const [showDemoNudge, setShowDemoNudge] = useState(false);
   const [demoNudgeDismissed, setDemoNudgeDismissed] = useState(false);
@@ -366,6 +367,14 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       setWelcomeHidden(false);
     }
   }, [activeTab, onboardingComplete]);
+
+  // Latch the demo modal open once conditions are first met — prevents
+  // re-renders during seeding from toggling show on/off and causing flashes
+  useEffect(() => {
+    if (!demoModalLatched && !loading && isInDemoMode && students.length === DEMO_NAMES.length) {
+      setDemoModalLatched(true);
+    }
+  }, [loading, isInDemoMode, students.length, demoModalLatched]);
 
   const userName = profile.userName;
   const schoolName = profile.schoolName;
@@ -938,15 +947,15 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       }} />
 
       <WelcomeModal
-        show={!welcomeHidden && !loading && (students.length === 0 && notes.length === 0 || (isInDemoMode && students.length === DEMO_NAMES.length))}
+        show={!welcomeHidden && !loading && (students.length === 0 && notes.length === 0 || demoModalLatched)}
         teacherName={teacherFirstName || userName}
         isDemo={isInDemoMode}
-        onGoToProfile={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('profile'); }}
-        onGoToRoster={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('data-management'); }}
-        onGoToPulse={() => { setWelcomeHidden(true); setActiveTab('pulse'); }}
-        onGoToCalendar={() => { setWelcomeHidden(true); setActiveTab('settings'); setSettingsView('calendar'); }}
-        onDismiss={() => setWelcomeHidden(true)}
-        onGoToStudents={() => { setWelcomeHidden(true); setActiveTab('students'); }}
+        onGoToProfile={() => { setWelcomeHidden(true); setDemoModalLatched(false); setActiveTab('settings'); setSettingsView('profile'); }}
+        onGoToRoster={() => { setWelcomeHidden(true); setDemoModalLatched(false); setActiveTab('settings'); setSettingsView('data-management'); }}
+        onGoToPulse={() => { setWelcomeHidden(true); setDemoModalLatched(false); setActiveTab('pulse'); }}
+        onGoToCalendar={() => { setWelcomeHidden(true); setDemoModalLatched(false); setActiveTab('settings'); setSettingsView('calendar'); }}
+        onDismiss={() => { setWelcomeHidden(true); setDemoModalLatched(false); }}
+        onGoToStudents={() => { setWelcomeHidden(true); setDemoModalLatched(false); setActiveTab('students'); }}
         onSwitchFromDemo={handleSwitchFromDemo}
         onAddStudents={async (names: string[]) => {
           for (const name of names) {
