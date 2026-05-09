@@ -122,7 +122,7 @@ export default function WelcomeModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] overflow-y-auto flex justify-center p-4"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
             style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}
           >
             <motion.div
@@ -130,7 +130,7 @@ export default function WelcomeModal({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 40 }}
               transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="w-full max-w-md bg-white rounded-[32px] overflow-hidden shadow-2xl my-auto"
+              className="w-full max-w-md bg-white rounded-[32px] overflow-hidden shadow-2xl"
             >
               <div className="bg-white px-8 pt-8 pb-6 border-b border-slate-100">
                 <div className="flex items-center gap-3 mb-4">
@@ -204,7 +204,7 @@ export default function WelcomeModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] overflow-y-auto flex justify-center p-4"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-y-auto"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}
         >
           <motion.div
@@ -213,7 +213,7 @@ export default function WelcomeModal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="w-full max-w-md bg-white rounded-[32px] overflow-hidden shadow-2xl my-auto"
+            className="w-full max-w-md bg-white rounded-[32px] overflow-hidden shadow-2xl"
           >
             {screen === 'main' ? (
               <>
