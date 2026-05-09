@@ -947,7 +947,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       }} />
 
       <WelcomeModal
-        show={!welcomeHidden && !loading && (students.length === 0 && notes.length === 0 || demoModalLatched)}
+        show={!welcomeHidden && (demoModalLatched || (!loading && students.length === 0 && notes.length === 0))}
         teacherName={teacherFirstName || userName}
         isDemo={isInDemoMode}
         onGoToProfile={() => { setWelcomeHidden(true); setDemoModalLatched(false); setActiveTab('settings'); setSettingsView('profile'); }}
