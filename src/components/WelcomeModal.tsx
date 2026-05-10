@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Users, PenLine, Calendar, ChevronRight, Sparkles, Zap, FlaskConical, X } from 'lucide-react';
-import { useFullMode } from '../context/FullModeContext';
-
-const DEMO_STUDENTS = [
-  'Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet',
-];
+import { Users, PenLine, ChevronRight, Sparkles, Zap, FlaskConical, X } from 'lucide-react';
 
 interface WelcomeModalProps {
   show: boolean;
@@ -16,39 +11,15 @@ interface WelcomeModalProps {
   onGoToPulse: () => void;
   onGoToCalendar: () => void;
   onDismiss: () => void;
-  onAddStudents: (names: string[]) => Promise<void>;
+  onAddStudents: (names: string[], isDemo?: boolean) => Promise<void>;
   onGoToStudents?: () => void;
   onSwitchFromDemo?: () => void;
 }
 
-type Screen = 'main' | 'quick-start';
+type Screen = 'main' | 'add-real';
 
-const profileStep = {
-  icon: <User className="w-5 h-5" />,
-  color: 'bg-sage/10 text-sage border-sage/20',
-  title: 'Set up your profile',
-  desc: 'Add your name and school so composed reports sign off correctly.',
-  action: 'onGoToProfile' as const,
-  badge: 'Start here',
-};
-
-const otherSteps = [
-  {
-    icon: <PenLine className="w-5 h-5" />,
-    color: 'bg-amber-50 text-amber-500 border-amber-100',
-    title: 'Add your first note',
-    desc: 'Tap a student, tap an indicator, done in 10 seconds.',
-    action: 'onGoToPulse' as const,
-    badge: null,
-  },
-  {
-    icon: <Calendar className="w-5 h-5" />,
-    color: 'bg-violet-50 text-violet-500 border-violet-100',
-    title: 'Upload your school calendar',
-    desc: 'Get specials rotation and event reminders automatically.',
-    action: 'onGoToCalendar' as const,
-    badge: 'Optional',
-  },
+const DEMO_STUDENTS = [
+  'Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet',
 ];
 
 export default function WelcomeModal({
@@ -65,12 +36,9 @@ export default function WelcomeModal({
   onSwitchFromDemo,
 }: WelcomeModalProps) {
   const [screen, setScreen] = useState<Screen>('main');
-  const isFullMode = useFullMode();
   const [nicknames, setNicknames] = useState<string[]>(Array(5).fill(''));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
-  const handlers = { onGoToProfile, onGoToRoster, onGoToPulse, onGoToCalendar };
 
   const filledNicknames = nicknames.map(n => n.trim()).filter(Boolean);
   const isValid = filledNicknames.length >= 3;
@@ -79,7 +47,6 @@ export default function WelcomeModal({
     setNicknames(prev => {
       const next = [...prev];
       next[index] = value;
-      // Auto-expand up to 10 rows: if last row is being typed in, add a new blank row
       if (index === next.length - 1 && value.trim() && next.length < 10) {
         next.push('');
       }
@@ -96,24 +63,25 @@ export default function WelcomeModal({
     }
   }
 
-  async function handleQuickStart() {
+  async function handleSandbox() {
+    setSaving(true);
+    await onAddStudents(DEMO_STUDENTS, true);
+    setSaving(false);
+    onDismiss();
+  }
+
+  async function handleRealClass() {
     if (!isValid) {
       setError('Add at least 3 names to get started.');
       return;
     }
     setSaving(true);
-    await onAddStudents(filledNicknames);
+    await onAddStudents(filledNicknames, false);
     setSaving(false);
     onDismiss();
   }
 
-  async function handleDemoMode() {
-    setSaving(true);
-    await onAddStudents(DEMO_STUDENTS);
-    setSaving(false);
-    onDismiss();
-  }
-
+  // Demo mode screen (existing demo account view — unchanged)
   if (isDemo) {
     return (
       <AnimatePresence>
@@ -229,121 +197,68 @@ export default function WelcomeModal({
                     Welcome{teacherName ? `, ${teacherName}` : ''}! 👋
                   </h1>
                   <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                    You're all set up. Let's get your students in here.
+                    You're all set up. See what ShortHand can do — or jump straight in with your real class.
                   </p>
                 </div>
 
-                {/* Student setup choices */}
-                <div className="px-6 pt-5 pb-3">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">How do you want to add students?</p>
-                  <div className="space-y-3">
+                {/* Two choices */}
+                <div className="px-6 pt-5 pb-6 space-y-3">
 
-                    {/* Quick Start */}
-                    <button
-                      type="button"
-                      onClick={() => setScreen('quick-start')}
-                      className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-sage/30 bg-sage/5 hover:border-sage/60 hover:bg-sage/10 transition-all text-left group"
-                    >
-                      <div className="w-10 h-10 rounded-xl border border-sage/30 bg-sage/10 flex items-center justify-center flex-shrink-0 text-sage">
-                        <Zap className="w-5 h-5" />
+                  {/* Sandbox — primary */}
+                  <button
+                    type="button"
+                    onClick={handleSandbox}
+                    disabled={saving}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-violet-200 bg-violet-50 hover:border-violet-400 hover:bg-violet-100 transition-all text-left group disabled:opacity-60"
+                  >
+                    <div className="w-10 h-10 rounded-xl border border-violet-200 bg-violet-100 flex items-center justify-center flex-shrink-0 text-violet-600">
+                      <FlaskConical className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-slate-800">Explore with sample students</span>
+                        <span className="text-[11px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-violet-200 text-violet-700">Try first</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-black text-slate-800">Quick Start</span>
-                          <span className="text-[11px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-sage/10 text-sage">Recommended</span>
-                        </div>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Type first names, nicknames, or codes — e.g. "Emma", "Table 3", "M.J." No last names needed.</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
-                    </button>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5 leading-snug">8 demo students load instantly — see AI parent emails, behavior history, and insights before adding your real class.</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
+                  </button>
 
-                    {/* Full Class */}
-                    <button
-                      type="button"
-                      onClick={onGoToRoster}
-                      className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group"
-                    >
-                      <div className="w-10 h-10 rounded-xl border border-blue-100 bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-500">
-                        <Users className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-black text-slate-800">Upload My Class</span>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Paste a roster, SIS export, or connect Google Classroom. You can store initials only if you'd rather keep real student names out of the app.</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
-                    </button>
+                  {/* Real class — secondary */}
+                  <button
+                    type="button"
+                    onClick={() => setScreen('add-real')}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all text-left group"
+                  >
+                    <div className="w-10 h-10 rounded-xl border border-sage/30 bg-sage/10 flex items-center justify-center flex-shrink-0 text-sage">
+                      <Zap className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-black text-slate-800">I'm ready to add my real class</span>
+                      <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Type first names or nicknames — no last names needed. Takes 2 minutes.</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
+                  </button>
 
-                    {/* Demo Mode */}
-                    <button
-                      type="button"
-                      onClick={handleDemoMode}
-                      disabled={saving}
-                      className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all text-left group disabled:opacity-60"
-                    >
-                      <div className="w-10 h-10 rounded-xl border border-violet-100 bg-violet-50 flex items-center justify-center flex-shrink-0 text-violet-500">
-                        <FlaskConical className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-black text-slate-800">Just Let Me Click Around</span>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5 leading-snug">Loads 8 fake students ("Falcon", "Rocket"…) so you can try every feature before adding your real class.</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
-                    </button>
-
-                  </div>
-                </div>
-
-                {/* Profile + other steps */}
-                <div className="px-6 pb-3">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 mt-4">Finish setup first →</p>
-                  <div className="space-y-2">
-                    {[profileStep, ...otherSteps.filter(s => isFullMode || s.action !== 'onGoToCalendar')].map((step) => (
-                      <button
-                        key={step.title}
-                        type="button"
-                        onClick={() => handlers[step.action]()}
-                        className="w-full flex items-center gap-4 p-3 rounded-2xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all text-left group"
-                      >
-                        <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${step.color}`}>
-                          {step.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-slate-800">{step.title}</span>
-                            {step.badge && (
-                              <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                                step.badge === 'Start here' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                              }`}>
-                                {step.badge}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <ChevronRight className="w-3 h-3 text-slate-300 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium mt-3 leading-relaxed">
-                    💡 Find the full <span className="font-black text-slate-700">Getting Started</span> guide at the top of the Settings screen anytime.
-                  </p>
-                </div>
-
-                <div className="px-6 pb-6 pt-2 flex justify-center">
-                  <button type="button" onClick={onDismiss} className="text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors">
-                    Skip for now
+                  <button
+                    type="button"
+                    onClick={onGoToRoster}
+                    className="w-full text-center text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors pt-1"
+                  >
+                    Upload a roster or connect Google Classroom →
                   </button>
                 </div>
               </>
             ) : (
               <>
-                {/* Quick Start screen */}
+                {/* Add real class screen */}
                 <div className="bg-sage px-8 pt-8 pb-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
                         <Zap className="w-5 h-5 text-white" />
                       </div>
-                      <span className="text-white/80 text-xs font-bold uppercase tracking-widest">Quick Start</span>
+                      <span className="text-white/80 text-xs font-bold uppercase tracking-widest">Add Your Class</span>
                     </div>
                     <button type="button" onClick={() => setScreen('main')} className="flex items-center gap-1 text-white/70 hover:text-white transition-colors text-xs font-bold">
                       <X className="w-4 h-4" /> Back
@@ -351,7 +266,7 @@ export default function WelcomeModal({
                   </div>
                   <h1 className="text-white font-black text-2xl leading-tight">Add your students</h1>
                   <p className="text-white/75 text-sm mt-2 leading-relaxed">
-                    Use real names, nicknames, or codes — whatever you're comfortable with. You can always change them later.
+                    Use real names, nicknames, or codes. You can always change them later.
                   </p>
                 </div>
 
@@ -375,21 +290,21 @@ export default function WelcomeModal({
                   </div>
                   {error && <p className="text-xs text-red-500 font-medium mt-2">{error}</p>}
                   <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-                    💡 You can use nicknames, seat numbers, or codes. Real names are never required.
+                    💡 Nicknames, seat numbers, or initials all work. Real names are never required.
                   </p>
                 </div>
 
                 <div className="px-6 pb-6 flex flex-col gap-2">
                   <button
                     type="button"
-                    onClick={handleQuickStart}
+                    onClick={handleRealClass}
                     disabled={saving || !isValid}
                     className="w-full py-4 bg-sage text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-sage/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {saving ? 'Adding students…' : `Add ${filledNicknames.length || ''}${filledNicknames.length ? ' ' : ''}Students & Start →`}
+                    {saving ? 'Adding students…' : `Add ${filledNicknames.length > 0 ? filledNicknames.length + ' ' : ''}Students & Start →`}
                   </button>
                   <button type="button" onClick={() => setScreen('main')} className="text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors text-center">
-                    ← Choose a different option
+                    ← Back
                   </button>
                 </div>
               </>

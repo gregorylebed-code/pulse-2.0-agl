@@ -167,6 +167,8 @@ interface ClassroomDataActions {
   saveNotificationPrefs: (prefs: NotificationPrefs) => Promise<void>;
   markOnboardingComplete: () => Promise<void>;
   refreshData: () => Promise<void>;
+  seedSandbox: () => Promise<void>;
+  wipeSandbox: () => Promise<void>;
 }
 
 export function useClassroomData(userId: string): ClassroomDataState & ClassroomDataActions {
@@ -970,6 +972,72 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     }
   }, []);
 
+  // ─── Sandbox seed / wipe ────────────────────────────────────────────────────
+
+  const seedSandbox = useCallback(async () => {
+    try {
+      // Insert 8 demo students
+      const { data: insertedStudents, error: studentError } = await supabase
+        .from('students')
+        .insert(SANDBOX_STUDENT_NAMES.map(name => ({
+          name,
+          user_id: userId,
+          class_id: null,
+          is_demo: true,
+          created_at: new Date().toISOString(),
+        })))
+        .select();
+      if (studentError) throw studentError;
+
+      // Insert sample notes spread across students
+      const notesToInsert = (insertedStudents as any[]).flatMap((student, si) => {
+        // Give each student 2-3 notes cycling through the sample set
+        const count = 2 + (si % 2);
+        return Array.from({ length: count }, (_, ni) => {
+          const sample = SANDBOX_NOTES_PER_STUDENT[(si * 2 + ni) % SANDBOX_NOTES_PER_STUDENT.length];
+          const daysAgo = (si * 3 + ni * 1 + 1);
+          const noteDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+          return {
+            student_id: student.id,
+            content: sample.content,
+            tags: sample.tags,
+            user_id: userId,
+            is_demo: true,
+            is_pinned: false,
+            is_checklist: false,
+            checklist_data: [],
+            deadline: null,
+            image_url: null,
+            is_parent_communication: false,
+            parent_communication_type: '',
+            created_at: noteDate,
+          };
+        });
+      });
+
+      const { error: noteError } = await supabase.from('notes').insert(notesToInsert);
+      if (noteError) throw noteError;
+
+      trackEvent('sandbox_started');
+      await refreshData();
+    } catch (err) {
+      console.error('Error seeding sandbox:', err);
+      toast.error('Could not load demo students — please try again.');
+    }
+  }, [userId, refreshData]);
+
+  const wipeSandbox = useCallback(async () => {
+    try {
+      await supabase.from('notes').delete().eq('user_id', userId).eq('is_demo', true);
+      await supabase.from('students').delete().eq('user_id', userId).eq('is_demo', true);
+      trackEvent('sandbox_wiped');
+      await refreshData();
+    } catch (err) {
+      console.error('Error wiping sandbox:', err);
+      toast.error('Could not remove demo students — please try again.');
+    }
+  }, [userId, refreshData]);
+
   return {
     ...state,
     addNote,
@@ -1013,5 +1081,24 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
     deleteShoutout,
     addAttendanceRecords,
     deleteAttendanceRecord,
+    seedSandbox,
+    wipeSandbox,
   };
 }
+
+// ─── Sandbox helpers (defined outside hook for clarity) ──────────────────────
+
+const SANDBOX_STUDENT_NAMES = [
+  'Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet',
+];
+
+const SANDBOX_NOTES_PER_STUDENT = [
+  { content: 'Great focus during group work today.', tags: ['on-task'] },
+  { content: 'Needed a few reminders to stay seated.', tags: ['off-task'] },
+  { content: 'Helped a classmate without being asked — really kind.', tags: ['kind'] },
+  { content: 'Struggled with transitions between activities.', tags: ['transitions'] },
+  { content: 'Excellent participation during discussion.', tags: ['participation'] },
+  { content: 'Completed all work independently.', tags: ['independent'] },
+  { content: 'Had a tough morning — checked in and settled down after 10 min.', tags: ['behavior'] },
+  { content: 'Parent contacted — positive update shared.', tags: ['parent-contact'] },
+];

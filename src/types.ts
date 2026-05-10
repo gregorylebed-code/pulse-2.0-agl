@@ -41,6 +41,7 @@ export interface Student {
   photo_url?: string | null;
   pronouns?: string | null;
   alias?: string | null;
+  is_demo?: boolean;
 }
 
 export interface Note {
@@ -59,6 +60,7 @@ export interface Note {
   is_parent_communication: boolean;
   parent_communication_type: string; // Stored as comma-separated string for multi-select
   created_at: string;
+  is_demo?: boolean;
 }
 
 export interface Report {

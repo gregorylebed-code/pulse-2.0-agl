@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { signIn, signUp } from '../lib/auth';
+import { trackEvent } from '../lib/analytics';
 import { cn } from '../utils/cn';
 
 export default function AuthScreen() {
@@ -22,6 +23,8 @@ export default function AuthScreen() {
         : await signUp(email, password);
       if (authError) {
         setError(authError.message);
+      } else if (mode === 'signup') {
+        trackEvent('signup_completed');
       }
     } catch (err: any) {
       setError(err.message ?? 'An unexpected error occurred.');

@@ -67,6 +67,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     seatingChart, saveSeatingChart,
     notificationPrefs, saveNotificationPrefs,
     onboardingComplete, markOnboardingComplete,
+    seedSandbox, wipeSandbox,
     loading,
   } = useClassroomData(userId);
 
@@ -957,13 +958,35 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         onDismiss={() => { setWelcomeHidden(true); setDemoModalLatched(false); }}
         onGoToStudents={() => { setWelcomeHidden(true); setDemoModalLatched(false); setActiveTab('students'); }}
         onSwitchFromDemo={handleSwitchFromDemo}
-        onAddStudents={async (names: string[]) => {
-          for (const name of names) {
-            await addStudent({ name, class_id: null });
+        onAddStudents={async (names: string[], isDemo?: boolean) => {
+          if (isDemo) {
+            await seedSandbox();
+          } else {
+            for (const name of names) {
+              await addStudent({ name, class_id: null });
+            }
+            trackEvent('first_student_added');
           }
           markOnboardingComplete();
         }}
       />
+
+      {/* Sandbox banner — shown when demo students exist in a real account */}
+      {!isInDemoMode && students.some(s => s.is_demo) && (
+        <div className="fixed top-0 left-0 right-0 z-[150] flex items-center justify-between gap-3 px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold shadow-lg">
+          <span>🧪 Demo students loaded — exploring ShortHand</span>
+          <button
+            type="button"
+            onClick={async () => {
+              await wipeSandbox();
+              setWelcomeHidden(false);
+            }}
+            className="text-xs font-black uppercase tracking-widest bg-white text-violet-700 px-3 py-1 rounded-full hover:bg-violet-50 transition-colors flex-shrink-0"
+          >
+            Add my real class →
+          </button>
+        </div>
+      )}
 
       <Confetti ref={confettiRef} />
 
