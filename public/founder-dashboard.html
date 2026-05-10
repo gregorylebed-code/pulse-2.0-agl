@@ -673,7 +673,7 @@
 
     // Notes card
     document.querySelector('#notesCard .card-value').textContent = d.notes.toLocaleString()
-    document.querySelector('#notesCard .card-sub').textContent   = `across ${d.students.toLocaleString()} students`
+    document.querySelector('#notesCard .card-sub').textContent   = `across ${d.realUsers} teachers`
 
     // Parent comms card
     document.querySelector('#parentCommsCard .card-value').textContent = d.parentComms.toLocaleString()
@@ -682,7 +682,7 @@
     document.querySelector('#shoutoutsCard .card-value').textContent = d.shoutouts.toLocaleString()
 
     // Notes activity chart sub-label
-    document.getElementById('notesChartSub').textContent = `${d.notes.toLocaleString()} total notes · ${d.students.toLocaleString()} students tracked`
+    document.getElementById('notesChartSub').textContent = `${d.notes.toLocaleString()} total notes · ${d.realUsers} teachers`
 
     // Charts
     requestAnimationFrame(() => {
