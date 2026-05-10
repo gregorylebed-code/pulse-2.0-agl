@@ -166,6 +166,7 @@ export interface ParentCommunication {
   follow_up_done: boolean;
   is_iep_related: boolean;
   is_urgent: boolean;
+  is_demo?: boolean;
   created_at: string;
   updated_at: string;
 }
