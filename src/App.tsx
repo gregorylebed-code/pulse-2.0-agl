@@ -145,7 +145,10 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
   const [openGettingStarted, setOpenGettingStarted] = useState(false);
 
   const DEMO_NAMES = ['Falcon', 'Blueberry', 'Math-Wiz', 'Rocket', 'Zigzag', 'Panda', 'Thunderbolt', 'Comet'];
-  const isInDemoMode = students.length > 0 && students.every(s => DEMO_NAMES.includes(s.name));
+  // isInDemoMode = anonymous demo account (info@getshorthandapp.com) with demo-named students but no is_demo flag
+  // sandbox users (real accounts) have is_demo:true on their students — they are NOT demo mode
+  const hasSandboxStudents = students.some(s => s.is_demo === true);
+  const isInDemoMode = !hasSandboxStudents && students.length > 0 && students.every(s => DEMO_NAMES.includes(s.name));
 
   // Show signup nudge after 5 minutes in demo mode
   useEffect(() => {
@@ -972,7 +975,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       />
 
       {/* Sandbox banner — shown when demo students exist in a real account */}
-      {!isInDemoMode && students.some(s => s.is_demo) && (
+      {hasSandboxStudents && (
         <div className="fixed top-0 left-0 right-0 z-[150] flex items-center justify-between gap-3 px-4 py-2.5 bg-violet-600 text-white text-sm font-semibold shadow-lg">
           <span>🧪 Demo students loaded — exploring ShortHand</span>
           <button
