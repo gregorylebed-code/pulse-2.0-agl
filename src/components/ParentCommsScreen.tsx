@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Plus, X, AlertTriangle, ArrowUpRight, ArrowDownLeft, Mail, Phone, Users, Calendar, ChevronDown, ChevronUp, CheckCircle2, Circle, Mic, MicOff, Sparkles } from 'lucide-react';
+import { MessageSquare, Plus, X, AlertTriangle, ArrowUpRight, ArrowDownLeft, Mail, Phone, Users, Calendar, ChevronDown, ChevronUp, CheckCircle2, Circle, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { ParentCommunication, Student } from '../types';
 import { cn } from '../utils/cn';
-import { generatePhoneScript, PhoneScriptIntent } from '../lib/gemini';
 
 interface ParentCommsScreenProps {
   students: Student[];
@@ -147,8 +146,6 @@ function QuickAddForm({
   const [saving, setSaving] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const [scriptIntent, setScriptIntent] = useState<PhoneScriptIntent | null>(null);
-  const [generatingScript, setGeneratingScript] = useState(false);
 
   const selectedStudent = students.find(s => s.id === selectedStudentId) ?? students[0];
 
@@ -167,21 +164,6 @@ function QuickAddForm({
     };
     recognitionRef.current = r;
     r.start();
-  };
-
-  const handleGenerateScript = async (intent: PhoneScriptIntent) => {
-    if (!selectedStudent) return;
-    setScriptIntent(intent);
-    setGeneratingScript(true);
-    try {
-      const bullets = await generatePhoneScript(selectedStudent.name, intent);
-      setNotes(n => n ? n + '\n\n' + bullets : bullets);
-      toast.success('Talking points added');
-    } catch {
-      toast.error('Could not generate script — try again.');
-    } finally {
-      setGeneratingScript(false);
-    }
   };
 
   const handleSubmit = async () => {
@@ -272,31 +254,6 @@ function QuickAddForm({
             {d === 'outbound' ? <><ArrowUpRight className="w-3.5 h-3.5" /> I reached out</> : <><ArrowDownLeft className="w-3.5 h-3.5" /> They contacted me</>}
           </button>
         ))}
-      </div>
-
-      {/* AI Script generator */}
-      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-          <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Generate talking points</span>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {(['Positive Shoutout', 'Missing Assignments', 'Behavior Issue'] as PhoneScriptIntent[]).map(intent => (
-            <button
-              key={intent}
-              onClick={() => handleGenerateScript(intent)}
-              disabled={generatingScript}
-              className={cn(
-                'px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all disabled:opacity-40',
-                scriptIntent === intent && generatingScript
-                  ? 'bg-violet-100 border-violet-300 text-violet-600 animate-pulse'
-                  : 'bg-white border-slate-200 text-slate-500 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-600'
-              )}
-            >
-              {scriptIntent === intent && generatingScript ? 'Generating...' : intent}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Subject + Parent */}

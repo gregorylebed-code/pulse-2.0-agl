@@ -662,26 +662,3 @@ Example: {"birthdays":[{"studentName":"Mike","matchedName":"Michael Chen","birth
     return [];
   }
 }
-
-export type PhoneScriptIntent = 'Positive Shoutout' | 'Missing Assignments' | 'Behavior Issue';
-
-export async function generatePhoneScript(studentName: string, intent: PhoneScriptIntent): Promise<string> {
-  const firstName = studentName.split(' ')[0];
-  const intentContext: Record<PhoneScriptIntent, string> = {
-    'Positive Shoutout': `You are calling to share good news. ${firstName} has been doing great and you want the parent to hear something positive.`,
-    'Missing Assignments': `You are calling because ${firstName} has missing or incomplete assignments and you want to problem-solve with the parent.`,
-    'Behavior Issue': `You are calling about a behavior concern. Something happened that you need to inform the parent about and work on together.`,
-  };
-
-  const prompt = `You are a helpful assistant for a classroom teacher who is about to make a parent phone call about ${firstName}.
-
-Intent: ${intent}
-Context: ${intentContext[intent]}
-
-Generate 4-5 concise bullet-point talking points for this phone call. Each bullet should be a short, plain-English phrase the teacher can glance at while talking — not a full script. Keep it warm, professional, and practical.
-
-Return ONLY the bullet points, one per line, starting each line with "• ". No headers, no intro, no explanation.`;
-
-  const raw = await callGroq(prompt, false, undefined, 'generate_phone_script');
-  return raw.trim();
-}
