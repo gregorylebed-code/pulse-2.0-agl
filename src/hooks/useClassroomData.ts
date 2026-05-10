@@ -976,6 +976,10 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const seedSandbox = useCallback(async () => {
     try {
+      // Guard: don't double-seed if demo data already exists
+      const alreadySeeded = state.students.some(s => s.is_demo);
+      if (alreadySeeded) return;
+
       // Insert 8 demo students
       const { data: insertedStudents, error: studentError } = await supabase
         .from('students')
