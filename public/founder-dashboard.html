@@ -598,8 +598,6 @@
       'demo@getshorthandapp.com','admin@getshorthandapp.com'
     ]
 
-    const events = ['demo_nudge_shown', 'demo_nudge_cta_clicked', 'demo_nudge_dismissed']
-
     const [
       notesRes, studentsRes, parentCommsRes, shoutoutsRes,
       signupsRes, notesActivityRes, eventsRes, anonRes, teacherRes, socialRes
@@ -610,7 +608,7 @@
       supabase.rpc('get_shoutouts_count'),
       supabase.rpc('get_signup_dates'),
       supabase.rpc('get_notes_last_14_days'),
-      supabase.from('analytics_events').select('event_name').in('event_name', events),
+      supabase.rpc('get_analytics_event_counts'),
       supabase.rpc('get_anon_user_count'),
       supabase.rpc('get_real_teacher_count'),
       supabase.from('social_stats').select('*').order('updated_at', { ascending: true }),
@@ -640,10 +638,8 @@
     }
     const notesData = Object.entries(notesMap).map(([day, n]) => ({ day, n }))
 
-    // Event counts
-    const eventCounts = {}
-    events.forEach(e => eventCounts[e] = 0)
-    if (eventsRes.data) eventsRes.data.forEach(r => { if (eventCounts[r.event_name] !== undefined) eventCounts[r.event_name]++ })
+    // Event counts from SECURITY DEFINER RPC
+    const eventCounts = eventsRes.data ?? {}
 
     return {
       notes:        notesRes.data ?? 0,
@@ -652,9 +648,9 @@
       shoutouts:    shoutoutsRes.data ?? 0,
       realUsers:    teacherRes.data ?? '—',
       demoStarted:  anonRes.data ?? '—',
-      nudgeShown:   eventCounts['demo_nudge_shown'],
-      nudgeCTA:     eventCounts['demo_nudge_cta_clicked'],
-      nudgeDismiss: eventCounts['demo_nudge_dismissed'],
+      nudgeShown:   eventCounts['demo_nudge_shown'] ?? 0,
+      nudgeCTA:     eventCounts['demo_nudge_cta_clicked'] ?? 0,
+      nudgeDismiss: eventCounts['demo_nudge_dismissed'] ?? 0,
       signupData,
       notesData,
       social:       socialRes.data ?? [],
