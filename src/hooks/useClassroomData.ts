@@ -1015,6 +1015,67 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       const { error: noteError } = await supabase.from('notes').insert(notesToInsert);
       if (noteError) throw noteError;
 
+      // Build parent comm threads keyed by student name
+      const studentMap = Object.fromEntries(
+        (insertedStudents as any[]).map(s => [s.name, s])
+      );
+      const daysAgo = (d: number) =>
+        new Date(Date.now() - d * 24 * 60 * 60 * 1000).toISOString();
+
+      const commsToInsert = [
+        // Rocket — helicopter mom Linda, daily emails
+        { student: 'Rocket', parent_name: 'Linda', comm_type: 'Email', direction: 'inbound', subject: 'Sleep schedule concern', notes: 'Linda emailed asking if Rocket seemed tired — says he\'s been up late. Asked me to watch for yawning.', comm_date: daysAgo(10), is_urgent: false },
+        { student: 'Rocket', parent_name: 'Linda', comm_type: 'Email', direction: 'outbound', subject: 'Re: Sleep schedule concern', notes: 'Replied that Rocket has been engaged but did rest his head once. Suggested a consistent bedtime routine.', comm_date: daysAgo(10), is_urgent: false },
+        { student: 'Rocket', parent_name: 'Linda', comm_type: 'Email', direction: 'inbound', subject: 'Lunch money + ELA homework', notes: 'Linda emailed again — can we confirm lunch balance and also asked if ELA homework is graded. Third email this week.', comm_date: daysAgo(5), is_urgent: false },
+        { student: 'Rocket', parent_name: 'Linda', comm_type: 'Email', direction: 'inbound', subject: 'End of week check-in', notes: 'How did Rocket do this week overall? She wants a full update. Did not reply yet.', comm_date: daysAgo(1), is_urgent: false },
+
+        // Zigzag — escalating behavior, zero parent response
+        { student: 'Zigzag', parent_name: '', comm_type: 'ParentSquare', direction: 'outbound', subject: 'Behavior concern', notes: 'Sent ParentSquare message about Zigzag\'s escalating outbursts during transitions. No reply received.', comm_date: daysAgo(14), is_urgent: true },
+        { student: 'Zigzag', parent_name: '', comm_type: 'ParentSquare', direction: 'outbound', subject: 'Follow-up — urgent', notes: 'Second message sent. Zigzag had a major incident today — threw materials, had to leave the room. Still no parent response.', comm_date: daysAgo(7), is_urgent: true },
+        { student: 'Zigzag', parent_name: '', comm_type: 'Phone', direction: 'outbound', subject: 'Phone call attempt', notes: 'Called listed number — went to voicemail. Left message asking for a callback ASAP. This is the third attempt to reach family.', comm_date: daysAgo(3), is_urgent: true },
+
+        // Blueberry — supportive dad Marcus, good back-and-forth
+        { student: 'Blueberry', parent_name: 'Marcus', comm_type: 'Email', direction: 'outbound', subject: 'Reading progress update', notes: 'Emailed Marcus to share that Blueberry moved up a reading level. Wanted to celebrate the win with family.', comm_date: daysAgo(9), is_urgent: false },
+        { student: 'Blueberry', parent_name: 'Marcus', comm_type: 'Email', direction: 'inbound', subject: 'Re: Reading progress update', notes: 'Marcus replied right away — so proud, says they\'ve been doing nightly reading together. Asked how to keep the momentum going.', comm_date: daysAgo(8), is_urgent: false },
+        { student: 'Blueberry', parent_name: 'Marcus', comm_type: 'Email', direction: 'outbound', subject: 'Great Friday', notes: 'Sent a Friday good news note — Blueberry led a group activity and every student stayed on task. Marcus is a great partner.', comm_date: daysAgo(2), is_urgent: false },
+
+        // Comet — withdrawn, mom replied with real context
+        { student: 'Comet', parent_name: '', comm_type: 'Email', direction: 'outbound', subject: 'Checking in on Comet', notes: 'Comet has been very quiet lately — not disruptive, just withdrawn. Reached out to ask if anything is going on at home.', comm_date: daysAgo(11), is_urgent: false },
+        { student: 'Comet', parent_name: 'Mom', comm_type: 'Email', direction: 'inbound', subject: 'Re: Checking in on Comet', notes: 'Mom replied — Comet\'s best friend moved schools last month. She\'s been struggling but doesn\'t want to talk about it. Really helpful context.', comm_date: daysAgo(10), is_urgent: false },
+        { student: 'Comet', parent_name: 'Mom', comm_type: 'Email', direction: 'outbound', subject: 'Plan to support Comet', notes: 'Replied with a plan — will pair Comet with a new partner during group work and give her a "helper" role to rebuild confidence. Mom was grateful.', comm_date: daysAgo(9), is_urgent: false },
+
+        // Falcon — two voicemails, one vague reply
+        { student: 'Falcon', parent_name: '', comm_type: 'Phone', direction: 'outbound', subject: 'Voicemail — behavior concern', notes: 'Left voicemail about Falcon\'s pattern of disrupting others during independent work. Asked for a call back.', comm_date: daysAgo(12), is_urgent: false },
+        { student: 'Falcon', parent_name: 'Mom', comm_type: 'Email', direction: 'inbound', subject: 'Re: Phone message', notes: 'Mom replied by email instead of calling — said "we\'re dealing with a lot right now" and thanked me for reaching out. No specifics.', comm_date: daysAgo(11), is_urgent: false },
+        { student: 'Falcon', parent_name: '', comm_type: 'Phone', direction: 'outbound', subject: 'Second voicemail', notes: 'Called again after Falcon had a difficult week. Left second voicemail. No response yet.', comm_date: daysAgo(4), is_urgent: false },
+
+        // Math-Wiz — ParentSquare thread, semi-useful reply
+        { student: 'Math-Wiz', parent_name: '', comm_type: 'ParentSquare', direction: 'outbound', subject: 'Math mastery + next steps', notes: 'Sent a ParentSquare note sharing that Math-Wiz has mastered all grade-level standards and is ready for enrichment. Wanted family to know.', comm_date: daysAgo(6), is_urgent: false },
+        { student: 'Math-Wiz', parent_name: 'Mom', comm_type: 'ParentSquare', direction: 'inbound', subject: 'Re: Math mastery', notes: 'Mom replied — "That\'s great, he does a lot of math at home too." Not much to work with but at least she saw it.', comm_date: daysAgo(5), is_urgent: false },
+
+        // Thunderbolt — logistics only, no drama
+        { student: 'Thunderbolt', parent_name: 'Mom', comm_type: 'Email', direction: 'inbound', subject: 'Early pickup Friday', notes: 'Mom emailed to let me know Thunderbolt will be picked up at 1:30 on Friday for a dentist appointment. Noted.', comm_date: daysAgo(3), is_urgent: false },
+
+        // Panda — meltdown, no reply
+        { student: 'Panda', parent_name: '', comm_type: 'ParentSquare', direction: 'outbound', subject: 'Difficult day — wanted to loop you in', notes: 'Panda had a full meltdown during math — crying, couldn\'t regulate for about 20 minutes. Sent a calm, factual message to keep family informed. No reply received.', comm_date: daysAgo(5), is_urgent: false },
+      ].map(c => {
+        const student = studentMap[c.student];
+        if (!student) return null;
+        const { student: _name, ...rest } = c;
+        return {
+          ...rest,
+          student_id: student.id,
+          student_name: student.name,
+          user_id: userId,
+          is_demo: true,
+          follow_up_done: false,
+          is_iep_related: false,
+        };
+      }).filter(Boolean);
+
+      const { error: commError } = await supabase.from('parent_communications').insert(commsToInsert);
+      if (commError) throw commError;
+
       trackEvent('sandbox_started');
       await refreshData();
     } catch (err) {
@@ -1025,6 +1086,7 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const wipeSandbox = useCallback(async () => {
     try {
+      await supabase.from('parent_communications').delete().eq('user_id', userId).eq('is_demo', true);
       await supabase.from('notes').delete().eq('user_id', userId).eq('is_demo', true);
       await supabase.from('students').delete().eq('user_id', userId).eq('is_demo', true);
       trackEvent('sandbox_wiped');
