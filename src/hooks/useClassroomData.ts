@@ -1090,8 +1090,8 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const wipeSandbox = useCallback(async () => {
     try {
-      await supabase.from('parent_communications').delete().eq('user_id', userId).eq('is_demo', true);
-      await supabase.from('notes').delete().eq('user_id', userId).eq('is_demo', true);
+      await supabase.from('parent_communications').delete().eq('user_id', userId);
+      await supabase.from('notes').delete().eq('user_id', userId);
       await supabase.from('students').delete().eq('user_id', userId).eq('is_demo', true);
       trackEvent('sandbox_wiped');
       await refreshData();
