@@ -14,6 +14,7 @@ interface ParentCommsScreenProps {
   addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
   tasks?: { id: string; text: string }[];
   onStudentClick: (studentId: string) => void;
+  isSandboxMode?: boolean;
 }
 
 const COMM_TYPES = [
@@ -110,17 +111,18 @@ function CommRow({ comm, onDelete, onUpdate }: CommRowProps) {
   );
 }
 
-export default function ParentCommsScreen({ students, communications, onAdd, onUpdate, onDelete, addTask, tasks, onStudentClick }: ParentCommsScreenProps) {
+export default function ParentCommsScreen({ students, communications, onAdd, onUpdate, onDelete, addTask, tasks, onStudentClick, isSandboxMode }: ParentCommsScreenProps) {
   const [filterStudentId, setFilterStudentId] = useState<string | null>(null);
 
-  const realStudents = useMemo(() => students.filter(s => !s.is_demo), [students]);
+  const realStudents = useMemo(() => isSandboxMode ? students.filter(s => s.is_demo) : students.filter(s => !s.is_demo), [students, isSandboxMode]);
 
   const realComms = useMemo(() =>
     communications.filter(c => {
       const student = students.find(s => s.id === c.student_id);
-      return student && !student.is_demo;
+      if (!student) return false;
+      return isSandboxMode ? student.is_demo : !student.is_demo;
     }),
-    [communications, students]
+    [communications, students, isSandboxMode]
   );
 
   const sorted = useMemo(() =>
