@@ -35,6 +35,7 @@ interface PulseScreenProps {
   onGoToSettings?: () => void;
   onSwitchToRealClass?: () => void;
   showDemoBanner?: boolean;
+  isSandboxMode?: boolean;
 }
 
 // ─── Today at a Glance ───────────────────────────────────────────────────────
@@ -191,7 +192,7 @@ function SparkleCanvas({ x, y, onDone }: { x: number; y: number; onDone: () => v
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings, onSwitchToRealClass, showDemoBanner }: PulseScreenProps) {
+function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, classes, onNoteAdded, addNote, updateNote, deleteNote, abbreviations, resetKey, onStudentClick, onboardingComplete, onGoToSettings, onSwitchToRealClass, showDemoBanner, isSandboxMode }: PulseScreenProps) {
   const { aliasMode } = useAliasMode();
   const isFullMode = useFullMode();
   const [onboardingBannerDismissed, setOnboardingBannerDismissed] = useState(() =>
@@ -707,6 +708,19 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           <button onClick={dismissOnboardingBanner} className="absolute top-2 right-2 text-slate-300 hover:text-slate-500 transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
+        </div>
+      )}
+
+      {/* SANDBOX NUDGE BANNER */}
+      {isSandboxMode && (
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 flex items-start gap-3 shadow-sm">
+          <span className="text-lg leading-none mt-0.5">✏️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-black text-violet-700">Now try it yourself</p>
+            <p className="text-[11px] text-slate-600 font-medium mt-0.5 leading-relaxed">
+              Tap any student below and log a note — just like you would in a real class. Takes 5 seconds.
+            </p>
+          </div>
         </div>
       )}
 

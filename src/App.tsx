@@ -693,6 +693,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   onGoToSettings={() => { setActiveTab('settings'); setSettingsView('main'); }}
                   onSwitchToRealClass={students.length > 0 ? handleSwitchFromDemo : undefined}
                   showDemoBanner={isInDemoMode && showDemoNudge && !demoNudgeDismissed}
+                  isSandboxMode={hasSandboxStudents}
                 />
                 </ErrorBoundary>
               ) : (
