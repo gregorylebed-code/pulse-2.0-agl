@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Plus, X, AlertTriangle, ArrowUpRight, ArrowDownLeft, Mail, Phone, Users, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Plus, X, AlertTriangle, ArrowUpRight, ArrowDownLeft, Mail, Phone, Users, Calendar, ChevronDown, ChevronUp, CheckCircle2, Circle, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { ParentCommunication, Student } from '../types';
 import { cn } from '../utils/cn';
@@ -111,8 +111,208 @@ function CommRow({ comm, onDelete, onUpdate }: CommRowProps) {
   );
 }
 
+const FORM_COMM_TYPES = [
+  { label: 'Email',        icon: Mail,          color: 'text-blue-500',    bg: 'bg-blue-50',    border: 'border-blue-100'    },
+  { label: 'Phone',        icon: Phone,         color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+  { label: 'Meeting',      icon: Users,         color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-100'  },
+  { label: 'ParentSquare', icon: MessageSquare, color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-100'   },
+];
+
+const detectDirection = (notes: string): 'outbound' | 'inbound' => {
+  const lower = notes.toLowerCase();
+  if (/\b(they called|she called|he called|parent called|mom called|dad called|they reached out|they contacted|they emailed|received a call|got a call|they left a message|incoming)\b/.test(lower)) return 'inbound';
+  return 'outbound';
+};
+
+function QuickAddForm({
+  students,
+  onSave,
+  onCancel,
+}: {
+  students: Student[];
+  onSave: (data: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
+  onCancel: () => void;
+}) {
+  const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id ?? '');
+  const [commType, setCommType] = useState('');
+  const [direction, setDirection] = useState<'' | 'outbound' | 'inbound'>('');
+  const [subject, setSubject] = useState('');
+  const [notes, setNotes] = useState('');
+  const [parentName, setParentName] = useState('');
+  const [commDate, setCommDate] = useState(new Date().toISOString().slice(0, 10));
+  const [followUpDate, setFollowUpDate] = useState('');
+  const [isIepRelated, setIsIepRelated] = useState(false);
+  const [isUrgent, setIsUrgent] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const selectedStudent = students.find(s => s.id === selectedStudentId) ?? students[0];
+
+  const handleVoice = () => {
+    if (isListening) { recognitionRef.current?.stop(); return; }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error('Voice not supported on this browser.'); return; }
+    const r = new SR();
+    r.lang = 'en-US';
+    r.onstart = () => setIsListening(true);
+    r.onend = () => setIsListening(false);
+    r.onresult = (e: any) => {
+      const t = e.results[0][0].transcript;
+      setNotes(n => n ? n + ' ' + t : t);
+      if (!direction) setDirection(detectDirection(t));
+    };
+    recognitionRef.current = r;
+    r.start();
+  };
+
+  const handleSubmit = async () => {
+    if (!notes.trim()) { toast.error('Please add notes about the communication.'); return; }
+    if (!selectedStudent) { toast.error('Please select a student.'); return; }
+    setSaving(true);
+    try {
+      await onSave({
+        student_id: selectedStudent.id,
+        student_name: selectedStudent.name,
+        comm_type: commType,
+        direction: direction || detectDirection(notes),
+        subject: subject || null,
+        notes: notes.trim(),
+        parent_name: parentName || null,
+        comm_date: new Date(commDate + 'T00:00').toISOString(),
+        follow_up_date: followUpDate || null,
+        follow_up_done: false,
+        is_iep_related: isIepRelated,
+        is_urgent: isUrgent,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-black text-slate-600 uppercase tracking-wider">Log Communication</span>
+        <button onClick={onCancel} className="text-slate-300 hover:text-slate-500"><X className="w-4 h-4" /></button>
+      </div>
+
+      {/* Student picker */}
+      <div>
+        <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Student</label>
+        <select
+          value={selectedStudentId}
+          onChange={e => {
+            setSelectedStudentId(e.target.value);
+            const s = students.find(st => st.id === e.target.value);
+            setParentName(s?.parent_guardian_names?.[0] ?? '');
+          }}
+          className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage"
+        >
+          {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      </div>
+
+      {/* Comm type */}
+      <div className="flex gap-2 flex-wrap">
+        {FORM_COMM_TYPES.map(t => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.label}
+              onClick={() => setCommType(c => c === t.label ? '' : t.label)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all',
+                commType === t.label ? cn(t.bg, t.border, t.color, 'shadow-sm') : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'
+              )}
+            >
+              {t.label === 'ParentSquare'
+                ? <span className="inline-flex items-center justify-center rounded-sm bg-amber-400 text-white font-black leading-none w-3.5 h-3.5 text-[8px]">PS</span>
+                : <Icon className={cn('w-3.5 h-3.5', commType === t.label ? t.color : 'text-slate-400')} />}
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Direction */}
+      <div className="flex gap-2">
+        {(['outbound', 'inbound'] as const).map(d => (
+          <button
+            key={d}
+            onClick={() => setDirection(v => v === d ? '' : d)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all',
+              direction === d ? 'bg-slate-700 border-slate-700 text-white' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'
+            )}
+          >
+            {d === 'outbound' ? <><ArrowUpRight className="w-3.5 h-3.5" /> I reached out</> : <><ArrowDownLeft className="w-3.5 h-3.5" /> They contacted me</>}
+          </button>
+        ))}
+      </div>
+
+      {/* Subject + Parent */}
+      <div className="grid grid-cols-2 gap-2">
+        <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject / topic..." className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage" />
+        <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} placeholder="Parent name..." className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage" />
+      </div>
+
+      {/* Notes + voice */}
+      <div className="relative">
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="What was discussed? Key points, next steps, tone..."
+          rows={5}
+          className="w-full px-3 py-2 pr-28 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-medium focus:outline-none focus:border-sage resize-none leading-relaxed"
+        />
+        <button
+          type="button"
+          onClick={handleVoice}
+          className={cn('absolute right-2 bottom-2 flex items-center gap-1.5 px-3 py-2 rounded-xl shadow-sm border transition-all font-bold text-[11px] uppercase tracking-widest', isListening ? 'bg-terracotta text-white border-terracotta animate-pulse' : 'bg-white text-slate-500 border-slate-200 hover:bg-terracotta/10 hover:text-terracotta hover:border-terracotta/40')}
+        >
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          <span>{isListening ? 'Stop' : 'Voice'}</span>
+        </button>
+      </div>
+
+      {/* Date + follow-up */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Date</label>
+          <input type="date" value={commDate} onChange={e => setCommDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[12px] font-medium focus:outline-none focus:border-sage" />
+        </div>
+        <div>
+          <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-1">Follow-up <span className="normal-case font-medium">(optional)</span></label>
+          <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[12px] font-medium focus:outline-none focus:border-sage" />
+        </div>
+      </div>
+
+      {/* Flags */}
+      <div className="flex gap-3">
+        <button onClick={() => setIsIepRelated(v => !v)} className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all', isIepRelated ? 'bg-violet-50 border-violet-200 text-violet-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100')}>
+          {isIepRelated ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />} IEP Related
+        </button>
+        <button onClick={() => setIsUrgent(v => !v)} className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-black transition-all', isUrgent ? 'bg-red-50 border-red-200 text-red-500' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100')}>
+          {isUrgent ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />} Urgent
+        </button>
+      </div>
+
+      <button onClick={handleSubmit} disabled={saving} className="w-full py-2.5 bg-sage text-white rounded-xl text-[13px] font-black hover:bg-sage-dark disabled:opacity-50 transition-colors">
+        {saving ? 'Saving...' : 'Save Communication Log'}
+      </button>
+    </motion.div>
+  );
+}
+
 export default function ParentCommsScreen({ students, communications, onAdd, onUpdate, onDelete, addTask, tasks, onStudentClick, isSandboxMode }: ParentCommsScreenProps) {
   const [filterStudentId, setFilterStudentId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const realStudents = useMemo(() =>
     isSandboxMode ? students.filter(s => !!s.is_demo) : students.filter(s => !s.is_demo),
@@ -149,7 +349,36 @@ export default function ParentCommsScreen({ students, communications, onAdd, onU
             <h1 className="text-[22px] font-black text-slate-800">Parent Comms</h1>
             <p className="text-[12px] text-slate-400 font-medium">Every contact, timestamped</p>
           </div>
+          {realStudents.length > 0 && (
+            <button
+              onClick={() => setShowForm(f => !f)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-sage text-white rounded-xl text-[13px] font-black hover:bg-sage-dark transition-colors shadow-sm"
+            >
+              {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {showForm ? 'Cancel' : 'Add'}
+            </button>
+          )}
         </div>
+
+        {/* Quick add form */}
+        <AnimatePresence>
+          {showForm && (
+            <QuickAddForm
+              students={realStudents}
+              onSave={async (data) => {
+                const result = await onAdd(data);
+                if (result) {
+                  setShowForm(false);
+                  toast.success('Communication logged');
+                } else {
+                  toast.error('Failed to save — please try again.');
+                }
+                return result;
+              }}
+              onCancel={() => setShowForm(false)}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Alert strip */}
         {(urgentCount > 0 || overdueCount > 0) && (
