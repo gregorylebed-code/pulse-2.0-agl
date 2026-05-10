@@ -25,6 +25,7 @@ import { getRotationForDate, SpecialsConfig } from './utils/rotationHelpers';
 import { scheduleDailyReminder, scheduleCalendarReminder } from './utils/notifications';
 import { trackEvent } from './lib/analytics';
 import WelcomeModal from './components/WelcomeModal';
+import ParentCommsScreen from './components/ParentCommsScreen';
 import Confetti, { ConfettiHandle } from './components/Confetti';
 import CarouselMaker from './components/social-lab/CarouselMaker';
 import StudioPanel, { AccentTheme, BgTheme } from './components/StudioPanel';
@@ -123,8 +124,8 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       .then(({ error }) => { if (error) console.error('user_presence upsert failed:', error); });
   }, [userId]);
 
-  const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'insights' | 'shoutouts' | 'settings'>('pulse');
-  const tabOrder = { pulse: 0, students: 1, insights: 2, shoutouts: 3, settings: 4 } as const;
+  const [activeTab, setActiveTab] = useState<'pulse' | 'students' | 'parents' | 'insights' | 'shoutouts' | 'settings'>('pulse');
+  const tabOrder = { pulse: 0, students: 1, parents: 2, insights: 3, shoutouts: 4, settings: 5 } as const;
   const prevTabRef = useRef<typeof activeTab>('pulse');
   const tabDirection = tabOrder[activeTab] >= tabOrder[prevTabRef.current] ? 1 : -1;
   const [classSummaries, setClassSummaries] = useState<Record<string, string>>({});
@@ -540,7 +541,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
 
   // Swipe to change tabs
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const tabs = (['pulse', 'students', isFullMode ? 'insights' : null, isFullMode ? 'shoutouts' : null, 'settings'] as const).filter(Boolean) as ('pulse' | 'students' | 'insights' | 'shoutouts' | 'settings')[];
+  const tabs = (['pulse', 'students', 'parents', isFullMode ? 'insights' : null, isFullMode ? 'shoutouts' : null, 'settings'] as const).filter(Boolean) as ('pulse' | 'students' | 'parents' | 'insights' | 'shoutouts' | 'settings')[];
   const handleTouchStart = (e: React.TouchEvent) => {
     if ((e.target as HTMLElement).closest('.no-swipe')) return;
     const t = e.touches[0];
@@ -816,6 +817,22 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                   setSelectedStudentId(studentId);
                   setActiveTab('students');
                 }}
+              />
+              </ErrorBoundary>
+            </motion.div>
+          )}
+          {activeTab === 'parents' && (
+            <motion.div key="parents" custom={tabDirection} variants={tabVariants} initial="enter" animate="center" exit="exit">
+              <ErrorBoundary label="Parent Comms">
+              <ParentCommsScreen
+                students={students}
+                communications={parentCommunications}
+                onAdd={addParentCommunication}
+                onUpdate={updateParentCommunication}
+                onDelete={deleteParentCommunication}
+                addTask={addTask}
+                tasks={tasks}
+                onStudentClick={(studentId) => { setSelectedStudentId(studentId); setActiveTab('students'); }}
               />
               </ErrorBoundary>
             </motion.div>
