@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Plus, X, AlertTriangle, ArrowUpRight, ArrowDownLeft, Mail, Phone, Users, Calendar, ChevronDown, ChevronUp, CheckCircle2, Circle, Mic, MicOff } from 'lucide-react';
+import { MessageSquare, Plus, X, AlertTriangle, ArrowUpRight, ArrowDownLeft, Mail, Phone, Users, Calendar, ChevronDown, ChevronUp, CheckCircle2, Circle, Mic, MicOff, Sparkles, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { ParentCommunication, Student } from '../types';
 import { cn } from '../utils/cn';
+import { generateCallScript } from '../lib/gemini';
 
 interface ParentCommsScreenProps {
   students: Student[];
@@ -146,6 +147,9 @@ function QuickAddForm({
   const [saving, setSaving] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const [callScript, setCallScript] = useState<string[]>([]);
+  const [generatingScript, setGeneratingScript] = useState(false);
+  const [scriptCopied, setScriptCopied] = useState(false);
 
   const selectedStudent = students.find(s => s.id === selectedStudentId) ?? students[0];
 
@@ -164,6 +168,28 @@ function QuickAddForm({
     };
     recognitionRef.current = r;
     r.start();
+  };
+
+  const handleGenerateScript = async () => {
+    if (!selectedStudent) return;
+    setGeneratingScript(true);
+    setCallScript([]);
+    try {
+      const bullets = await generateCallScript(selectedStudent.name, subject, notes);
+      setCallScript(bullets);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to generate script. Try again.');
+    } finally {
+      setGeneratingScript(false);
+    }
+  };
+
+  const handleCopyScript = () => {
+    const text = callScript.map((b, i) => `${i + 1}. ${b}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setScriptCopied(true);
+      setTimeout(() => setScriptCopied(false), 2000);
+    });
   };
 
   const handleSubmit = async () => {
@@ -280,6 +306,54 @@ function QuickAddForm({
           <span>{isListening ? 'Stop' : 'Voice'}</span>
         </button>
       </div>
+
+      {/* AI call script — Phone only */}
+      {commType === 'Phone' && (
+        <div>
+          <button
+            type="button"
+            onClick={handleGenerateScript}
+            disabled={generatingScript}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[12px] font-black transition-all',
+              generatingScript
+                ? 'bg-slate-100 border-slate-200 text-slate-400'
+                : 'bg-violet-50 border-violet-200 text-violet-600 hover:bg-violet-100'
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {generatingScript ? 'Generating script...' : 'Prep call script'}
+          </button>
+
+          <AnimatePresence>
+            {callScript.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-2 bg-violet-50 border border-violet-200 rounded-xl p-3 space-y-1.5"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-black text-violet-500 uppercase tracking-wider">Call Script</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyScript}
+                    className="flex items-center gap-1 text-[11px] font-black text-violet-400 hover:text-violet-600 transition-colors"
+                  >
+                    {scriptCopied ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+                  </button>
+                </div>
+                {callScript.map((bullet, i) => (
+                  <div key={i} className="flex gap-2 text-[12px] text-violet-800 leading-relaxed">
+                    <span className="font-black text-violet-400 flex-shrink-0">{i + 1}.</span>
+                    <span>{bullet}</span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Date + follow-up */}
       <div className="grid grid-cols-2 gap-2">

@@ -115,6 +115,39 @@ export async function extractRotationMapping(fileData: string, mimeType: string,
   }
 }
 
+export async function generateCallScript(
+  studentName: string,
+  subject: string,
+  context: string,
+  signal?: AbortSignal
+): Promise<string[]> {
+  const prompt = `You are helping a teacher prepare for a parent phone call.
+
+Student: ${studentName}
+Topic/Subject: ${subject || 'General check-in'}
+Context/Notes: ${context || 'No additional context provided'}
+
+Write a short phone call script as 4-6 bullet points the teacher can follow. Include:
+1. A warm opening line (introduce yourself, ask if it's a good time)
+2. The main point(s) to communicate clearly
+3. A specific ask or next step for the parent
+4. A positive closing line
+
+Keep it natural and conversational — this is a real phone call, not a formal letter. Be concise. Each bullet should be 1-2 sentences max.
+
+Return ONLY a JSON object with a single key "bullets" containing an array of strings. No markdown, no extra text.
+Example: {"bullets": ["Hi, this is Ms. Smith calling about Jordan...", "I wanted to share..."]}`;
+
+  const text = await callGroq(prompt, true, undefined, 'generate_call_script', signal);
+  try {
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed.bullets) ? parsed.bullets : [];
+  } catch {
+    // Fallback: split on newlines if JSON parse fails
+    return text.split('\n').map((l: string) => l.replace(/^[-•*\d.]+\s*/, '').trim()).filter(Boolean);
+  }
+}
+
 export async function performSmartScan(fileData: string, mimeType: string, signal?: AbortSignal) {
   const prompt = `Analyze this document (likely a school calendar or schedule screenshot).
             Specifically look for a "Chronological List" of dates and events.
