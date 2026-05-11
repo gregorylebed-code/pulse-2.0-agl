@@ -388,13 +388,20 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const incrementStat = useCallback(async (field: keyof Stats) => {
     let updatedStats: Stats | null = null;
+    let previousStats: Stats | null = null;
     setState(prev => {
+      previousStats = prev.stats;
       const updated = { ...prev.stats, [field]: (prev.stats[field] ?? 0) + 1 };
       updatedStats = updated;
       return { ...prev, stats: updated };
     });
     if (updatedStats) {
-      await updateSetting('stats', updatedStats);
+      try {
+        await updateSetting('stats', updatedStats);
+      } catch {
+        // Roll back the optimistic update so state stays in sync with the DB
+        if (previousStats) setState(prev => ({ ...prev, stats: previousStats! }));
+      }
     }
   }, [updateSetting]);
 
@@ -427,8 +434,15 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       trackEvent('note_logged', { indicator: (note as any).indicator_id ?? null });
       return data;
     } catch (error) {
-      // If offline, queue the note for later sync and return null gracefully
-      if (!navigator.onLine) {
+      // Enqueue if offline OR if the error looks like a network failure (Lie-Fi:
+      // navigator.onLine can be true even when the connection has no internet).
+      const isNetworkError = !navigator.onLine ||
+        (error instanceof Error && (
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('Load failed')
+        ));
+      if (isNetworkError) {
         await enqueueNote({
           id: crypto.randomUUID(),
           note: note as any,
@@ -976,9 +990,14 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
 
   const seedSandbox = useCallback(async () => {
     try {
-      // Guard: don't double-seed if demo data already exists
-      const alreadySeeded = state.students.some(s => s.is_demo);
-      if (alreadySeeded) return;
+      // Guard: query the DB directly — state.students is a stale closure here
+      const { data: existing } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_demo', true)
+        .limit(1);
+      if (existing && existing.length > 0) return;
 
       // Insert 8 demo students
       const { data: insertedStudents, error: studentError } = await supabase

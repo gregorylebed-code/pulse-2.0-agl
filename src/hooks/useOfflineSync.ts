@@ -29,7 +29,13 @@ export function useOfflineSync(userId: string, onSynced: () => void) {
         if (!error) {
           await dequeueNote(entry.id);
           synced++;
+        } else if (error.code !== 'PGRST301' && !error.message.includes('Failed to fetch')) {
+          // DB-level error (e.g. foreign key violation because student was deleted
+          // while offline) — this note will never succeed, so drop it to prevent
+          // it from poisoning the queue and blocking every future sync.
+          await dequeueNote(entry.id);
         }
+        // Network errors: leave in queue and retry next time
       } catch {
         // network still down — leave it in the queue
       }
