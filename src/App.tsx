@@ -970,7 +970,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
       }} />
 
       <WelcomeModal
-        show={!welcomeHidden && (demoModalLatched || (!isInDemoMode && !loading && students.length === 0 && notes.length === 0))}
+        show={!welcomeHidden && (demoModalLatched || (!isInDemoMode && !loading && onboardingComplete !== true && students.length === 0 && notes.length === 0))}
         teacherName={teacherFirstName || userName}
         isDemo={isInDemoMode}
         onGoToProfile={() => { setWelcomeHidden(true); setDemoModalLatched(false); setActiveTab('settings'); setSettingsView('profile'); }}
@@ -984,9 +984,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
           if (isDemo) {
             await seedSandbox();
           } else {
-            for (const name of names) {
-              await addStudent({ name, class_id: null });
-            }
+            await Promise.all(names.map(name => addStudent({ name, class_id: null })));
             trackEvent('first_student_added');
           }
           markOnboardingComplete();

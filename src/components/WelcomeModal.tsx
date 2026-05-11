@@ -41,13 +41,13 @@ export default function WelcomeModal({
   const [error, setError] = useState('');
 
   const filledNicknames = nicknames.map(n => n.trim()).filter(Boolean);
-  const isValid = filledNicknames.length >= 3;
+  const isValid = filledNicknames.length >= 1;
 
   function handleNicknameChange(index: number, value: string) {
     setNicknames(prev => {
       const next = [...prev];
       next[index] = value;
-      if (index === next.length - 1 && value.trim() && next.length < 10) {
+      if (index === next.length - 1 && value.trim()) {
         next.push('');
       }
       return next;
@@ -72,7 +72,7 @@ export default function WelcomeModal({
 
   async function handleRealClass() {
     if (!isValid) {
-      setError('Add at least 3 names to get started.');
+      setError('Add at least one name to get started.');
       return;
     }
     setSaving(true);
@@ -272,7 +272,7 @@ export default function WelcomeModal({
 
                 <div className="px-6 py-5">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">
-                    Names (3–10) · <span className="text-sage">{filledNicknames.length} added</span>
+                    Names · <span className="text-sage">{filledNicknames.length} added</span>
                   </p>
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                     {nicknames.map((val, i) => (
