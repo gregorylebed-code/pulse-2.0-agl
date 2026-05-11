@@ -72,9 +72,10 @@ async function callGroq(prompt: string, isJson: boolean, imageData?: { data: str
   clearTimeout(timeoutId);
 
   if (!response.ok) {
+    const provider = response.headers.get('X-AI-Provider') ?? 'AI';
     const errBody = await response.json().catch(() => ({}));
     const errMsg = errBody?.error?.message || JSON.stringify(errBody);
-    throw new Error(`Groq API error: ${response.status} — ${errMsg}`);
+    throw new Error(`${provider} error: ${response.status} — ${errMsg}`);
   }
 
   const data = await response.json();

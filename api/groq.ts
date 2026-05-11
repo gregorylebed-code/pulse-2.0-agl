@@ -49,7 +49,9 @@ export default async function handler(req: Request): Promise<Response> {
   const body = await req.text();
 
   // Try Groq first (55s timeout — leaves margin before Vercel edge limit)
-  let groqRes: Response;
+  let groqRes: Response | null = null;
+  let groqHardFailed = false;
+  let groqErr: any = null;
   try {
     groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -61,15 +63,18 @@ export default async function handler(req: Request): Promise<Response> {
       signal: AbortSignal.timeout(55_000),
     });
   } catch (err: any) {
-    const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
-    return new Response(
-      JSON.stringify({ error: { message: timedOut ? 'Groq request timed out after 55s' : err?.message ?? 'Groq fetch failed' } }),
-      { status: 504, headers: { 'Content-Type': 'application/json' } }
-    );
+    // Hard failure (DNS, timeout, network drop) — attempt fallback before giving up
+    groqHardFailed = true;
+    groqErr = err;
   }
 
-  // On rate limit (429) or server error (5xx), try Together AI as fallback
-  if ((groqRes.status === 429 || groqRes.status >= 500) && process.env.TOGETHER_API_KEY) {
+  const shouldFallback = process.env.TOGETHER_API_KEY && (
+    groqHardFailed ||
+    (groqRes !== null && (groqRes.status === 429 || groqRes.status >= 500))
+  );
+
+  // On rate limit (429), server error (5xx), or hard failure, try Together AI as fallback
+  if (shouldFallback) {
     try {
       const parsed = JSON.parse(body);
       const togetherModel = TOGETHER_MODEL_MAP[parsed.model] ?? parsed.model;
@@ -91,16 +96,25 @@ export default async function handler(req: Request): Promise<Response> {
       }
       return new Response(data, {
         status: togetherRes.status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-AI-Provider': 'together' },
       });
     } catch {
-      // If fallback errors, fall through and return the original Groq error
+      // Fallback also failed — fall through to return the original Groq error below
     }
   }
 
-  const data = await groqRes.text();
+  // If Groq hard-failed and fallback wasn't available or also failed, return 504
+  if (groqHardFailed) {
+    const timedOut = groqErr?.name === 'TimeoutError' || groqErr?.name === 'AbortError';
+    return new Response(
+      JSON.stringify({ error: { message: timedOut ? 'Groq request timed out after 55s' : groqErr?.message ?? 'Groq fetch failed' } }),
+      { status: 504, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const data = await groqRes!.text();
   return new Response(data, {
-    status: groqRes.status,
-    headers: { 'Content-Type': 'application/json' },
+    status: groqRes!.status,
+    headers: { 'Content-Type': 'application/json', 'X-AI-Provider': 'groq' },
   });
 }
