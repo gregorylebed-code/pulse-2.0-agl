@@ -16,6 +16,7 @@ interface ParentCommsScreenProps {
   tasks?: { id: string; text: string }[];
   onStudentClick: (studentId: string) => void;
   isSandboxMode?: boolean;
+  teacherName?: string;
 }
 
 const COMM_TYPES = [
@@ -129,10 +130,12 @@ function QuickAddForm({
   students,
   onSave,
   onCancel,
+  teacherName,
 }: {
   students: Student[];
   onSave: (data: Omit<ParentCommunication, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<ParentCommunication | null>;
   onCancel: () => void;
+  teacherName?: string;
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id ?? '');
   const [commType, setCommType] = useState('');
@@ -175,7 +178,7 @@ function QuickAddForm({
     setGeneratingScript(true);
     setCallScript([]);
     try {
-      const bullets = await generateCallScript(selectedStudent.name, subject, notes);
+      const bullets = await generateCallScript(selectedStudent.name, subject, notes, teacherName);
       setCallScript(bullets);
     } catch (err: any) {
       toast.error(err?.message || 'Failed to generate script. Try again.');
@@ -384,7 +387,7 @@ function QuickAddForm({
   );
 }
 
-export default function ParentCommsScreen({ students, communications, onAdd, onUpdate, onDelete, addTask, tasks, onStudentClick, isSandboxMode }: ParentCommsScreenProps) {
+export default function ParentCommsScreen({ students, communications, onAdd, onUpdate, onDelete, addTask, tasks, onStudentClick, isSandboxMode, teacherName }: ParentCommsScreenProps) {
   const [filterStudentId, setFilterStudentId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -439,6 +442,7 @@ export default function ParentCommsScreen({ students, communications, onAdd, onU
           {showForm && (
             <QuickAddForm
               students={realStudents}
+              teacherName={teacherName}
               onSave={async (data) => {
                 const result = await onAdd(data);
                 if (result) {

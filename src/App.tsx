@@ -834,6 +834,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 tasks={tasks}
                 onStudentClick={(studentId) => { setSelectedStudentId(studentId); setActiveTab('students'); }}
                 isSandboxMode={hasSandboxStudents}
+                teacherName={`${teacherTitle} ${teacherLastName}`.trim() || userName}
               />
               </ErrorBoundary>
             </motion.div>
