@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as Sentry from '@sentry/react';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -880,15 +879,6 @@ export default function SettingsScreen({
               <p className="text-[11px] text-slate-400 ml-1">These actions are permanent and cannot be undone.</p>
 
               <div className="flex flex-col items-start gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    Sentry.captureException(new Error("Sentry Test Error — Pulse 2.0"));
-                    alert("Sent to Sentry! Check your dashboard.");
-                  }}
-                  className="flex items-center gap-2 text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors px-3 py-1.5 rounded-xl hover:bg-slate-100"
-                >
-                  Test Sentry
-                </button>
                 <button
                   onClick={async () => {
                     if (window.confirm('Are you sure you want to clear ALL notes for EVERY student? This cannot be undone.')) {
