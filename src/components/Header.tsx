@@ -209,17 +209,16 @@ export default function Header({
                     {/* Today override — only for letter-day and rolling modes */}
                     {canOverride && (
                       <div className="mt-4 pt-4 border-t border-slate-100">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-bold text-slate-400">Fix Today's Day</span>
-                          {hasOverride && !pendingLetter && (
+                        {hasOverride && !pendingLetter && (
+                          <div className="flex justify-end mb-1">
                             <button
                               onClick={() => { onSetTodayOverride(null); setShowOverridePicker(false); }}
                               className="flex items-center gap-1 text-[11px] font-bold text-terracotta hover:underline"
                             >
                               <RotateCcw className="w-2.5 h-2.5" /> Clear
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                         {pendingLetter ? (
                           <div>
                             <p className="text-[11px] text-slate-500 mb-2">
@@ -264,7 +263,7 @@ export default function Header({
                         ) : (
                           <button
                             onClick={() => setShowOverridePicker(true)}
-                            className="text-[11px] font-bold text-slate-400 hover:text-sage transition-colors"
+                            className="text-[11px] font-bold text-sage/70 hover:text-sage transition-colors"
                           >
                             + Set today's day letter
                           </button>
