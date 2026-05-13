@@ -632,63 +632,32 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
             saveRollingConfig(`${y}-${m}-${dd}`, letterCount);
             saveTodayOverride(null);
           } else if (specialsConfig.mode === 'letter-day') {
-            // Determine what letter today actually has in the mapping (ignoring
-            // any override), then shift every date from today onward so the
-            // sequence stays intact but starts at the chosen letter.
-            const letterSet = Object.values(specialsConfig.rotationMapping)
-              .filter(Boolean)
-              .map(l => l.toUpperCase());
-            const usedLetters = [...new Set(letterSet)].sort();
+            // Re-sequence all dates from today onward: sort them, assign letters
+            // starting from the chosen letter and cycling A→B→C→D→E→A...
+            const usedLetters = [...new Set(
+              Object.values(specialsConfig.rotationMapping).filter(Boolean).map(l => l.toUpperCase())
+            )].sort();
             const cycleLen = usedLetters.length || 5;
-            const chosenPos = usedLetters.indexOf(letter);
-
-            // Find today's raw mapped letter (no override). If today isn't in
-            // the mapping at all, look at the next mapped date to anchor the shift.
             const todayMs = new Date(todayKey + 'T00:00:00').getTime();
-            const rawTodayLetter = specialsConfig.rotationMapping[todayKey];
-            let anchorPos = rawTodayLetter ? usedLetters.indexOf(rawTodayLetter) : -1;
 
-            if (anchorPos === -1) {
-              // Today has no entry; find the nearest future mapped date and work back
-              const futureDates = Object.keys(specialsConfig.rotationMapping)
-                .filter(d => new Date(d + 'T00:00:00').getTime() > todayMs)
-                .sort();
-              if (futureDates.length > 0) {
-                const nearestLetter = specialsConfig.rotationMapping[futureDates[0]];
-                const nearestPos = usedLetters.indexOf(nearestLetter);
-                // How many weekdays from today to that date?
-                const nearestMs = new Date(futureDates[0] + 'T00:00:00').getTime();
-                let weekdayGap = 0;
-                const cur = new Date(todayMs);
-                while (cur.getTime() < nearestMs) {
-                  cur.setDate(cur.getDate() + 1);
-                  const d = cur.getDay();
-                  if (d !== 0 && d !== 6 && cur.getTime() <= nearestMs) weekdayGap++;
-                }
-                anchorPos = ((nearestPos - weekdayGap) % cycleLen + cycleLen) % cycleLen;
-              }
-            }
+            const futureDates = Object.keys(specialsConfig.rotationMapping)
+              .filter(d => new Date(d + 'T00:00:00').getTime() >= todayMs)
+              .sort();
 
-            // If we still can't determine the anchor, nothing to shift
-            if (anchorPos === -1) {
-              saveRotationMapping({ ...specialsConfig.rotationMapping, [todayKey]: letter });
-              saveTodayOverride(null);
-              return;
-            }
+            // If today isn't already in the mapping, add it
+            if (!specialsConfig.rotationMapping[todayKey]) futureDates.unshift(todayKey);
 
-            const shift = ((chosenPos - anchorPos) + cycleLen) % cycleLen;
             const updated: Record<string, string> = {};
+            // Keep past dates unchanged
             for (const [dateStr, ltr] of Object.entries(specialsConfig.rotationMapping)) {
-              const dateMs = new Date(dateStr + 'T00:00:00').getTime();
-              if (dateMs < todayMs) {
-                updated[dateStr] = ltr;
-              } else {
-                const pos = usedLetters.indexOf(ltr);
-                updated[dateStr] = pos === -1 ? ltr : usedLetters[(pos + shift) % cycleLen];
-              }
+              if (new Date(dateStr + 'T00:00:00').getTime() < todayMs) updated[dateStr] = ltr;
             }
-            // Ensure today is explicitly written even if it wasn't in the mapping
-            updated[todayKey] = letter;
+            // Re-assign from today onward in order, starting at chosen letter
+            const startPos = usedLetters.indexOf(letter);
+            futureDates.forEach((dateStr, i) => {
+              updated[dateStr] = usedLetters[(startPos + i) % cycleLen];
+            });
+
             saveRotationMapping(updated);
             saveTodayOverride(null);
           }
