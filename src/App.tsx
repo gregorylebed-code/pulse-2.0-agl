@@ -610,6 +610,34 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         setShowRotationForecast={setShowRotationForecast}
         specialsConfig={specialsConfig}
         onSetTodayOverride={(letter) => saveTodayOverride(letter ? { date: todayKey, letter } : null)}
+        onAdjustSchedule={(letter) => {
+          if (specialsConfig.mode === 'rolling') {
+            // Recalculate rollingStartDate so today maps to the chosen letter.
+            // Walk back `letterIndex` weekdays from today to get the new Day A.
+            const LETTERS = 'ABCDEFGHIJ';
+            const letterIndex = LETTERS.indexOf(letter);
+            const letterCount = specialsConfig.rollingLetterCount || 5;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let weekdaysBack = letterIndex;
+            const newStart = new Date(today);
+            while (weekdaysBack > 0) {
+              newStart.setDate(newStart.getDate() - 1);
+              const d = newStart.getDay();
+              if (d !== 0 && d !== 6) weekdaysBack--;
+            }
+            const y = newStart.getFullYear();
+            const m = String(newStart.getMonth() + 1).padStart(2, '0');
+            const dd = String(newStart.getDate()).padStart(2, '0');
+            saveRollingConfig(`${y}-${m}-${dd}`, letterCount);
+            saveTodayOverride(null);
+          } else if (specialsConfig.mode === 'letter-day') {
+            // Update the mapping for today's date to the chosen letter.
+            const updated = { ...specialsConfig.rotationMapping, [todayKey]: letter };
+            saveRotationMapping(updated);
+            saveTodayOverride(null);
+          }
+        }}
         tasks={tasks}
         setShowTasks={setShowTasks}
         onOpenStudio={() => setStudioOpen(true)}

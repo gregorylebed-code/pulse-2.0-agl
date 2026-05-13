@@ -20,6 +20,7 @@ interface HeaderProps {
   setShowRotationForecast: (v: boolean) => void;
   specialsConfig: SpecialsConfig;
   onSetTodayOverride: (letter: string | null) => void;
+  onAdjustSchedule: (letter: string) => void;
   tasks: Task[];
   setShowTasks: (v: boolean) => void;
   onOpenStudio?: () => void;
@@ -45,12 +46,14 @@ export default function Header({
   setShowRotationForecast,
   specialsConfig,
   onSetTodayOverride,
+  onAdjustSchedule,
   tasks,
   setShowTasks,
   onOpenStudio,
 }: HeaderProps) {
   const forecast = getForecast(specialsConfig);
   const [showOverridePicker, setShowOverridePicker] = useState(false);
+  const [pendingLetter, setPendingLetter] = useState<string | null>(null);
   const logoTapCount = React.useRef(0);
   const logoTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -207,8 +210,8 @@ export default function Header({
                     {canOverride && (
                       <div className="mt-4 pt-4 border-t border-slate-100">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-bold text-slate-400">Override Today</span>
-                          {hasOverride && (
+                          <span className="text-[11px] font-bold text-slate-400">Fix Today's Day</span>
+                          {hasOverride && !pendingLetter && (
                             <button
                               onClick={() => { onSetTodayOverride(null); setShowOverridePicker(false); }}
                               className="flex items-center gap-1 text-[11px] font-bold text-terracotta hover:underline"
@@ -217,7 +220,31 @@ export default function Header({
                             </button>
                           )}
                         </div>
-                        {hasOverride ? (
+                        {pendingLetter ? (
+                          <div>
+                            <p className="text-[11px] text-slate-500 mb-2">
+                              Set today to Day <span className="font-black text-sage">{pendingLetter}</span> ({specialsConfig.specialsNames[pendingLetter] || 'No Special'}). How long?
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => { onSetTodayOverride(pendingLetter); setPendingLetter(null); setShowOverridePicker(false); }}
+                                className="flex-1 py-1.5 bg-sage/10 text-sage rounded-lg text-[11px] font-bold hover:bg-sage/20 transition-colors"
+                              >
+                                Just today
+                              </button>
+                              <button
+                                onClick={() => { onAdjustSchedule(pendingLetter); setPendingLetter(null); setShowOverridePicker(false); }}
+                                className="flex-1 py-1.5 bg-sage text-white rounded-lg text-[11px] font-bold hover:bg-sage-dark transition-colors"
+                              >
+                                From now on
+                              </button>
+                              <button
+                                onClick={() => setPendingLetter(null)}
+                                className="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg text-[11px] font-black hover:bg-slate-200 transition-colors flex items-center justify-center"
+                              >✕</button>
+                            </div>
+                          </div>
+                        ) : hasOverride ? (
                           <p className="text-[11px] text-sage font-bold">
                             Today set to Day {specialsConfig.todayOverride!.letter} ({specialsConfig.specialsNames[specialsConfig.todayOverride!.letter] || 'No Special'})
                           </p>
@@ -226,7 +253,7 @@ export default function Header({
                             {letters.map(l => (
                               <button
                                 key={l}
-                                onClick={() => { onSetTodayOverride(l); setShowOverridePicker(false); }}
+                                onClick={() => { setPendingLetter(l); }}
                                 className="w-8 h-8 bg-sage/10 text-sage rounded-lg text-[11px] font-black hover:bg-sage/20 transition-colors"
                               >
                                 {l}
