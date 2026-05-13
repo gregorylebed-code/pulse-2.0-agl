@@ -50,7 +50,10 @@ interface CommRowProps {
 
 function CommRow({ comm, onDelete, onUpdate }: CommRowProps) {
   const [expanded, setExpanded] = useState(false);
-  const dateStr = new Date(comm.comm_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const dateObj = new Date(comm.comm_date);
+  const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const hasExplicitTime = dateObj.getHours() !== 0 || dateObj.getMinutes() !== 0;
+  const timeStr = (hasExplicitTime ? dateObj : new Date(comm.created_at)).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   const followUpDate = comm.follow_up_date ? new Date(comm.follow_up_date + 'T00:00') : null;
   const followUpOverdue = followUpDate && !comm.follow_up_done && followUpDate < new Date();
 
@@ -72,7 +75,7 @@ function CommRow({ comm, onDelete, onUpdate }: CommRowProps) {
           <span className={cn('text-[11px] flex-shrink-0', comm.direction === 'inbound' ? 'text-emerald-600' : 'text-slate-400')}>
             {comm.direction === 'inbound' ? <ArrowDownLeft className="w-3 h-3 inline" /> : <ArrowUpRight className="w-3 h-3 inline" />}
           </span>
-          <span className="text-[11px] text-slate-400 flex-shrink-0">{dateStr}</span>
+          <span className="text-[11px] text-slate-400 flex-shrink-0">{dateStr} · {timeStr}</span>
           {expanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />}
         </div>
         {comm.subject && <p className="mt-1 text-[12px] font-semibold text-slate-600 truncate">{comm.subject}</p>}
