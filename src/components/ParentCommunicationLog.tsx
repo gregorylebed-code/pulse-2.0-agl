@@ -99,8 +99,9 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
   const meta = getCommMeta(comm.comm_type);
   const dateObj = new Date(comm.comm_date);
   const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  const hasTime = dateObj.getHours() !== 0 || dateObj.getMinutes() !== 0;
-  const timeStr = hasTime ? dateObj.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : null;
+  const hasExplicitTime = dateObj.getHours() !== 0 || dateObj.getMinutes() !== 0;
+  const timeSource = hasExplicitTime ? dateObj : new Date(comm.created_at);
+  const timeStr = timeSource.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
   const followUpDate = comm.follow_up_date ? new Date(comm.follow_up_date + 'T00:00') : null;
   const followUpOverdue = followUpDate && !comm.follow_up_done && followUpDate < new Date();
@@ -164,7 +165,7 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
             </span>
           )}
 
-          <span className="ml-auto text-[11px] text-slate-400 font-medium">{dateStr}{timeStr ? ` · ${timeStr}` : ''}</span>
+          <span className="ml-auto text-[11px] text-slate-400 font-medium">{dateStr} · {timeStr}</span>
         </div>
 
         {/* Row 2: subject + parent */}
