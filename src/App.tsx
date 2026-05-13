@@ -632,34 +632,63 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
             saveRollingConfig(`${y}-${m}-${dd}`, letterCount);
             saveTodayOverride(null);
           } else if (specialsConfig.mode === 'letter-day') {
-            // Shift all dates from today onward by the offset between the current
-            // mapped letter and the chosen letter, wrapping within the letter set.
-            const existingLetter = specialsConfig.rotationMapping[todayKey];
+            // Determine what letter today actually has in the mapping (ignoring
+            // any override), then shift every date from today onward so the
+            // sequence stays intact but starts at the chosen letter.
             const letterSet = Object.values(specialsConfig.rotationMapping)
               .filter(Boolean)
               .map(l => l.toUpperCase());
-            // Build sorted unique letter set actually used in the mapping
             const usedLetters = [...new Set(letterSet)].sort();
             const cycleLen = usedLetters.length || 5;
             const chosenPos = usedLetters.indexOf(letter);
-            const existingPos = existingLetter ? usedLetters.indexOf(existingLetter) : chosenPos;
-            const shift = ((chosenPos - existingPos) + cycleLen) % cycleLen;
-            const updated: Record<string, string> = {};
+
+            // Find today's raw mapped letter (no override). If today isn't in
+            // the mapping at all, look at the next mapped date to anchor the shift.
             const todayMs = new Date(todayKey + 'T00:00:00').getTime();
+            const rawTodayLetter = specialsConfig.rotationMapping[todayKey];
+            let anchorPos = rawTodayLetter ? usedLetters.indexOf(rawTodayLetter) : -1;
+
+            if (anchorPos === -1) {
+              // Today has no entry; find the nearest future mapped date and work back
+              const futureDates = Object.keys(specialsConfig.rotationMapping)
+                .filter(d => new Date(d + 'T00:00:00').getTime() > todayMs)
+                .sort();
+              if (futureDates.length > 0) {
+                const nearestLetter = specialsConfig.rotationMapping[futureDates[0]];
+                const nearestPos = usedLetters.indexOf(nearestLetter);
+                // How many weekdays from today to that date?
+                const nearestMs = new Date(futureDates[0] + 'T00:00:00').getTime();
+                let weekdayGap = 0;
+                const cur = new Date(todayMs);
+                while (cur.getTime() < nearestMs) {
+                  cur.setDate(cur.getDate() + 1);
+                  const d = cur.getDay();
+                  if (d !== 0 && d !== 6 && cur.getTime() <= nearestMs) weekdayGap++;
+                }
+                anchorPos = ((nearestPos - weekdayGap) % cycleLen + cycleLen) % cycleLen;
+              }
+            }
+
+            // If we still can't determine the anchor, nothing to shift
+            if (anchorPos === -1) {
+              saveRotationMapping({ ...specialsConfig.rotationMapping, [todayKey]: letter });
+              saveTodayOverride(null);
+              return;
+            }
+
+            const shift = ((chosenPos - anchorPos) + cycleLen) % cycleLen;
+            const updated: Record<string, string> = {};
             for (const [dateStr, ltr] of Object.entries(specialsConfig.rotationMapping)) {
               const dateMs = new Date(dateStr + 'T00:00:00').getTime();
               if (dateMs < todayMs) {
-                // Past dates unchanged
                 updated[dateStr] = ltr;
               } else {
                 const pos = usedLetters.indexOf(ltr);
-                if (pos === -1) {
-                  updated[dateStr] = ltr; // unknown letter, leave alone
-                } else {
-                  updated[dateStr] = usedLetters[(pos + shift) % cycleLen];
-                }
+                updated[dateStr] = pos === -1 ? ltr : usedLetters[(pos + shift) % cycleLen];
               }
             }
+            // Ensure today is explicitly written even if it wasn't in the mapping
+            updated[todayKey] = letter;
             saveRotationMapping(updated);
             saveTodayOverride(null);
           }
