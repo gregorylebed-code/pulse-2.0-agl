@@ -40,6 +40,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
   const [gcImporting, setGcImporting] = useState(false);
   const [gcClassPeriod, setGcClassPeriod] = useState(classes[0] || 'Class 1');
   const [gcNewClassName, setGcNewClassName] = useState('');
+  const [gcSelectedIndices, setGcSelectedIndices] = useState<Set<number>>(new Set());
 
   // Birthday import state
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -97,7 +98,10 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       const data = await res.json();
-      if (Array.isArray(data)) setGcStudents(data);
+      if (Array.isArray(data)) {
+        setGcStudents(data);
+        setGcSelectedIndices(new Set(data.map((_: any, i: number) => i)));
+      }
     } catch {
       toast.error('Failed to load students');
     } finally {
@@ -117,7 +121,8 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
       let added = 0;
       let skipped = 0;
       const existingNames = students.map(s => s.name.toLowerCase().trim());
-      for (const s of gcStudents) {
+      for (const [i, s] of gcStudents.entries()) {
+        if (!gcSelectedIndices.has(i)) continue;
         if (!s.name) continue;
         if (existingNames.includes(s.name.toLowerCase().trim())) { skipped++; continue; }
         const studentName = useInitialsOnly ? toInitials(s.name) : s.name;
@@ -138,6 +143,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
       toast.success(msg);
       setGcSelectedCourse(null);
       setGcStudents([]);
+      setGcSelectedIndices(new Set());
       onImportComplete();
     } catch {
       toast.error('Import failed. Please try again.');
@@ -514,7 +520,7 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                   <p className="text-xs text-slate-400">{gcStudents.length} students</p>
                 </div>
                 <button
-                  onClick={() => { setGcSelectedCourse(null); setGcStudents([]); }}
+                  onClick={() => { setGcSelectedCourse(null); setGcStudents([]); setGcSelectedIndices(new Set()); }}
                   className="text-xs text-slate-400 hover:text-slate-600 font-bold"
                 >
                   ← Back
@@ -527,13 +533,43 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
                 </div>
               ) : (
                 <>
-                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                    {gcStudents.map((s, i) => (
-                      <div key={i} className="flex items-center justify-between px-4 py-2.5 bg-slate-50 rounded-xl">
-                        <span className="text-sm font-medium text-slate-700">{s.name}</span>
-                        {s.email && <span className="text-[11px] text-slate-400 ml-2 truncate max-w-[140px]">{s.email}</span>}
-                      </div>
-                    ))}
+                  <div>
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                        {gcSelectedIndices.size} of {gcStudents.length} selected
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setGcSelectedIndices(
+                          gcSelectedIndices.size === gcStudents.length
+                            ? new Set()
+                            : new Set(gcStudents.map((_, i) => i))
+                        )}
+                        className="text-[11px] font-bold text-blue-500 hover:text-blue-600"
+                      >
+                        {gcSelectedIndices.size === gcStudents.length ? 'Deselect all' : 'Select all'}
+                      </button>
+                    </div>
+                    <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                      {gcStudents.map((s, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setGcSelectedIndices(prev => {
+                            const next = new Set(prev);
+                            next.has(i) ? next.delete(i) : next.add(i);
+                            return next;
+                          })}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-colors ${gcSelectedIndices.has(i) ? 'bg-blue-50' : 'bg-slate-50 opacity-50'}`}
+                        >
+                          <div className={`w-4 h-4 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${gcSelectedIndices.has(i) ? 'bg-blue-500 border-blue-500' : 'border-slate-300 bg-white'}`}>
+                            {gcSelectedIndices.has(i) && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          </div>
+                          <span className="text-sm font-medium text-slate-700 flex-1">{s.name}</span>
+                          {s.email && <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{s.email}</span>}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -575,12 +611,12 @@ export default function ImportScreen({ onImportComplete, classes, students, addS
 
                   <button
                     onClick={handleGcImport}
-                    disabled={gcImporting || gcStudents.length === 0 || (gcClassPeriod === '__new__' && !gcNewClassName.trim())}
+                    disabled={gcImporting || gcSelectedIndices.size === 0 || (gcClassPeriod === '__new__' && !gcNewClassName.trim())}
                     className="w-full py-4 bg-blue-500 text-white rounded-[24px] font-bold text-sm hover:bg-blue-600 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {gcImporting
                       ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing...</>
-                      : <><CheckCircle2 className="w-4 h-4" /> Import {gcStudents.length} Students</>
+                      : <><CheckCircle2 className="w-4 h-4" /> Import {gcSelectedIndices.size} Student{gcSelectedIndices.size !== 1 ? 's' : ''}</>
                     }
                   </button>
                 </>
