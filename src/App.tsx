@@ -609,6 +609,7 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
         showRotationForecast={showRotationForecast}
         setShowRotationForecast={setShowRotationForecast}
         specialsConfig={specialsConfig}
+        calendarEvents={calendarEvents}
         onSetTodayOverride={(letter) => saveTodayOverride(letter ? { date: todayKey, letter } : null)}
         onAdjustSchedule={(letter) => {
           if (specialsConfig.mode === 'rolling') {

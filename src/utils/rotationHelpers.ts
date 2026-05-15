@@ -102,7 +102,8 @@ export function getRotationForDate(
 }
 
 export function getForecast(
-  config: SpecialsConfig
+  config: SpecialsConfig,
+  offDates: Set<string> = new Set()
 ): { date: Date; letter: string; special: string }[] {
   const forecast: { date: Date; letter: string; special: string }[] = [];
   const current = new Date();
@@ -113,6 +114,8 @@ export function getForecast(
   while (count < 6 && daysChecked < 30) {
     current.setDate(current.getDate() + 1);
     daysChecked++;
+
+    if (offDates.has(toLocalKey(current))) continue;
 
     const rotation = getRotationForDate(current, config);
     if (rotation) {

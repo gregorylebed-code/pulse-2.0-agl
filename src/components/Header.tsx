@@ -4,6 +4,7 @@ import { useAliasMode } from '../context/AliasModeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { getForecast, SpecialsConfig } from '../utils/rotationHelpers';
+import type { CalendarEvent } from '../types';
 import { useFullMode } from '../context/FullModeContext';
 
 interface Task { id: string; text: string; completed: boolean; color?: string; }
@@ -21,6 +22,7 @@ interface HeaderProps {
   specialsConfig: SpecialsConfig;
   onSetTodayOverride: (letter: string | null) => void;
   onAdjustSchedule: (letter: string) => void;
+  calendarEvents: CalendarEvent[];
   tasks: Task[];
   setShowTasks: (v: boolean) => void;
   onOpenStudio?: () => void;
@@ -47,11 +49,15 @@ export default function Header({
   specialsConfig,
   onSetTodayOverride,
   onAdjustSchedule,
+  calendarEvents,
   tasks,
   setShowTasks,
   onOpenStudio,
 }: HeaderProps) {
-  const forecast = getForecast(specialsConfig);
+  const offDates = new Set(
+    calendarEvents.filter(e => e.type === 'Holiday').map(e => e.date)
+  );
+  const forecast = getForecast(specialsConfig, offDates);
   const [showOverridePicker, setShowOverridePicker] = useState(false);
   const [pendingLetter, setPendingLetter] = useState<string | null>(null);
   const logoTapCount = React.useRef(0);
