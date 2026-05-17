@@ -243,7 +243,6 @@ Return only the cleaned note text — no quotes, no explanation.`;
 }
 
 export async function categorizeNote(content: string, currentTime: string, hasImage: boolean, availableIndicators: string[] = []) {
-  throw new Error('TEST: simulated AI failure'); // TEMP — remove after testing
   const indicatorList = availableIndicators.length > 0
     ? availableIndicators.join(', ')
     : 'Behavior, Academic, Social, Attendance, Health, Other';

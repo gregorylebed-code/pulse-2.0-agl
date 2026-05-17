@@ -532,7 +532,6 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             if (finalTags.length === 0) finalTags = aiResult.tags ?? [];
             cleanedContent = cleaned;
           } catch (err) {
-            console.error('[note_tagging] AI failed, capturing to Sentry:', err);
             captureAiFlowError('note_tagging', err, {
               noteLength: expandedContent.length,
               hadManualTags: selectedTags.length > 0,
@@ -626,7 +625,6 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           if (finalTags.length === 0) finalTags = aiResult.tags ?? [];
           cleanedContent = cleaned;
         } catch (err) {
-            console.error('[note_tagging] AI failed on student note, capturing to Sentry:', err);
             captureAiFlowError('note_tagging', err, {
               noteLength: expandedContent.length,
               hadManualTags: selectedTags.length > 0,
