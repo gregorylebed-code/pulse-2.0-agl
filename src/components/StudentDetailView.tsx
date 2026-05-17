@@ -2317,7 +2317,8 @@ export default function StudentDetailView({
                   try {
                     const suggestions = await suggestGoals(student.name, notes);
                     setGoalSuggestions(suggestions);
-                  } catch {
+                  } catch (err) {
+                    captureAiFlowError('goal_suggestions', err, { noteCount: notes.length });
                     toast.error('Could not generate suggestions');
                   } finally {
                     setIsSuggestingGoals(false);

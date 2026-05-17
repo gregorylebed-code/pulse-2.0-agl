@@ -7,6 +7,7 @@ import {
 import { jsPDF } from 'jspdf';
 import { Note, Student, SELTopic, SELLesson, DeliveredLesson } from '../types';
 import { summarizeClassPeriod, suggestSELTopics, generateSELLesson } from '../lib/gemini';
+import { captureAiFlowError } from '../lib/captureAiError';
 import { toast } from 'sonner';
 import { cn } from '../utils/cn';
 
@@ -98,7 +99,8 @@ export default function SummaryView({ notes, students, classes, lessonHistory, s
     try {
       const summary = await summarizeClassPeriod(clsNotes, cls);
       setSummaries(prev => ({ ...prev, [cls]: summary }));
-    } catch {
+    } catch (err) {
+      captureAiFlowError('class_period_summary', err, { noteCount: clsNotes.length });
       toast.error('Could not generate summary. Try again.');
     } finally {
       setGenerating(prev => ({ ...prev, [cls]: false }));
@@ -122,7 +124,8 @@ export default function SummaryView({ notes, students, classes, lessonHistory, s
         .map(l => l.title);
       const topics = await suggestSELTopics(clsNotes, deliveredForClass);
       setSelTopics(prev => ({ ...prev, [cls]: topics }));
-    } catch {
+    } catch (err) {
+      captureAiFlowError('sel_topic_suggestions', err, { noteCount: clsNotes.length });
       toast.error('Could not generate SEL suggestions. Try again.');
     } finally {
       setSelGenerating(prev => ({ ...prev, [cls]: false }));
@@ -136,7 +139,8 @@ export default function SummaryView({ notes, students, classes, lessonHistory, s
     try {
       const lesson = await generateSELLesson(topic);
       setSelLesson(prev => ({ ...prev, [cls]: lesson }));
-    } catch {
+    } catch (err) {
+      captureAiFlowError('sel_lesson_generation', err);
       toast.error('Could not generate lesson plan. Try again.');
     } finally {
       setLessonGenerating(prev => ({ ...prev, [cls]: false }));

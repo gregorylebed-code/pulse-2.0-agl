@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { ParentCommunication, Student } from '../types';
 import { cn } from '../utils/cn';
 import { generateCallScript } from '../lib/gemini';
+import { captureAiFlowError } from '../lib/captureAiError';
 
 interface ParentCommsScreenProps {
   students: Student[];
@@ -184,6 +185,7 @@ function QuickAddForm({
       const bullets = await generateCallScript(selectedStudent.name, subject, notes, teacherName);
       setCallScript(bullets);
     } catch (err: any) {
+      captureAiFlowError('call_script_generation', err, { noteCount: notes.length });
       toast.error(err?.message || 'Failed to generate script. Try again.');
     } finally {
       setGeneratingScript(false);
