@@ -222,8 +222,8 @@ export default function TaskDrawer({
                                   {...provided.draggableProps}
                                   className={cn(
                                     "group flex items-start gap-3 p-4 rounded-[32px] border-2 transition-all relative hover:shadow-md",
-                                    TASK_COLORS[task.color || 'default'].bg,
-                                    TASK_COLORS[task.color || 'default'].border,
+                                    (TASK_COLORS[task.color ?? ''] ?? TASK_COLORS.default).bg,
+                                    (TASK_COLORS[task.color ?? ''] ?? TASK_COLORS.default).border,
                                     snapshot.isDragging && "shadow-xl border-sage/40 ring-2 ring-sage/10 scale-[1.02] z-[100] cursor-grabbing"
                                   )}
                                 >
