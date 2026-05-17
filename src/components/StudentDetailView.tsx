@@ -20,6 +20,7 @@ import ParentCommunicationLog from './ParentCommunicationLog';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { expandAbbreviations } from '../utils/expandAbbreviations';
 import { categorizeNote, cleanNoteContent, refineReport, refineQuickNote, parseVoiceLog, quickParentNote, suggestGoals, ReportData, PronounInfo } from '../lib/gemini';
+import { captureAiFlowError } from '../lib/captureAiError';
 import { useFullMode } from '../context/FullModeContext';
 import { cn } from '../utils/cn';
 
@@ -1333,7 +1334,8 @@ export default function StudentDetailView({
       const { note, pronounInfo } = await quickParentNote(filtered, teacherTitle, teacherLastName, student.name, shoutouts, student.pronouns);
       setQuickNote(note.trim());
       setQuickNotePronounInfo(pronounInfo);
-    } catch {
+    } catch (err) {
+      captureAiFlowError('quick_parent_note', err, { noteCount: filtered.length });
       toast.error('Failed to generate quick note.');
     } finally {
       setIsGeneratingQuickNote(false);
@@ -1365,6 +1367,12 @@ export default function StudentDetailView({
         setCurrentReport(refined);
         setRefineInstructions('');
       }
+    } catch (err) {
+      captureAiFlowError('refine_report', err, {
+        reportLength: currentReport?.length,
+        instructionsLength: refineInstructions.length,
+      });
+      toast.error('Failed to refine report. Please try again.');
     } finally {
       setIsRefining(false);
     }

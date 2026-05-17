@@ -3,6 +3,7 @@ import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 import { createPortal } from 'react-dom';
 import { Note, Student, CalendarEvent } from '../types';
 import { parseVoiceLog, categorizeNote, cleanNoteContent } from '../lib/gemini';
+import { captureAiFlowError } from '../lib/captureAiError';
 import { expandAbbreviations, Abbreviation } from '../utils/expandAbbreviations';
 import imageCompression from 'browser-image-compression';
 import {
@@ -348,8 +349,9 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
         setNoteContent(transcript);
       }
     } catch (err) {
-      console.error('Voice parse error:', err);
+      captureAiFlowError('voice_log_parsing', err, { transcriptLength: transcript?.length });
       setNoteContent(transcript);
+      toast.error('Voice parsing failed. Your transcript was kept as-is.');
     } finally {
       setIsSaving(false);
     }
@@ -529,8 +531,11 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
             ]);
             if (finalTags.length === 0) finalTags = aiResult.tags ?? [];
             cleanedContent = cleaned;
-          } catch {
-            // AI unavailable — save note without tags
+          } catch (err) {
+            captureAiFlowError('note_tagging', err, {
+              noteLength: expandedContent.length,
+              hadManualTags: selectedTags.length > 0,
+            });
           }
         }
         const noteDateEvent = calendarEvents?.find(e => e.date === noteDate);
