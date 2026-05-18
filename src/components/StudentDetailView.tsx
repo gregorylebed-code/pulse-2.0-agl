@@ -2816,6 +2816,48 @@ export default function StudentDetailView({
                 </div>
                 <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{quickNote}</p>
 
+                {/* Pronoun quick-fix chips — only show when pronouns were guessed/ambiguous */}
+                {quickNotePronounInfo && quickNotePronounInfo.source !== 'set' && (
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-widest">Pronouns:</span>
+                    {(['he/him', 'she/her'] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        disabled={isRefiningQuickNote}
+                        onClick={async () => {
+                          setIsRefiningQuickNote(true);
+                          try {
+                            const refined = await refineQuickNote(
+                              quickNote,
+                              `Replace all they/them/their pronouns with ${p} pronouns throughout.`,
+                              p,
+                              student.name.split(' ')[0]
+                            );
+                            if (refined) {
+                              setQuickNote(refined);
+                              setQuickNotePronounInfo({ pronouns: p, source: 'set' });
+                            }
+                          } catch {
+                            toast.error('Failed to update pronouns.');
+                          } finally {
+                            setIsRefiningQuickNote(false);
+                          }
+                        }}
+                        className={cn(
+                          'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all',
+                          quickNotePronounInfo.pronouns === p
+                            ? 'bg-terracotta text-white border-terracotta'
+                            : 'bg-white text-slate-500 border-slate-200 hover:border-terracotta hover:text-terracotta'
+                        )}
+                      >
+                        {p === 'he/him' ? 'He/Him' : 'She/Her'}
+                      </button>
+                    ))}
+                    {isRefiningQuickNote && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                  </div>
+                )}
+
                 {/* Refine */}
                 <div className="space-y-2 pt-1">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
