@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout, Accommodation, AttendanceRecord } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
 import { summarizeNotes, ReportData, parseBirthdays } from '../lib/gemini';
+import { PronounInfo } from '../lib/pronounUtils';
 import { askAboutStudents } from '../utils/aiAssistant';
 import StudentDetailView from './StudentDetailView';
 import { cn } from '../utils/cn';
@@ -416,16 +417,16 @@ export default function StudentsScreen({
   const reportToText = (report: ReportData): string =>
     [report.opening, '\nGlow:\n' + report.glow, '\nGrow:\n' + report.grow, '\nGoal:\n' + report.goal, '\n' + report.closing].join('\n');
 
-  const handleGenerateReport = async (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]): Promise<ReportData | undefined> => {
+  const handleGenerateReport = async (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]): Promise<{ report: ReportData; pronounInfo: PronounInfo } | undefined> => {
     if (!selectedStudent) return;
     const studentShoutouts = shoutouts.filter(s => s.student_id === selectedStudent.id);
-    const { report } = await summarizeNotes(filteredNotes, length, studentShoutouts, selectedStudent.pronouns);
+    const { report, pronounInfo } = await summarizeNotes(filteredNotes, length, studentShoutouts, selectedStudent.pronouns);
     await addReport({
       student_name: selectedStudent.name,
       content: report ? reportToText(report) : '',
       length,
     });
-    return report ?? undefined;
+    return report ? { report, pronounInfo } : undefined;
   };
 
   const handleDeleteAll = async () => {

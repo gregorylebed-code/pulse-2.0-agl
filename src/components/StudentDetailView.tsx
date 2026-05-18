@@ -78,7 +78,7 @@ interface StudentDetailViewProps {
   calendarEvents: CalendarEvent[];
   parentCommunications: ParentCommunication[];
   onBack: () => void;
-  onGenerateReport: (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<ReportData | undefined>;
+  onGenerateReport: (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]) => Promise<{ report: ReportData; pronounInfo: PronounInfo } | undefined>;
   onNoteUpdate: () => void;
   addNote: (note: any, createdAt?: string) => Promise<any>;
   updateNote: (id: string, updates: any) => Promise<void>;
@@ -699,6 +699,7 @@ export default function StudentDetailView({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdatingContact, setIsUpdatingContact] = useState(false);
   const [currentReport, setCurrentReport] = useState<ReportData | null>(null);
+  const [reportPronounInfo, setReportPronounInfo] = useState<PronounInfo | null>(null);
   const teacherSignOff = teacherLastName.trim() ? `\n— ${teacherTitle} ${teacherLastName}` : '';
   const reportToText = (report: ReportData): string =>
     [report.opening, '\nGlow:\n' + report.glow, '\nGrow:\n' + report.grow, '\nGoal:\n' + report.goal, '\n' + report.closing + teacherSignOff].join('\n');
@@ -1383,9 +1384,9 @@ export default function StudentDetailView({
     try {
       const filtered = filterNotesByTimeRange(notes, timeRange);
       console.log('[handleGenerate] filtered notes count:', filtered.length, 'timeRange:', timeRange);
-      const summary = await onGenerateReport(reportLength, filtered);
-      console.log('[handleGenerate] summary result:', summary);
-      if (summary) setCurrentReport(summary);
+      const result = await onGenerateReport(reportLength, filtered);
+      console.log('[handleGenerate] summary result:', result);
+      if (result) { setCurrentReport(result.report); setReportPronounInfo(result.pronounInfo); }
       else toast.error('Failed to generate report. Please try again.');
     } catch (err: any) {
       toast.error(`Report error: ${err?.message || 'Unknown error'}`);
@@ -2930,7 +2931,7 @@ export default function StudentDetailView({
                     <p className="text-[11px] font-black uppercase tracking-[0.2em] text-sage/60 mb-1">Detailed Report · {timeRange}</p>
                     <p className="text-base font-black text-slate-800">{student.name}</p>
                   </div>
-                  <button onClick={() => setCurrentReport(null)} className="text-slate-300 hover:text-terracotta mt-1"><X className="w-4 h-4" /></button>
+                  <button onClick={() => { setCurrentReport(null); setReportPronounInfo(null); }} className="text-slate-300 hover:text-terracotta mt-1"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="px-6 py-5 space-y-4">
                   <p className="text-sm text-slate-500 italic leading-relaxed">{currentReport.opening}</p>
@@ -2950,6 +2951,36 @@ export default function StudentDetailView({
                 </div>
                 {/* Refinement */}
                 <div className="space-y-3 px-6 pb-5 border-t border-cream-dark pt-4">
+                  {/* Pronoun quick-fix chips */}
+                  {reportPronounInfo && reportPronounInfo.source !== 'set' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-400 uppercase tracking-widest">Pronouns:</span>
+                      {(['he/him', 'she/her'] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          disabled={isRefining}
+                          onClick={async () => {
+                            setIsRefining(true);
+                            try {
+                              const refined = await refineReport(currentReport!, `Replace all they/them/their pronouns with ${p} pronouns throughout.`, p, student.name.split(' ')[0]);
+                              if (refined) { setCurrentReport(refined); setReportPronounInfo({ pronouns: p, source: 'set' }); }
+                            } catch { toast.error('Failed to update pronouns.'); }
+                            finally { setIsRefining(false); }
+                          }}
+                          className={cn(
+                            'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all',
+                            reportPronounInfo.pronouns === p
+                              ? 'bg-sage text-white border-sage'
+                              : 'bg-white text-slate-500 border-slate-200 hover:border-sage hover:text-sage'
+                          )}
+                        >
+                          {p === 'he/him' ? 'He/Him' : 'She/Her'}
+                        </button>
+                      ))}
+                      {isRefining && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                    </div>
+                  )}
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-3 h-3 text-sage" /> Refine this report
                   </p>
