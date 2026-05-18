@@ -726,7 +726,7 @@ function PulseScreen({ notes, students, indicators, commTypes, calendarEvents, c
           <div className="flex-1 min-w-0">
             <p className="text-sm font-black text-violet-700">Now try it yourself</p>
             <p className="text-[11px] text-slate-600 font-medium mt-0.5 leading-relaxed">
-              Type a student name above to log a note, just like you would in a real class. Takes 5 seconds.
+              Type a student name below to log a note, just like you would in a real class. Takes 5 seconds. Try: <span className="font-black text-violet-600">Rocket</span>, <span className="font-black text-violet-600">Panda</span>, or <span className="font-black text-violet-600">Blueberry</span>.
             </p>
           </div>
         </div>
