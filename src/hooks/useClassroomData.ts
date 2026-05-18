@@ -1014,18 +1014,25 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         .single();
       const amClassId = amClass?.id ?? null;
 
-      // Insert 8 demo students (Comet gets parent contact info)
+      const SANDBOX_PARENT_INFO: Record<string, { parent_guardian_names: string[]; parent_emails: string[]; parent_phones: string[] }> = {
+        'Blueberry': { parent_guardian_names: ['Marcus Webb'],    parent_emails: ['marcus.webb@email.com'],    parent_phones: ['(732) 555-0182'] },
+        'Comet':     { parent_guardian_names: ['Maria Torres'],   parent_emails: ['maria.torres@email.com'],   parent_phones: ['(609) 555-0147'] },
+        'Falcon':    { parent_guardian_names: ['Diana Okafor'],   parent_emails: ['d.okafor@email.com'],       parent_phones: ['(201) 555-0263'] },
+        'Math-Wiz':  { parent_guardian_names: ['Kevin Park'],     parent_emails: ['kevin.park@email.com'],     parent_phones: ['(908) 555-0391'] },
+        'Panda':     { parent_guardian_names: ['Sandra Lee'],     parent_emails: ['sandra.lee@email.com'],     parent_phones: ['(973) 555-0114'] },
+        'Rocket':    { parent_guardian_names: ['Linda Marsh'],    parent_emails: ['linda.marsh@email.com'],    parent_phones: ['(848) 555-0227'] },
+        'Thunderbolt': { parent_guardian_names: ['Tracy Simmons'], parent_emails: ['t.simmons@email.com'],     parent_phones: ['(732) 555-0449'] },
+        'Zigzag':    { parent_guardian_names: ['James Carter'],   parent_emails: ['jcarter.family@email.com'], parent_phones: ['(609) 555-0338'] },
+      };
+
+      // Insert 8 demo students with parent contact info
       const studentRows = SANDBOX_STUDENT_NAMES.map(name => ({
         name,
         user_id: userId,
         class_id: amClassId,
         is_demo: true,
         created_at: new Date().toISOString(),
-        ...(name === 'Comet' ? {
-          parent_guardian_names: ['Maria Torres'],
-          parent_emails: ['maria.torres@email.com'],
-          parent_phones: ['(609) 555-0147'],
-        } : {}),
+        ...(SANDBOX_PARENT_INFO[name] ?? {}),
       }));
 
       const { data: insertedStudents, error: studentError } = await supabase
