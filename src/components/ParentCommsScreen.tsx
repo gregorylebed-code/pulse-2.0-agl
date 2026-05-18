@@ -394,6 +394,7 @@ function QuickAddForm({
 
 export default function ParentCommsScreen({ students, communications, onAdd, onUpdate, onDelete, addTask, tasks, onStudentClick, isSandboxMode, teacherName }: ParentCommsScreenProps) {
   const [filterStudentId, setFilterStudentId] = useState<string | null>(null);
+  const [filterUrgent, setFilterUrgent] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   const realStudents = useMemo(() =>
@@ -409,8 +410,9 @@ export default function ParentCommsScreen({ students, communications, onAdd, onU
   const sorted = useMemo(() =>
     [...realComms]
       .filter(c => !filterStudentId || c.student_id === filterStudentId)
+      .filter(c => !filterUrgent || c.is_urgent)
       .sort((a, b) => new Date(b.comm_date).getTime() - new Date(a.comm_date).getTime()),
-    [realComms, filterStudentId]
+    [realComms, filterStudentId, filterUrgent]
   );
 
   const urgentCount  = useMemo(() => realComms.filter(c => c.is_urgent && !c.follow_up_done).length, [realComms]);
@@ -467,9 +469,12 @@ export default function ParentCommsScreen({ students, communications, onAdd, onU
         {(urgentCount > 0 || overdueCount > 0) && (
           <div className="flex gap-2 flex-wrap">
             {urgentCount > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[12px] font-black text-red-500">
+              <button
+                onClick={() => setFilterUrgent(f => !f)}
+                className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[12px] font-black transition-colors', filterUrgent ? 'bg-red-500 border-red-500 text-white' : 'bg-red-50 border-red-200 text-red-500')}
+              >
                 <AlertTriangle className="w-3.5 h-3.5" /> {urgentCount} urgent
-              </div>
+              </button>
             )}
             {overdueCount > 0 && (
               <div className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-[12px] font-black text-amber-600">
