@@ -1010,9 +1010,9 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         is_demo: true,
         created_at: new Date().toISOString(),
         ...(name === 'Comet' ? {
-          parent_name: 'Maria Torres',
-          parent_email: 'maria.torres@email.com',
-          parent_phone: '(609) 555-0147',
+          parent_guardian_names: 'Maria Torres',
+          parent_emails: 'maria.torres@email.com',
+          parent_phones: '(609) 555-0147',
         } : {}),
       }));
 
@@ -1116,7 +1116,6 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
             goal_text: 'Comet will reduce calling-out behavior to 2 or fewer instances per 30-minute period by the end of Q4, measured by teacher tally.',
             category: 'social-emotional',
             status: 'in-progress',
-            is_demo: true,
             created_at: daysAgo(60),
           },
           {
@@ -1125,7 +1124,6 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
             goal_text: 'Comet will demonstrate 75% or higher accuracy on grade-level math assessments by end of year, with extended time accommodations in place.',
             category: 'academic',
             status: 'in-progress',
-            is_demo: true,
             created_at: daysAgo(60),
           },
         ]);
@@ -1137,8 +1135,8 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
             user_id: userId,
             accommodation_text: 'Extended time (1.5x) on all tests and quizzes, administered in a separate room.',
             category: 'IEP',
-            subcategory: 'testing',
-            is_demo: true,
+            plan_type: 'IEP',
+            is_active: true,
             created_at: daysAgo(60),
           },
           {
@@ -1146,8 +1144,8 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
             user_id: userId,
             accommodation_text: 'Preferential seating near the front of the room, away from high-traffic areas.',
             category: 'IEP',
-            subcategory: 'seating',
-            is_demo: true,
+            plan_type: 'IEP',
+            is_active: true,
             created_at: daysAgo(60),
           },
         ]);
@@ -1156,9 +1154,9 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         const { error: shoutoutError } = await supabase.from('shoutouts').insert([
           {
             student_id: cometId,
+            student_name: 'Comet',
             user_id: userId,
             content: 'Helped a classmate with the science diagram completely unprompted. That\'s the Comet I know.',
-            is_demo: true,
             created_at: daysAgo(3),
           },
         ]);
