@@ -1176,13 +1176,15 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       await supabase.from('parent_communications').delete().eq('user_id', userId);
       await supabase.from('notes').delete().eq('user_id', userId);
       await supabase.from('students').delete().eq('user_id', userId).eq('is_demo', true);
+      await updateSetting('onboarding_complete', true);
+      setState(prev => ({ ...prev, onboardingComplete: true }));
       trackEvent('sandbox_wiped');
       await refreshData();
     } catch (err) {
       console.error('Error wiping sandbox:', err);
       toast.error('Could not remove demo students — please try again.');
     }
-  }, [userId, refreshData]);
+  }, [userId, refreshData, updateSetting]);
 
   return {
     ...state,
