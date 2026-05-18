@@ -1005,11 +1005,20 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         return dt.toISOString();
       };
 
+      // Look up the AM class so demo students get assigned to it
+      const { data: amClass } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('name', 'AM')
+        .single();
+      const amClassId = amClass?.id ?? null;
+
       // Insert 8 demo students (Comet gets parent contact info)
       const studentRows = SANDBOX_STUDENT_NAMES.map(name => ({
         name,
         user_id: userId,
-        class_id: null,
+        class_id: amClassId,
         is_demo: true,
         created_at: new Date().toISOString(),
         ...(name === 'Comet' ? {
