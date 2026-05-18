@@ -65,6 +65,13 @@ const MALE_NAMES = new Set([
   'finn','gage','gio','hank','heath','jake','jay','jed','jo','jt','kai','lane',
   'luca','luke','matt','milo','nate','reed','rhett','rob','ron','russ','scott','trey',
   'ty','wade','wren','zach','zion','liam','mason','ethan','noah','aiden','logan',
+  // modern school-age male names
+  'grayson','greyson','brayden','braeden','kayden','jayden','zayden','caiden','raiden',
+  'bentley','easton','weston','paxton','daxton','braxton','layton','beckham','camden',
+  'landen','boden','holden','caden','jaden','kaden','braden','matteo','jax','jaxon',
+  'jaxson','axel','ace','cruz','river','ryder','ryker','jensen','beckett','emmett',
+  'everett','colton','dalton','trenton','lawson','hudson','cash','tucker','porter',
+  'silas','cyrus','atticus','august','bodhi','reef','stone','crew','crew','ace',
 ]);
 
 // Top 500 female names from SSA dataset (1880–present), all-time popularity
