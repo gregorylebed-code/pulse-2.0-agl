@@ -420,7 +420,7 @@ export default function StudentsScreen({
   const handleGenerateReport = async (length: 'Quick Note' | 'Standard' | 'Detailed', filteredNotes: Note[]): Promise<{ report: ReportData; pronounInfo: PronounInfo } | undefined> => {
     if (!selectedStudent) return;
     const studentShoutouts = shoutouts.filter(s => s.student_id === selectedStudent.id);
-    const { report, pronounInfo } = await summarizeNotes(filteredNotes, length, studentShoutouts, selectedStudent.pronouns);
+    const { report, pronounInfo } = await summarizeNotes(filteredNotes, length, studentShoutouts, selectedStudent.pronouns, selectedStudent.name);
     await addReport({
       student_name: selectedStudent.name,
       content: report ? reportToText(report) : '',

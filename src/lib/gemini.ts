@@ -326,14 +326,14 @@ function parseReportJson(raw: string): ReportData | null {
   }
 }
 
-export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard', shoutouts: Shoutout[] = [], studentPronouns?: string | null): Promise<{ report: ReportData | null; pronounInfo: PronounInfo }> {
+export async function summarizeNotes(notes: Note[], length: 'Quick Note' | 'Standard' | 'Detailed' = 'Standard', shoutouts: Shoutout[] = [], studentPronouns?: string | null, studentName?: string): Promise<{ report: ReportData | null; pronounInfo: PronounInfo }> {
   const firstNameOnly = (name: string) => name?.split(' ')[0] || name;
   const notesText = notes.map(n => {
     const tagStr = n.tags?.length ? `[${n.tags.join(', ')}]` : '';
     const body = [n.content, tagStr].filter(Boolean).join(' ');
     return `[${new Date(n.created_at).toLocaleDateString()}] ${firstNameOnly(n.student_name)}: ${body}`;
   }).join('\n');
-  const studentFirstName = notes[0]?.student_name?.split(' ')[0] || 'your child';
+  const studentFirstName = studentName?.split(' ')[0] || notes[0]?.student_name?.split(' ')[0] || 'your child';
   const pronounInfo = getStudentPronounInfo(studentFirstName, studentPronouns);
   const pronounInstruction = buildPronounInstruction(pronounInfo);
   const shoutoutsText = shoutouts.length > 0
