@@ -1005,13 +1005,21 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         return dt.toISOString();
       };
 
-      // Look up the AM class so demo students get assigned to it
-      const { data: amClass } = await supabase
+      // Look up or create the AM class so demo students get assigned to it
+      let { data: amClass } = await supabase
         .from('classes')
         .select('id')
         .eq('user_id', userId)
         .eq('name', 'AM')
         .single();
+      if (!amClass) {
+        const { data: created } = await supabase
+          .from('classes')
+          .insert({ name: 'AM', user_id: userId })
+          .select('id')
+          .single();
+        amClass = created;
+      }
       const amClassId = amClass?.id ?? null;
 
       const SANDBOX_PARENT_INFO: Record<string, { parent_guardian_names: string[]; parent_emails: string[]; parent_phones: string[] }> = {
