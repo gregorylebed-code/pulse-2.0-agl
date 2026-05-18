@@ -387,6 +387,7 @@ export default function SettingsScreen({
   const [rosterFilter, setRosterFilter] = useState<string>('all');
   const [editingStudentNameId, setEditingStudentNameId] = useState<string | null>(null);
   const [editingStudentNameVal, setEditingStudentNameVal] = useState('');
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   // Class Management state
   const [newClassName, setNewClassName] = useState('');
@@ -1091,6 +1092,26 @@ export default function SettingsScreen({
                   {rosterStudents.length === 0 && <p className="text-center py-10 text-xs text-slate-400 italic">No students in roster.</p>}
                 </div>
               </div>
+
+              {students.length > 0 && (
+                <div className="pt-2 border-t border-slate-100">
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm('This will permanently remove all students and their notes. Are you sure?')) return;
+                      setIsDeletingAll(true);
+                      try {
+                        for (const s of students) await deleteStudent(s.id);
+                      } finally {
+                        setIsDeletingAll(false);
+                      }
+                    }}
+                    disabled={isDeletingAll}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-terracotta/70 hover:text-terracotta transition-colors px-1 py-1 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> {isDeletingAll ? 'Deleting...' : 'Delete all students'}
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

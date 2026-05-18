@@ -746,13 +746,6 @@ export default function StudentsScreen({
           >
             <Mail className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => setIsCleanupModalOpen(true)}
-            className="p-1.5 bg-red-50 text-red-400 rounded-lg hover:bg-red-100 hover:text-red-500 transition-colors"
-            title="Cleanup Roster"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
         </div>
         <div className="flex bg-white rounded-xl p-1 shadow-sm border border-slate-100 overflow-x-auto no-scrollbar max-w-[240px]">
           {(
