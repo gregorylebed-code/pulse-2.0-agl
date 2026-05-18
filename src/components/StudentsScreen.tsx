@@ -397,7 +397,6 @@ export default function StudentsScreen({
     setPressingId(null);
   };
   const [isDeleting, setIsDeleting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -690,9 +689,7 @@ export default function StudentsScreen({
 
   const filteredStudents = students.filter(s => {
     const section = s.class_period || s.class_id;
-    const matchesFilter = filter === 'All' || section === filter;
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
+    return filter === 'All' || section === filter;
   });
 
   // Group students by section
@@ -779,16 +776,6 @@ export default function StudentsScreen({
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="px-2">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by student name..."
-          className="w-full p-4 bg-white border border-slate-100 rounded-full focus:outline-none focus:ring-2 focus:ring-sage/20 text-sm font-medium shadow-inner"
-        />
       </div>
 
       {/* Attendance mode instruction bar */}
