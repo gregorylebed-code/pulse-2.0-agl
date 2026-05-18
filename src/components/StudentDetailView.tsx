@@ -1307,25 +1307,29 @@ export default function StudentDetailView({
   };
 
   const handleGenerateQuickNote = async () => {
-    const today = new Date();
-    const filtered = notes.filter(n => {
-      const d = new Date(n.created_at);
-      const noteDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      if (quickNoteDays === 0) {
-        // Today only
-        const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        return noteDay.getTime() === todayDay.getTime();
-      } else if (quickNoteDays === 1) {
-        // Yesterday only
-        const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-        return noteDay.getTime() === yesterday.getTime();
-      } else {
-        // Last N calendar days (not including today if we want strict past, but include today too)
-        const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (quickNoteDays - 1));
-        return noteDay >= cutoff;
-      }
-    });
-    const rangeLabel = quickNoteDays === 0 ? 'today' : quickNoteDays === 1 ? 'yesterday' : `the past ${quickNoteDays} days`;
+    // Custom Range: delegate to the shared filterNotesByTimeRange which handles customStartDate/customEndDate
+    const filtered = timeRange === 'Custom Range'
+      ? filterNotesByTimeRange(notes, 'Custom Range')
+      : (() => {
+          const today = new Date();
+          return notes.filter(n => {
+            const d = new Date(n.created_at);
+            const noteDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            if (quickNoteDays === 0) {
+              const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+              return noteDay.getTime() === todayDay.getTime();
+            } else if (quickNoteDays === 1) {
+              const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+              return noteDay.getTime() === yesterday.getTime();
+            } else {
+              const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (quickNoteDays - 1));
+              return noteDay >= cutoff;
+            }
+          });
+        })();
+    const rangeLabel = timeRange === 'Custom Range'
+      ? `${customStartDate} – ${customEndDate}`
+      : quickNoteDays === 0 ? 'today' : quickNoteDays === 1 ? 'yesterday' : `the past ${quickNoteDays} days`;
     if (filtered.length === 0 && shoutouts.length === 0) {
       toast.error(`No notes from ${rangeLabel} to base this on.`);
       return;
