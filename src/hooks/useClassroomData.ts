@@ -292,11 +292,14 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
       }));
 
       const classes = (classesData || []).map((c: any) => c.name);
+      const classIdToName = new Map((classesData || []).map((c: any) => [c.id, c.name]));
 
       // Map snake_case DB fields to camelCase expected by the app
       const studentsWithCamel = (studentsData || []).map((s: any) => ({
         ...s,
         archivedSummaries: s.archived_summaries ?? [],
+        // Resolve class_id to a name so grouping/display never shows a raw UUID
+        class_period: s.class_period || (s.class_id ? classIdToName.get(s.class_id) ?? null : null),
       }));
 
       setState(prev => ({
