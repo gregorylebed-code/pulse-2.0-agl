@@ -1010,9 +1010,9 @@ export function useClassroomData(userId: string): ClassroomDataState & Classroom
         is_demo: true,
         created_at: new Date().toISOString(),
         ...(name === 'Comet' ? {
-          parent_guardian_names: 'Maria Torres',
-          parent_emails: 'maria.torres@email.com',
-          parent_phones: '(609) 555-0147',
+          parent_guardian_names: ['Maria Torres'],
+          parent_emails: ['maria.torres@email.com'],
+          parent_phones: ['(609) 555-0147'],
         } : {}),
       }));
 
