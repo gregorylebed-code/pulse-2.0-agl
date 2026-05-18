@@ -65,7 +65,6 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
     saveSpecialsMode, saveDayOfWeekSpecials, saveRollingConfig, saveTodayOverride,
     abbreviations, updateIndicators, updateCommTypes, updateClasses,
     updateCalendarEvents, refreshData, stats, lessonHistory, saveLessonHistory,
-    seatingChart, saveSeatingChart,
     notificationPrefs, saveNotificationPrefs,
     onboardingComplete, markOnboardingComplete,
     seedSandbox, wipeSandbox,
@@ -851,8 +850,6 @@ function AuthenticatedApp({ userId, userEmail }: { userId: string; userEmail: st
                 addTask={addTask}
                 deleteTask={deleteTask}
                 tasks={tasks}
-                seatingChart={seatingChart}
-                saveSeatingChart={saveSeatingChart}
                 studioShuffle={studioShuffle}
                 studioClassLabel={studioClassLabel}
               />

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Mail, LayoutGrid, Map } from 'lucide-react';
+import { Users, Trash2, Sparkles, Loader2, X, Send, Copy, Mic, MicOff, Cake, Pin, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { Note, Student, Report, CalendarEvent, StudentGoal, ParentCommunication, Shoutout, Accommodation, AttendanceRecord } from '../types';
 import { Abbreviation } from '../utils/expandAbbreviations';
@@ -11,7 +11,6 @@ import { cn } from '../utils/cn';
 import { useFullMode } from '../context/FullModeContext';
 import { useAliasMode } from '../context/AliasModeContext';
 import { getDisplayName, getDisplayFirst } from '../utils/getDisplayName';
-import SeatingChart from './SeatingChart';
 
 
 interface StudentsScreenProps {
@@ -54,8 +53,6 @@ interface StudentsScreenProps {
   addTask?: (task: { text: string; completed: boolean; color: string }) => Promise<any>;
   deleteTask?: (id: string) => Promise<void>;
   tasks?: { id: string; text: string }[];
-  seatingChart: Record<string, { x: number; y: number }>;
-  saveSeatingChart: (chart: Record<string, { x: number; y: number }>) => Promise<void>;
   studioShuffle?: number;
   studioClassLabel?: string | null;
 }
@@ -294,22 +291,12 @@ export default function StudentsScreen({
   addTask,
   deleteTask,
   tasks,
-  seatingChart,
-  saveSeatingChart,
   studioShuffle,
   studioClassLabel,
 }: StudentsScreenProps) {
   const { aliasMode } = useAliasMode();
   const isFullMode = useFullMode();
   const [filter, setFilter] = useState<string>('All');
-  const [viewMode, setViewMode] = useState<'grid' | 'seating'>('grid');
-
-  React.useEffect(() => {
-    if (filter === 'All' && viewMode === 'seating') {
-      setViewMode('grid');
-    }
-  }, [filter, viewMode]);
-
   // ─── Attendance mode ─────────────────────────────────────────────────────
   const [attendanceMode, setAttendanceMode] = useState(false);
   const [attendanceSelections, setAttendanceSelections] = useState<Record<string, 'absent' | 'tardy'>>({});
@@ -745,24 +732,6 @@ export default function StudentsScreen({
           </button>
         </div>
         <div className="flex bg-white rounded-xl p-1 shadow-sm border border-slate-100 overflow-x-auto no-scrollbar max-w-[240px]">
-          {(
-             <div className="flex mr-2 pr-2 border-r border-slate-100">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn("px-2 py-1.5 rounded-lg transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-700 font-bold" : "text-slate-400 hover:bg-slate-50")}
-                  title="Grid View"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('seating')}
-                  className={cn("px-2 py-1.5 rounded-lg transition-all", viewMode === 'seating' ? "bg-slate-100 text-slate-700 font-bold" : "text-slate-400 hover:bg-slate-50")}
-                  title="Seating Chart"
-                >
-                  <Map className="w-4 h-4" />
-                </button>
-             </div>
-          )}
           {['All', ...classes].map(f => (
             <button
               key={f}
@@ -922,22 +891,6 @@ export default function StudentsScreen({
         )}
       </AnimatePresence>
 
-      {viewMode === 'seating' ? (
-        <div className="px-2 pb-10 mt-2">
-          <SeatingChart 
-            students={filteredStudents} 
-            seatingChart={seatingChart}
-            saveSeatingChart={saveSeatingChart}
-            onStudentClick={(id) => {
-              if (attendanceMode) { toggleAttendanceStudent(id); return; }
-              if (!didPin.current) setSelectedStudentId(id);
-              didPin.current = false;
-            }}
-            statusDot={statusDot}
-            getStudentStatus={getStudentStatus}
-          />
-        </div>
-      ) : (
       <div className="space-y-8">
         {sections.map((section, sIdx) => {
           const palette = CLASS_PALETTE[sIdx % CLASS_PALETTE.length];
@@ -1063,7 +1016,6 @@ export default function StudentsScreen({
           </div>
         )}
       </div>
-      )}
 
       {/* Birthday Import Modal */}
       <AnimatePresence>
